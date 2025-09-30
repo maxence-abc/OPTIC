@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>{% block title %}OPTIC{% endblock %}</title>
+
+    {% block stylesheets %}
+        {#<link href="{{ asset('styles/app.css') }}" rel="stylesheet" />#}
+    {% endblock %}
+
+    {% block javascripts %}{% endblock %}
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="{{ path('app_home') }}">OPTIC</a></li>
+
+                {# Lien vers la page Boutique #}
+                <li><a href="{{ path('app_store_search') }}">Boutique</a></li>
+
+                {# Lien vers la page Service #}
+                <li><a href="{{ path('app_service') }}">Service</a></li>            
+            <div class="user-info">
+                {% if app.user %}
+                <span>{{ app.user.firstName }} {{ app.user.lastName }}</span>
+                    <a href="{{ path('app_logout') }}">Déconnexion</a>
+                {% else %}
+                    <a href="{{ path('app_login') }}">Mon compte</a>
+                    <a href="{{ path('app_registration') }}">S'inscrire</a>
+                {% endif %}
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        {% for message in app.flashes('error') %}
+            <div class="alert alert-danger">{{ message }}</div>
+        {% endfor %}
+
+        {% block body %}{% endblock %}
+    </main>
+</body>
+</html>

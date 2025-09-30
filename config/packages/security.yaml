@@ -1,0 +1,53 @@
+security:
+    # Hiérarchie des rôles
+    role_hierarchy:
+        ROLE_ADMIN: [ROLE_USER]
+
+    # Gestion du hachage des mots de passe
+    password_hashers:
+        App\Entity\User:
+            algorithm: auto
+
+    # Provider basé sur ton entité User (connexion avec l'email)
+    providers:
+        app_user_provider:
+            entity:
+                class: App\Entity\User
+                property: email
+
+    firewalls:
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            security: false
+
+        main:
+            lazy: true
+            provider: app_user_provider
+            custom_authenticator: App\Security\AppAuthenticator
+            logout:
+                path: app_logout
+                target: /
+
+            remember_me:
+                secret: '%kernel.secret%'
+                lifetime: 604800
+                path: /
+                #always_remember_me: true
+
+    # Règles d'accès
+    access_control:
+        - { path: ^/login, roles: PUBLIC_ACCESS }
+        - { path: ^/registration, roles: PUBLIC_ACCESS }
+        - { path: ^/home, roles: PUBLIC_ACCESS }
+        - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/, roles: ROLE_USER }
+        
+
+when@test:
+    security:
+        password_hashers:
+            App\Entity\User:
+                algorithm: auto
+                cost: 4      # bcrypt
+                time_cost: 3 # argon
+                memory_cost: 10 # argon
