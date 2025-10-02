@@ -20,7 +20,7 @@ final class RegistrationController extends AbstractController
         UserPasswordHasherInterface $passwordHasher
     ): Response {
         $user = new User();
-        $user->setCreatedAt(new \DateTimeImmutable());
+        $user->setCreatedAtValue(new \DateTimeImmutable());
         $user->setIsActive(true); // Par défaut, l'utilisateur est actif
 
         // Création du formulaire
