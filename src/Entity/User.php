@@ -99,9 +99,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->adminSuspensions = new ArrayCollection();
     }
 
-    // =====================
+
     // GETTERS & SETTERS
-    // =====================
+
 
     public function getId(): ?int
     {
@@ -226,10 +226,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    // =====================
+
     // RELATIONS
-    // =====================
-    // (inchangé - je n’ai pas modifié tes add/remove)
+
+
 
     public function getAppointmentsAsClient(): Collection
     {
@@ -385,9 +385,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    // =====================
+
     // SECURITY
-    // =====================
+
 
     public function getUserIdentifier(): string
     {
@@ -410,9 +410,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         // nettoyer les données sensibles si besoin
     }
 
-    // =====================
+
     // LIFECYCLE CALLBACKS
-    // =====================
+
 
     #[ORM\PrePersist]
     public function setCreatedAtValue(): void
@@ -421,7 +421,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->updateAt = new \DateTime();
 
         if ($this->isActive === null) {
-            $this->isActive = true; // ✅ actif par défaut
+            $this->isActive = true;
         }
     }
 
