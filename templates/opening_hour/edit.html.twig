@@ -1,0 +1,14 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier un horaire{% endblock %}
+
+{% block body %}
+<h1>Modifier un horaire d'ouverture</h1>
+
+{{ form_start(form) }}
+    {{ form_widget(form) }}
+    <button class="btn btn-primary mt-2">Mettre à jour</button>
+{{ form_end(form) }}
+
+<a href="{{ path('app_opening_hour_index') }}" class="btn btn-secondary mt-3">⬅ Retour</a>
+{% endblock %}

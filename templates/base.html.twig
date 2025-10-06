@@ -7,7 +7,7 @@
     <title>{% block title %}OPTIC{% endblock %}</title>
 
     {% block stylesheets %}
-        {#<link href="{{ asset('styles/app.css') }}" rel="stylesheet" />#}
+        {# <link href="{{ asset('styles/app.css') }}" rel="stylesheet" /> #}
     {% endblock %}
 
     {% block javascripts %}{% endblock %}
@@ -23,10 +23,23 @@
 
                 {# Lien vers la page Service #}
                 <li><a href="{{ path('app_service_index') }}">Service</a></li> 
-                <li><a href="{{ path('app_establishment_index') }}">Établissements</a></li>          
+
+                {# Lien vers les Établissements #}
+                <li><a href="{{ path('app_establishment_index') }}">Établissements</a></li>
+
+                {# Menu pour la gestion des horaires #}
+                <li>
+                    <a href="#">Horaires</a>
+                    <ul>
+                        <li><a href="{{ path('app_opening_hour_index') }}">📅 Voir les horaires</a></li>
+                        <li><a href="{{ path('app_opening_hour_new') }}">➕ Créer un horaire</a></li>
+                    </ul>
+                </li>
+            </ul>
+
             <div class="user-info">
                 {% if app.user %}
-                <span>{{ app.user.firstName }} {{ app.user.lastName }}</span>
+                    <span>{{ app.user.firstName }} {{ app.user.lastName }}</span>
                     <a href="{{ path('app_logout') }}">Déconnexion</a>
                 {% else %}
                     <a href="{{ path('app_login') }}">Mon compte</a>
@@ -37,6 +50,10 @@
     </header>
 
     <main>
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success">{{ message }}</div>
+        {% endfor %}
+
         {% for message in app.flashes('error') %}
             <div class="alert alert-danger">{{ message }}</div>
         {% endfor %}

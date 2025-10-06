@@ -1,0 +1,18 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouvel horaire{% endblock %}
+
+{% block body %}
+<h1>Ajouter un horaire d'ouverture</h1>
+
+{% if establishment %}
+    <p>Établissement : <strong>{{ establishment.name }}</strong></p>
+{% endif %}
+
+{{ form_start(form) }}
+    {{ form_widget(form) }}
+    <button class="btn btn-success mt-2">Enregistrer</button>
+{{ form_end(form) }}
+
+<a href="{{ path('app_opening_hour_index') }}" class="btn btn-secondary mt-3">⬅ Retour</a>
+{% endblock %}

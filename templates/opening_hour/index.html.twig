@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Horaires d'ouverture{% endblock %}
+
+{% block body %}
+<h1>Liste des horaires d'ouverture</h1>
+
+<a href="{{ path('app_opening_hour_new') }}" class="btn btn-primary">➕ Ajouter un horaire</a>
+
+<table>
+    <thead>
+        <tr>
+            <th>Établissement</th>
+            <th>Jour</th>
+            <th>Ouverture</th>
+            <th>Fermeture</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for hour in opening_hours %}
+            <tr>
+                <td>{{ hour.establishment.name }}</td>
+                <td>{{ hour.dayOfWeek }}</td>
+                <td>{{ hour.openTime|date('H:i') }}</td>
+                <td>{{ hour.closeTime|date('H:i') }}</td>
+                <td>
+                    <a href="{{ path('app_opening_hour_edit', {id: hour.id}) }}">Modifier</a> |
+                    <a href="{{ path('app_opening_hour_show', {id: hour.id}) }}">Voir</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="5">Aucun horaire trouvé.</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

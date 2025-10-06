@@ -1,0 +1,17 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Détails horaire{% endblock %}
+
+{% block body %}
+<h1>Détail de l’horaire</h1>
+
+<ul>
+    <li><strong>Établissement :</strong> {{ opening_hour.establishment.name }}</li>
+    <li><strong>Jour :</strong> {{ opening_hour.dayOfWeek }}</li>
+    <li><strong>Ouverture :</strong> {{ opening_hour.openTime|date('H:i') }}</li>
+    <li><strong>Fermeture :</strong> {{ opening_hour.closeTime|date('H:i') }}</li>
+</ul>
+
+<a href="{{ path('app_opening_hour_edit', {id: opening_hour.id}) }}" class="btn btn-primary">✏️ Modifier</a>
+<a href="{{ path('app_opening_hour_index') }}" class="btn btn-secondary">⬅ Retour</a>
+{% endblock %}
