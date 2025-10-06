@@ -39,4 +39,26 @@
     <a href="{{ path('app_establishment_edit', {'id': establishment.id}) }}">edit</a>
 
     {{ include('establishment/_delete_form.html.twig') }}
+
+    {# 🧩 AJOUT : Gestion des services de l’établissement #}
+    <hr>
+    <h3>Services proposés</h3>
+
+    <a href="{{ path('app_service_new', { id: establishment.id }) }}" class="btn btn-primary">
+        ➕ Ajouter un service
+    </a>
+
+    {% if establishment.services|length > 0 %}
+        <ul>
+            {% for service in establishment.services %}
+                <li>
+                    {{ service.name }} – {{ service.price }} €
+                    (<a href="{{ path('app_service_show', {id: service.id}) }}">voir</a>)
+                    (<a href="{{ path('app_service_edit', {id: service.id}) }}">modifier</a>)
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Aucun service pour cet établissement.</p>
+    {% endif %}
 {% endblock %}
