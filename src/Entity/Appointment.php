@@ -3,8 +3,6 @@
 namespace App\Entity;
 
 use App\Repository\AppointmentRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -35,17 +33,6 @@ class Appointment
     #[ORM\JoinColumn(nullable: false)]
     private ?User $client = null;
 
-    #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'appointmentsAsProfessional')]
-    #[ORM\JoinColumn(nullable: false)]
-    private ?self $professional = null;
-
-
-    /**
-     * @var Collection<int, self>
-     */
-    #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'professional')]
-    private Collection $appointmentsAsProfessional;
-
     #[ORM\ManyToOne(inversedBy: 'appointments')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Service $service = null;
@@ -53,10 +40,9 @@ class Appointment
     #[ORM\ManyToOne(inversedBy: 'appointments')]
     private ?Equipement $equipement = null;
 
-    public function __construct()
-    {
-        $this->appointmentsAsProfessional = new ArrayCollection();
-    }
+    #[ORM\ManyToOne(inversedBy: 'appointments')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?User $professional = null;
 
     public function getId(): ?int
     {
@@ -71,7 +57,6 @@ class Appointment
     public function setDate(\DateTime $date): static
     {
         $this->date = $date;
-
         return $this;
     }
 
@@ -83,7 +68,6 @@ class Appointment
     public function setStartTime(\DateTime $startTime): static
     {
         $this->startTime = $startTime;
-
         return $this;
     }
 
@@ -95,7 +79,6 @@ class Appointment
     public function setEndTime(\DateTime $endTime): static
     {
         $this->endTime = $endTime;
-
         return $this;
     }
 
@@ -107,7 +90,6 @@ class Appointment
     public function setStatus(string $status): static
     {
         $this->status = $status;
-
         return $this;
     }
 
@@ -119,7 +101,6 @@ class Appointment
     public function setCreatedAt(\DateTimeImmutable $createdAt): static
     {
         $this->createdAt = $createdAt;
-
         return $this;
     }
 
@@ -131,49 +112,6 @@ class Appointment
     public function setClient(?User $client): static
     {
         $this->client = $client;
-
-        return $this;
-    }
-
-    public function getProfessional(): ?self
-    {
-        return $this->professional;
-    }
-
-    public function setProfessional(?self $professional): static
-    {
-        $this->professional = $professional;
-
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, self>
-     */
-    public function getAppointmentsAsProfessional(): Collection
-    {
-        return $this->appointmentsAsProfessional;
-    }
-
-    public function addAppointmentsAsProfessional(self $appointmentsAsProfessional): static
-    {
-        if (!$this->appointmentsAsProfessional->contains($appointmentsAsProfessional)) {
-            $this->appointmentsAsProfessional->add($appointmentsAsProfessional);
-            $appointmentsAsProfessional->setProfessional($this);
-        }
-
-        return $this;
-    }
-
-    public function removeAppointmentsAsProfessional(self $appointmentsAsProfessional): static
-    {
-        if ($this->appointmentsAsProfessional->removeElement($appointmentsAsProfessional)) {
-            // set the owning side to null (unless already changed)
-            if ($appointmentsAsProfessional->getProfessional() === $this) {
-                $appointmentsAsProfessional->setProfessional(null);
-            }
-        }
-
         return $this;
     }
 
@@ -185,7 +123,6 @@ class Appointment
     public function setService(?Service $service): static
     {
         $this->service = $service;
-
         return $this;
     }
 
@@ -197,6 +134,17 @@ class Appointment
     public function setEquipement(?Equipement $equipement): static
     {
         $this->equipement = $equipement;
+        return $this;
+    }
+
+    public function getProfessional(): ?User
+    {
+        return $this->professional;
+    }
+
+    public function setProfessional(?User $professional): static
+    {
+        $this->professional = $professional;
 
         return $this;
     }

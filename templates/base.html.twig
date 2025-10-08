@@ -16,40 +16,50 @@
     <header>
         <nav>
             <ul>
-                <li><a href="{{ path('app_home') }}">OPTIC</a></li>
+                <li><a href="{{ path('app_home') }}"> OPTIC</a></li>
 
                 {# Lien vers la page Boutique #}
-                <li><a href="{{ path('app_store_search') }}">Boutique</a></li>
+                <li><a href="{{ path('app_store_search') }}">🛍️ Boutique</a></li>
 
                 {# Lien vers la page Service #}
-                <li><a href="{{ path('app_service_index') }}">Service</a></li> 
+                <li><a href="{{ path('app_service_index') }}">🧾 Services</a></li> 
 
                 {# Lien vers les Établissements #}
-                <li><a href="{{ path('app_establishment_index') }}">Établissements</a></li>
+                <li><a href="{{ path('app_establishment_index') }}">🏢 Établissements</a></li>
 
                 {# Menu pour la gestion des horaires #}
                 <li>
-                    <a href="#">Horaires</a>
+                    <a href="#">⏰ Horaires</a>
                     <ul>
                         <li><a href="{{ path('app_opening_hour_index') }}">📅 Voir les horaires</a></li>
                         <li><a href="{{ path('app_opening_hour_new') }}">➕ Créer un horaire</a></li>
+                    </ul>
+                </li>
+
+                {# Menu pour la gestion des rendez-vous #}
+                <li>
+                    <a href="#">📆 Rendez-vous</a>
+                    <ul>
+                        <li><a href="{{ path('app_appointment_index') }}"> Voir les rendez-vous</a></li>
+                        <li><a href="{{ path('app_appointment_new') }}"> Réserver un créneau</a></li>
                     </ul>
                 </li>
             </ul>
 
             <div class="user-info">
                 {% if app.user %}
-                    <span>{{ app.user.firstName }} {{ app.user.lastName }}</span>
-                    <a href="{{ path('app_logout') }}">Déconnexion</a>
+                    <span>👤 {{ app.user.firstName }} {{ app.user.lastName }}</span>
+                    <a href="{{ path('app_logout') }}"> Déconnexion</a>
                 {% else %}
-                    <a href="{{ path('app_login') }}">Mon compte</a>
-                    <a href="{{ path('app_registration') }}">S'inscrire</a>
+                    <a href="{{ path('app_login') }}"> Mon compte</a>
+                    <a href="{{ path('app_registration') }}"> S'inscrire</a>
                 {% endif %}
             </div>
         </nav>
     </header>
 
     <main>
+        {# Messages flash #}
         {% for message in app.flashes('success') %}
             <div class="alert alert-success">{{ message }}</div>
         {% endfor %}

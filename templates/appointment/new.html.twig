@@ -1,0 +1,57 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouveau rendez-vous{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1 class="mb-4">🗓️ Prendre un rendez-vous</h1>
+
+    {{ form_start(form, { attr: { id: 'appointment-form' } }) }}
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                {{ form_row(form.service) }}
+            </div>
+            <div class="col-md-6 mb-3">
+                {{ form_row(form.date) }}
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                {{ form_row(form.startTime) }}
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <button class="btn btn-success">💾 Enregistrer</button>
+            <a href="{{ path('app_appointment_index') }}" class="btn btn-secondary">⬅ Retour</a>
+        </div>
+    {{ form_end(form) }}
+
+    {% if appointment.endTime is not null %}
+        <div class="alert alert-info mt-4">
+            ⏰ Heure de fin prévue : <strong>{{ appointment.endTime|date('H:i') }}</strong>
+        </div>
+    {% endif %}
+</div>
+
+{# Script pour recharger automatiquement la page dès qu’un service et une date sont choisis #}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const serviceField = document.querySelector('#appointment_service');
+    const dateField = document.querySelector('#appointment_date');
+
+    function reloadPage() {
+        const service = serviceField.value;
+        const date = dateField.value;
+        if (service && date) {
+            const baseUrl = window.location.pathname;
+            window.location.href = `${baseUrl}?service=${service}&date=${date}`;
+        }
+    }
+
+    if (serviceField) serviceField.addEventListener('change', reloadPage);
+    if (dateField) dateField.addEventListener('change', reloadPage);
+});
+</script>
+{% endblock %}

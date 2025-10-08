@@ -1,0 +1,47 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Liste des rendez-vous{% endblock %}
+
+{% block body %}
+<h1>📅 Liste des rendez-vous</h1>
+
+<a href="{{ path('app_appointment_new') }}" class="btn btn-primary">➕ Nouveau rendez-vous</a>
+
+<table border="1" cellpadding="10" style="margin-top: 20px;">
+    <thead>
+        <tr>
+            <th>Client</th>
+            <th>Service</th>
+            <th>Établissement</th>
+            <th>Date</th>
+            <th>Heure</th>
+            <th>Statut</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for appointment in appointments %}
+        <tr>
+            <td>{{ appointment.client.firstName }} {{ appointment.client.lastName }}</td>
+            <td>{{ appointment.service.name }}</td>
+            <td>{{ appointment.service.establishment.name }}</td>
+            <td>{{ appointment.date|date('d/m/Y') }}</td>
+            <td>{{ appointment.startTime|date('H:i') }} - {{ appointment.endTime|date('H:i') }}</td>
+            <td>{{ appointment.status }}</td>
+            <td>
+                <a href="{{ path('app_appointment_show', {id: appointment.id}) }}">👁️</a>
+                <a href="{{ path('app_appointment_edit', {id: appointment.id}) }}">✏️</a>
+                <form method="post" action="{{ path('app_appointment_delete', {id: appointment.id}) }}" style="display:inline" onsubmit="return confirm('Supprimer ce rendez-vous ?');">
+                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ appointment.id) }}">
+                    <button type="submit" style="color:red; background:none; border:none;">🗑️</button>
+                </form>
+            </td>
+        </tr>
+    {% else %}
+        <tr>
+            <td colspan="7">Aucun rendez-vous trouvé.</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

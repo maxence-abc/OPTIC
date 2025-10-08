@@ -89,6 +89,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: AccountSuspension::class, mappedBy: 'adminUser')]
     private Collection $adminSuspensions;
 
+    /**
+     * @var Collection<int, Appointment>
+     */
+    #[ORM\OneToMany(targetEntity: Appointment::class, mappedBy: 'professional', orphanRemoval: true)]
+    private Collection $appointments;
+
     public function __construct()
     {
         $this->appointmentsAsClient = new ArrayCollection();
@@ -97,6 +103,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->userlogs = new ArrayCollection();
         $this->accountSuspensions = new ArrayCollection();
         $this->adminSuspensions = new ArrayCollection();
+        $this->appointments = new ArrayCollection();
     }
 
 
@@ -429,5 +436,34 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setUpdateAtValue(): void
     {
         $this->updateAt = new \DateTime();
+    }
+
+    /**
+     * @return Collection<int, Appointment>
+     */
+    public function getAppointments(): Collection
+    {
+        return $this->appointments;
+    }
+
+    public function addAppointment(Appointment $appointment): static
+    {
+        if (!$this->appointments->contains($appointment)) {
+            $this->appointments->add($appointment);
+            $appointment->setProfessional($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAppointment(Appointment $appointment): static
+    {
+        if ($this->appointments->removeElement($appointment)) {
+            if ($appointment->getProfessional() === $this) {
+                $appointment->setProfessional(null);
+            }
+        }
+
+        return $this;
     }
 }
