@@ -7,12 +7,20 @@
 
 <ul>
     <li><strong>Client :</strong> {{ appointment.client.firstName }} {{ appointment.client.lastName }}</li>
+    <li><strong>Professionnel :</strong> {{ appointment.professional.firstName }} {{ appointment.professional.lastName }}</li>
     <li><strong>Service :</strong> {{ appointment.service.name }}</li>
     <li><strong>Établissement :</strong> {{ appointment.service.establishment.name }}</li>
     <li><strong>Date :</strong> {{ appointment.date|date('d/m/Y') }}</li>
     <li><strong>Heure :</strong> {{ appointment.startTime|date('H:i') }} - {{ appointment.endTime|date('H:i') }}</li>
     <li><strong>Statut :</strong> {{ appointment.status }}</li>
+    <li><strong>Équipement :</strong>
+        {% if appointment.equipement %}
+            {{ appointment.equipement.name }}
+        {% else %}
+            Aucun
+        {% endif %}
+    </li>
 </ul>
 
-<a href="{{ path('app_appointment_index') }}">⬅ Retour à la liste</a>
+<a href="{{ path('app_appointment_index') }}">Retour à la liste</a>
 {% endblock %}

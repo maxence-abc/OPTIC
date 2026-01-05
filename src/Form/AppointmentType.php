@@ -7,8 +7,8 @@ use App\Entity\Service;
 use App\Entity\Equipement;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -17,14 +17,6 @@ class AppointmentType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            // Date du rendez-vous
-            ->add('date', DateType::class, [
-                'widget' => 'single_text',
-                'label' => 'Date du rendez-vous',
-                'required' => true,
-            ])
-
-            // Service concerné
             ->add('service', EntityType::class, [
                 'class' => Service::class,
                 'choice_label' => function (Service $service) {
@@ -36,7 +28,12 @@ class AppointmentType extends AbstractType
                 'required' => true,
             ])
 
-            // Créneau disponible
+            ->add('date', DateType::class, [
+                'widget' => 'single_text',
+                'label' => 'Date du rendez-vous',
+                'required' => true,
+            ])
+
             ->add('startTime', ChoiceType::class, [
                 'label' => 'Créneau horaire disponible',
                 'choices' => $options['available_slots'] ?? [],
@@ -45,7 +42,6 @@ class AppointmentType extends AbstractType
                 'mapped' => false,
             ])
 
-            // Équipement optionnel
             ->add('equipement', EntityType::class, [
                 'class' => Equipement::class,
                 'choice_label' => 'name',
