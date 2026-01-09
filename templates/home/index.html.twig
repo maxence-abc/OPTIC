@@ -1,12 +1,11 @@
 {% extends 'base.html.twig' %}
 
+{% block header %}{% endblock %}
+
 {% block title %}Accueil - OPTIC{% endblock %}
 
 {% block body %}
-    <h1>Bienvenue sur <span class="highlight">OPTIC</span></h1>
-    <p>Prendre Rendez-vous</p>
-
-    <div class="actions">
-        <a href="{{ path('app_appointment_index') }}" class="btn btn-primary">Voir les rendez-vous</a>
-    </div>
+<h1>Bienvenue sur OPTIC</h1>
+<p>Prendre rendez-vous</p>
+<a href="{{ path('app_appointment_new') }}">Réserver un créneau</a>
 {% endblock %}

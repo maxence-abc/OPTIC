@@ -1,0 +1,95 @@
+/* =========================
+   NAVBAR
+========================= */
+
+.navbar {
+  background: #ffffff;
+  border-bottom: 1px solid #eee;
+  height: 64px;
+  display: flex;
+  align-items: center;
+}
+
+.navbar__container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+}
+
+/* Brand */
+.navbar__brand {
+  display: flex;
+  align-items: center;
+}
+
+.navbar__logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  color: #000;
+}
+
+.navbar__icon {
+  font-size: 18px;
+}
+
+/* Nav links */
+.navbar__nav {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+}
+
+.navbar__link {
+  text-decoration: none;
+  color: #555;
+  font-weight: 500;
+}
+
+.navbar__link:hover {
+  color: #000;
+}
+
+/* User */
+.navbar__user {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.navbar__user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.navbar__email {
+  font-size: 14px;
+  color: #666;
+}
+
+/* Buttons (global utilitaires) */
+.btn {
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+
+.btn-primary {
+  background: #000;
+  color: #fff;
+}
+
+.btn-outline {
+  background: #fff;
+  border: 1px solid #ccc;
+  color: #000;
+}

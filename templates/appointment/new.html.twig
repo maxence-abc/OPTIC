@@ -40,20 +40,70 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const serviceField = document.querySelector('#appointment_service');
-    const dateField = document.querySelector('#appointment_date');
+  const serviceField = document.querySelector('#appointment_service');
+  const dateField = document.querySelector('#appointment_date');
+  const equipField = document.querySelector('#appointment_equipement');
+  const slotField = document.querySelector('#appointment_startTime');
 
-    function reloadPage() {
-        const service = serviceField?.value;
-        const date = dateField?.value;
-        if (service && date) {
-            const baseUrl = window.location.pathname;
-            window.location.href = `${baseUrl}?service=${service}&date=${date}`;
-        }
+  if (!slotField) return;
+
+  function setSlots(slots) {
+    slotField.innerHTML = '';
+
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = (slots && slots.length)
+      ? 'Choisissez un créneau'
+      : 'Aucun créneau disponible';
+    slotField.appendChild(placeholder);
+
+    if (slots && slots.length) {
+      for (const t of slots) {
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = t;
+        slotField.appendChild(opt);
+      }
     }
 
-    if (serviceField) serviceField.addEventListener('change', reloadPage);
-    if (dateField) dateField.addEventListener('change', reloadPage);
+    slotField.disabled = !(slots && slots.length);
+  }
+
+  async function refreshSlots() {
+    const service = serviceField?.value;
+    const date = dateField?.value;
+    const equip = equipField?.value;
+
+    if (!service || !date) {
+      setSlots([]);
+      return;
+    }
+
+    slotField.disabled = true;
+    slotField.innerHTML = '<option value="">Chargement...</option>';
+
+    const params = new URLSearchParams();
+    params.set('service', service);
+    params.set('date', date);
+    if (equip) params.set('equipement', equip);
+
+    const url = "{{ path('app_appointment_slots') }}" + '?' + params.toString();
+
+    try {
+      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      const data = await res.json();
+      setSlots(data.slots || []);
+    } catch (e) {
+      setSlots([]);
+    }
+  }
+
+  serviceField?.addEventListener('change', refreshSlots);
+  dateField?.addEventListener('change', refreshSlots);
+  equipField?.addEventListener('change', refreshSlots);
+
+  refreshSlots();
 });
 </script>
+
 {% endblock %}

@@ -1,74 +1,92 @@
+{# templates/base.html.twig #}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
     <title>{% block title %}OPTIC{% endblock %}</title>
 
-    {% block stylesheets %}
-        {# <link href="{{ asset('styles/app.css') }}" rel="stylesheet" /> #}
-    {% endblock %}
+    {# CSS global (chargé partout) #}
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+
+    {# CSS spécifique par page/module #}
+    {% block stylesheets %}{% endblock %}
 
     {% block javascripts %}{% endblock %}
 </head>
-<body>
-    <header>
-        <nav>
-            <ul>
-                <li><a href="{{ path('app_home') }}"> OPTIC</a></li>
 
-                {# Lien vers la page Boutique #}
-                <li><a href="{{ path('app_store_search') }}">🛍️ Boutique</a></li>
+<body class="{% block body_class %}{% endblock %}">
 
-                {# Lien vers la page Service #}
-                <li><a href="{{ path('app_service_index') }}">🧾 Services</a></li> 
+{% block header %}
+<header class="navbar">
+    <div class="navbar__container">
 
-                {# Lien vers les Établissements #}
-                <li><a href="{{ path('app_establishment_index') }}">🏢 Établissements</a></li>
+        {# Brand #}
+        <div class="navbar__brand">
+            <a href="{{ path('app_home') }}" class="navbar__logo">
+                <span class="navbar__name">OPTIC</span>
+            </a>
+        </div>
 
-                {# Menu pour la gestion des horaires #}
-                <li>
-                    <a href="#">⏰ Horaires</a>
-                    <ul>
-                        <li><a href="{{ path('app_opening_hour_index') }}">📅 Voir les horaires</a></li>
-                        <li><a href="{{ path('app_opening_hour_new') }}">➕ Créer un horaire</a></li>
-                    </ul>
-                </li>
+        {# Navigation (centre) #}
+        <nav class="navbar__nav" aria-label="Navigation principale">
+            <a href="{{ path('app_home') }}" class="navbar__link">Accueil</a>
+            <a href="{{ path('app_store_search') }}" class="navbar__link">Rechercher un service</a>
 
-                {# Menu pour la gestion des rendez-vous #}
-                <li>
-                    <a href="#">📆 Rendez-vous</a>
-                    <ul>
-                        <li><a href="{{ path('app_appointment_index') }}"> Voir les rendez-vous</a></li>
-                        <li><a href="{{ path('app_appointment_new') }}"> Réserver un créneau</a></li>
-                    </ul>
-                </li>
-            </ul>
+            {# Liens "admin/backoffice" (tu peux les garder si tu en as besoin) #}
+            <a href="{{ path('app_service_index') }}" class="navbar__link">Services</a>
+            <a href="{{ path('app_establishment_index') }}" class="navbar__link">Établissements</a>
 
-            <div class="user-info">
-                {% if app.user %}
-                    <span>👤 {{ app.user.firstName }} {{ app.user.lastName }}</span>
-                    <a href="{{ path('app_logout') }}"> Déconnexion</a>
-                {% else %}
-                    <a href="{{ path('app_login') }}"> Mon compte</a>
-                    <a href="{{ path('app_registration') }}"> S'inscrire</a>
-                {% endif %}
+            <div class="navbar__dropdown">
+                <button class="navbar__link navbar__dropdown-toggle" type="button">
+                    Horaires
+                </button>
+                <div class="navbar__dropdown-menu">
+                    <a href="{{ path('app_opening_hour_index') }}" class="navbar__dropdown-item">Voir les horaires</a>
+                    <a href="{{ path('app_opening_hour_new') }}" class="navbar__dropdown-item">Créer un horaire</a>
+                </div>
+            </div>
+
+            <div class="navbar__dropdown">
+                <button class="navbar__link navbar__dropdown-toggle" type="button">
+                    Rendez-vous
+                </button>
+                <div class="navbar__dropdown-menu">
+                    <a href="{{ path('app_appointment_index') }}" class="navbar__dropdown-item">Voir les rendez-vous</a>
+                    <a href="{{ path('app_appointment_new') }}" class="navbar__dropdown-item">Réserver un créneau</a>
+                </div>
             </div>
         </nav>
-    </header>
 
-    <main>
-        {# Messages flash #}
-        {% for message in app.flashes('success') %}
-            <div class="alert alert-success">{{ message }}</div>
-        {% endfor %}
+        {# User #}
+        <div class="navbar__user">
+            {% if app.user %}
+                <div class="navbar__user-info">
+                    <span class="navbar__user-name">{{ app.user.firstName }} {{ app.user.lastName }}</span>
+                    <a href="{{ path('app_logout') }}" class="btn btn-outline">Déconnexion</a>
+                </div>
+            {% else %}
+                <div class="navbar__user-info">
+                    <a href="{{ path('app_login') }}" class="btn btn-outline">Connexion</a>
+                    <a href="{{ path('app_registration') }}" class="btn btn-primary">S’inscrire</a>
+                </div>
+            {% endif %}
+        </div>
 
-        {% for message in app.flashes('error') %}
-            <div class="alert alert-danger">{{ message }}</div>
-        {% endfor %}
+    </div>
+</header>
+{% endblock %}
 
-        {% block body %}{% endblock %}
-    </main>
+<main class="main">
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success">{{ message }}</div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-danger">{{ message }}</div>
+    {% endfor %}
+
+    {% block body %}{% endblock %}
+</main>
+
 </body>
 </html>
