@@ -6,12 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}OPTIC{% endblock %}</title>
 
-    {# CSS global (chargé partout) #}
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <link rel="stylesheet" href="/css/app.css">
 
-    {# CSS spécifique par page/module #}
     {% block stylesheets %}{% endblock %}
-
     {% block javascripts %}{% endblock %}
 </head>
 
@@ -24,50 +21,45 @@
         {# Brand #}
         <div class="navbar__brand">
             <a href="{{ path('app_home') }}" class="navbar__logo">
+                <span class="navbar__icon">
+                    {{ ux_icon('uit:calendar') }}
+                </span>
                 <span class="navbar__name">OPTIC</span>
             </a>
         </div>
 
-        {# Navigation (centre) #}
+        {# Navigation centrale #}
         <nav class="navbar__nav" aria-label="Navigation principale">
             <a href="{{ path('app_home') }}" class="navbar__link">Accueil</a>
             <a href="{{ path('app_store_search') }}" class="navbar__link">Rechercher un service</a>
-
-            {# Liens "admin/backoffice" (tu peux les garder si tu en as besoin) #}
-            <a href="{{ path('app_service_index') }}" class="navbar__link">Services</a>
-            <a href="{{ path('app_establishment_index') }}" class="navbar__link">Établissements</a>
-
-            <div class="navbar__dropdown">
-                <button class="navbar__link navbar__dropdown-toggle" type="button">
-                    Horaires
-                </button>
-                <div class="navbar__dropdown-menu">
-                    <a href="{{ path('app_opening_hour_index') }}" class="navbar__dropdown-item">Voir les horaires</a>
-                    <a href="{{ path('app_opening_hour_new') }}" class="navbar__dropdown-item">Créer un horaire</a>
-                </div>
-            </div>
-
-            <div class="navbar__dropdown">
-                <button class="navbar__link navbar__dropdown-toggle" type="button">
-                    Rendez-vous
-                </button>
-                <div class="navbar__dropdown-menu">
-                    <a href="{{ path('app_appointment_index') }}" class="navbar__dropdown-item">Voir les rendez-vous</a>
-                    <a href="{{ path('app_appointment_new') }}" class="navbar__dropdown-item">Réserver un créneau</a>
-                </div>
-            </div>
+            <a href="{{ path('app_appointment_index') }}" class="navbar__link">Voir les rendez-vous</a>
+            <a href="{{ path('app_appointment_new') }}" class="navbar__link">Réserver un créneau</a>
         </nav>
 
         {# User #}
         <div class="navbar__user">
             {% if app.user %}
                 <div class="navbar__user-info">
-                    <span class="navbar__user-name">{{ app.user.firstName }} {{ app.user.lastName }}</span>
-                    <a href="{{ path('app_logout') }}" class="btn btn-outline">Déconnexion</a>
+                    <div class="navbar__user-text">
+                        <span class="navbar__user-name">{{ app.user.firstName }} {{ app.user.lastName }}</span>
+                        <span class="navbar__email">{{ app.user.email }}</span>
+                    </div>
+
+                    <a href="{{ path('app_login') }}" class="btn btn-user">
+                        <span class="btn__icon">
+                            {{ ux_icon('uil:user') }}
+                        </span>
+                        <span>Mon compte</span>
+                    </a>
                 </div>
             {% else %}
                 <div class="navbar__user-info">
-                    <a href="{{ path('app_login') }}" class="btn btn-outline">Connexion</a>
+                    <a href="{{ path('app_login') }}" class="btn btn-user">
+                        <span class="btn__icon">
+                            {{ ux_icon('uil:user') }}
+                        </span>
+                        <span>Connexion</span>
+                    </a>
                     <a href="{{ path('app_registration') }}" class="btn btn-primary">S’inscrire</a>
                 </div>
             {% endif %}
@@ -78,13 +70,6 @@
 {% endblock %}
 
 <main class="main">
-    {% for message in app.flashes('success') %}
-        <div class="alert alert-success">{{ message }}</div>
-    {% endfor %}
-    {% for message in app.flashes('error') %}
-        <div class="alert alert-danger">{{ message }}</div>
-    {% endfor %}
-
     {% block body %}{% endblock %}
 </main>
 
