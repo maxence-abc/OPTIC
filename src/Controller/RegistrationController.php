@@ -20,32 +20,32 @@ final class RegistrationController extends AbstractController
         UserPasswordHasherInterface $passwordHasher
     ): Response {
         $user = new User();
-        $user->setCreatedAtValue(new \DateTimeImmutable());
-        $user->setIsActive(true); // Par défaut, l'utilisateur est actif
+        // ❌ PAS d'appel manuel à setCreatedAtValue()
+        // Doctrine le fera automatiquement via PrePersist
+        $user->setIsActive(true); // optionnel, mais OK
 
         // Création du formulaire
         $form = $this->createForm(UserType::class, $user);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // Hachage du mot de passe
-            $hashedPassword = $passwordHasher->hashPassword(
-                $user,
-                $user->getPassword()
-            );
-            $user->setPassword($hashedPassword);
 
-            // Définir le rôle par défaut
-            $user->setRole('ROLE_USER');
+            // Hachage du mot de passe
+            $user->setPassword(
+                $passwordHasher->hashPassword($user, $user->getPassword())
+            );
+
+            // Rôle par défaut (client)
+            $user->setRoles(['ROLE_USER']);
 
             // Sauvegarde en BDD
             $em->persist($user);
             $em->flush();
 
-
             $this->addFlash('success', 'Utilisateur créé avec succès !');
 
-            return $this->redirectToRoute('app_registration');
+            // Après inscription → login
+            return $this->redirectToRoute('app_login');
         }
 
         return $this->render('registration/index.html.twig', [
@@ -53,4 +53,3 @@ final class RegistrationController extends AbstractController
         ]);
     }
 }
-

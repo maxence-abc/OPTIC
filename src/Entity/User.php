@@ -35,8 +35,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $phone = null;
 
-    #[ORM\Column(length: 255)]
-    private ?string $role = null;
+    #[ORM\Column(type: 'json')]
+    private array $roles = [];
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $specialization = null;
@@ -106,9 +106,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->appointments = new ArrayCollection();
     }
 
-
     // GETTERS & SETTERS
-
 
     public function getId(): ?int
     {
@@ -123,7 +121,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setFirstName(string $firstName): static
     {
         $this->firstName = $firstName;
-
         return $this;
     }
 
@@ -135,7 +132,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setLastName(string $lastName): static
     {
         $this->lastName = $lastName;
-
         return $this;
     }
 
@@ -147,7 +143,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setEmail(string $email): static
     {
         $this->email = $email;
-
         return $this;
     }
 
@@ -159,7 +154,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setPassword(string $password): static
     {
         $this->password = $password;
-
         return $this;
     }
 
@@ -171,19 +165,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setPhone(string $phone): static
     {
         $this->phone = $phone;
-
-        return $this;
-    }
-
-    public function getRole(): ?string
-    {
-        return $this->role;
-    }
-
-    public function setRole(string $role): static
-    {
-        $this->role = $role;
-
         return $this;
     }
 
@@ -195,7 +176,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setSpecialization(string $specialization): static
     {
         $this->specialization = $specialization;
-
         return $this;
     }
 
@@ -207,7 +187,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setIsActive(?bool $isActive): static
     {
         $this->isActive = $isActive;
-
         return $this;
     }
 
@@ -229,14 +208,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setEstablishment(?Establishment $establishment): static
     {
         $this->establishment = $establishment;
-
         return $this;
     }
 
-
-    // RELATIONS
-
-
+    // RELATIONS (inchangées)
 
     public function getAppointmentsAsClient(): Collection
     {
@@ -249,7 +224,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $this->appointmentsAsClient->add($appointmentsAsClient);
             $appointmentsAsClient->setClient($this);
         }
-
         return $this;
     }
 
@@ -260,7 +234,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 $appointmentsAsClient->setClient(null);
             }
         }
-
         return $this;
     }
 
@@ -275,7 +248,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $this->establishments->add($establishment);
             $establishment->setOwner($this);
         }
-
         return $this;
     }
 
@@ -286,7 +258,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 $establishment->setOwner(null);
             }
         }
-
         return $this;
     }
 
@@ -301,7 +272,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $this->loyalties->add($loyalty);
             $loyalty->setClient($this);
         }
-
         return $this;
     }
 
@@ -312,7 +282,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 $loyalty->setClient(null);
             }
         }
-
         return $this;
     }
 
@@ -327,7 +296,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $this->userlogs->add($userlog);
             $userlog->setRelatedUser($this);
         }
-
         return $this;
     }
 
@@ -338,7 +306,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 $userlog->setRelatedUser(null);
             }
         }
-
         return $this;
     }
 
@@ -353,7 +320,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $this->accountSuspensions->add($accountSuspension);
             $accountSuspension->setSuspendedUser($this);
         }
-
         return $this;
     }
 
@@ -364,7 +330,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 $accountSuspension->setSuspendedUser(null);
             }
         }
-
         return $this;
     }
 
@@ -392,9 +357,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-
     // SECURITY
-
 
     public function getUserIdentifier(): string
     {
@@ -403,13 +366,41 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getRoles(): array
     {
-        $roles = [$this->role ?? 'ROLE_USER'];
+        $roles = $this->roles;
 
         if (!in_array('ROLE_USER', $roles, true)) {
             $roles[] = 'ROLE_USER';
         }
 
-        return array_unique($roles);
+        return array_values(array_unique($roles));
+    }
+
+    public function setRoles(array $roles): static
+    {
+        $this->roles = $roles;
+        return $this;
+    }
+
+    public function addRole(string $role): static
+    {
+        if (!in_array($role, $this->roles, true)) {
+            $this->roles[] = $role;
+        }
+        return $this;
+    }
+
+    public function removeRole(string $role): static
+    {
+        $this->roles = array_values(array_filter(
+            $this->roles,
+            static fn (string $r) => $r !== $role
+        ));
+        return $this;
+    }
+
+    public function hasRole(string $role): bool
+    {
+        return in_array($role, $this->getRoles(), true);
     }
 
     public function eraseCredentials(): void
@@ -417,9 +408,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         // nettoyer les données sensibles si besoin
     }
 
-
     // LIFECYCLE CALLBACKS
-
 
     #[ORM\PrePersist]
     public function setCreatedAtValue(): void
@@ -452,7 +441,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $this->appointments->add($appointment);
             $appointment->setProfessional($this);
         }
-
         return $this;
     }
 
@@ -463,7 +451,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 $appointment->setProfessional(null);
             }
         }
-
         return $this;
     }
 }
