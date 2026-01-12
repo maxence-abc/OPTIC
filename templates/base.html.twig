@@ -2,74 +2,53 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}OPTIC{% endblock %}</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}OPTIC{% endblock %}</title>
 
-    <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/app.css">
 
-    {% block stylesheets %}{% endblock %}
-    {% block javascripts %}{% endblock %}
+  <link rel="stylesheet" href="/css/components/button.css">
+  <link rel="stylesheet" href="/css/components/navbar.css">
+
+  {% block stylesheets %}{% endblock %}
+  {% block javascripts %}{% endblock %}
 </head>
 
 <body class="{% block body_class %}{% endblock %}">
 
 {% block header %}
-<header class="navbar">
-    <div class="navbar__container">
-
-        {# Brand #}
-        <div class="navbar__brand">
-            <a href="{{ path('app_home') }}" class="navbar__logo">
-                <span class="navbar__icon">
-                    {{ ux_icon('uit:calendar') }}
-                </span>
-                <span class="navbar__name">OPTIC</span>
-            </a>
-        </div>
-
-        {# Navigation centrale #}
-        <nav class="navbar__nav" aria-label="Navigation principale">
-            <a href="{{ path('app_home') }}" class="navbar__link">Accueil</a>
-            <a href="{{ path('app_store_search') }}" class="navbar__link">Rechercher un service</a>
-        </nav>
-
-        {# User #}
-        <div class="navbar__user">
-            {% if app.user %}
-                <div class="navbar__user-info">
-                    <div class="navbar__user-text">
-                        <span class="navbar__user-name">{{ app.user.firstName }} {{ app.user.lastName }}</span>
-                        <span class="navbar__email">{{ app.user.email }}</span>
-                    </div>
-
-                    <a href="{{ path('app_login') }}" class="btn btn-user">
-                        <span class="btn__icon">
-                            {{ ux_icon('uil:user') }}
-                        </span>
-                        <span>Mon compte</span>
-                    </a>
-                </div>
-            {% else %}
-                <div class="navbar__user-info">
-                    <a href="{{ path('app_login') }}" class="btn btn-user">
-                        <span class="btn__icon">
-                            {{ ux_icon('uil:user') }}
-                        </span>
-                        <span>Connexion</span>
-                    </a>
-                    <a href="{{ path('app_registration') }}" class="btn btn-primary">S’inscrire</a>
-                </div>
-            {% endif %}
-        </div>
-
-    </div>
-</header>
+  <twig:Navbar
+    brandHref="{{ path('app_home') }}"
+    brandLabel="OPTIC"
+    brandIcon="uit:calendar"
+    homeHref="{{ path('app_home') }}"
+    searchHref="{{ path('app_store_search') }}"
+    loginHref="{{ path('app_login') }}"
+    registerHref="{{ path('app_registration') }}"
+    accountLabel="Mon compte"
+    loginLabel="Connexion"
+    registerLabel="S'inscrire"
+    userIcon="uil:user"
+  />
 {% endblock %}
 
-<main class="main">
-    {% block body %}{% endblock %}
+<main class="main" role="main">
+  {% for message in app.flashes('success') %}
+    <div class="container container--wide">
+      <div class="alert alert-success" role="alert">{{ message }}</div>
+    </div>
+  {% endfor %}
+
+  {% for message in app.flashes('error') %}
+    <div class="container container--wide">
+      <div class="alert alert-danger" role="alert">{{ message }}</div>
+    </div>
+  {% endfor %}
+
+  {% block body %}{% endblock %}
 </main>
 
+{% block footer %}{% endblock %}
 </body>
 </html>

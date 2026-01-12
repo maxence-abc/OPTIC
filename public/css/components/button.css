@@ -1,0 +1,75 @@
+/* public/css/components/button.css */
+
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap: 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  user-select: none;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  transition: transform .06s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease, color .2s ease;
+}
+
+.btn:active{ transform: translateY(1px); }
+
+.btn--sm{ height: 34px; padding: 0 12px; font-size: 13px; }
+.btn--md{ height: 38px; padding: 0 14px; font-size: 14px; }
+.btn--lg{ height: 44px; padding: 0 18px; font-size: 14px; }
+
+.btn--primary{
+  background: #111;
+  color:#fff;
+  border-color:#111;
+}
+
+.btn--primary:hover{
+  box-shadow: 0 10px 24px rgba(0,0,0,.14);
+}
+
+.btn--outline{
+  background: transparent;
+  color:#111;
+  border-color: rgba(0,0,0,.35);
+}
+
+.btn--outline:hover{
+  border-color: rgba(0,0,0,.55);
+}
+
+.btn--ghost{
+  background: transparent;
+  color:#111;
+  border-color: transparent;
+}
+
+.btn--block{ width:100%; }
+
+.btn[disabled],
+.btn.is-loading{
+  opacity: .65;
+  cursor: not-allowed;
+}
+
+.btn__icon svg{
+  width: 16px;
+  height: 16px;
+}
+
+.btn__spinner{
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: spin .8s linear infinite;
+}
+
+@keyframes spin{
+  to{ transform: rotate(360deg); }
+}

@@ -1,0 +1,67 @@
+{% if this.enabled %}
+<header class="navbar" data-navbar>
+  <div class="navbar__container">
+
+    {# Brand #}
+    <div class="navbar__brand">
+      <a href="{{ this.brandHref ?? path('app_home') }}" class="navbar__logo">
+        {% if this.brandIcon %}
+          <span class="navbar__icon" aria-hidden="true">
+            {{ ux_icon(this.brandIcon) }}
+          </span>
+        {% endif %}
+        <span class="navbar__name">{{ this.brandLabel }}</span>
+      </a>
+    </div>
+
+    {# Burger (mobile only, masqué en desktop via CSS) #}
+    <button class="navbar__burger" type="button" aria-label="Ouvrir le menu" aria-expanded="false">
+      <span class="navbar__burger-icon" aria-hidden="true">{{ ux_icon('uil:bars') }}</span>
+    </button>
+
+    {# Navigation #}
+    <nav class="navbar__nav" aria-label="Navigation principale">
+      <a href="{{ this.homeHref ?? path('app_home') }}" class="navbar__link">Accueil</a>
+      <a href="{{ this.searchHref ?? path('app_store_search') }}" class="navbar__link">Rechercher un service</a>
+    </nav>
+
+    {# User #}
+    <div class="navbar__user">
+      {% if app.user %}
+        <div class="navbar__user-info">
+          <div class="navbar__user-text">
+            <span class="navbar__user-name">{{ app.user.firstName }} {{ app.user.lastName }}</span>
+            <span class="navbar__email">{{ app.user.email }}</span>
+          </div>
+
+          <twig:Button
+            label="{{ this.accountLabel }}"
+            href="{{ this.loginHref ?? path('app_login') }}"
+            variant="outline"
+            size="md"
+            iconLeft="{{ this.userIcon }}"
+          />
+        </div>
+      {% else %}
+        <div class="navbar__user-info">
+          <twig:Button
+            label="{{ this.loginLabel }}"
+            href="{{ this.loginHref ?? path('app_login') }}"
+            variant="outline"
+            size="md"
+            iconLeft="{{ this.userIcon }}"
+          />
+
+          <twig:Button
+            label="{{ this.registerLabel }}"
+            href="{{ this.registerHref ?? path('app_registration') }}"
+            variant="primary"
+            size="md"
+          />
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+</header>
+{% endif %}

@@ -10,35 +10,42 @@
 {% block body %}
 
 <section class="home-hero">
-  <div class="home-hero__inner">
+  <div class="container container--wide home-hero__inner">
     <h1 class="home-hero__title">Tous vos services à portée de clic</h1>
     <p class="home-hero__subtitle">
       Réservez facilement vos rendez-vous chez les meilleurs professionnels de votre ville
     </p>
 
     <div class="home-hero__actions">
-      <a class="btn btn-primary" href="{{ path('app_store_search') }}">
-        <span class="icon" aria-hidden="true">{{ ux_icon('uil:search') }}</span>
-        <span>Trouver un service</span>
-      </a>
+      <twig:Button
+        label="Trouver un service"
+        href="{{ path('app_store_search') }}"
+        variant="primary"
+        size="lg"
+        iconLeft="uil:search"
+        class="home-hero__btn home-hero__btn--primary"
+      />
 
-      {# Ajuste la route si tu as une page dédiée partenaire #}
-      <a class="btn btn-outline" href="{{ path('app_establishment_new') }}">
-        <span class="icon" aria-hidden="true">{{ ux_icon('uil:store') }}</span>
-        <span>Devenir partenaire</span>
-      </a>
+      <twig:Button
+        label="Devenir partenaire"
+        href="{{ path('app_establishment_new') }}"
+        variant="outline"
+        size="lg"
+        iconLeft="uil:store"
+        class="home-hero__btn home-hero__btn--secondary"
+      />
     </div>
   </div>
 </section>
 
 <section class="home-stats">
-  <div class="home-stats__inner">
+  <div class="container container--wide home-stats__inner">
     <div class="stat">
-      <div class="stat__value">10 000+</div>
+      <div class="stat__value">10 000 +</div>
       <div class="stat__label">Partenaires professionnels</div>
     </div>
     <div class="stat">
-      <div class="stat__value">500 000+</div>
+      <div class="stat__value">500 000 +</div>
       <div class="stat__label">Réservations effectuées</div>
     </div>
     <div class="stat">
@@ -53,13 +60,15 @@
 </section>
 
 <section class="home-section">
-  <div class="container">
+  <div class="container container--wide">
     <h2 class="section-title">Explorez nos catégories</h2>
     <p class="section-subtitle">Des milliers de professionnels à votre service dans tous les domaines</p>
 
     <div class="category-grid">
       <a class="category-card" href="#">
-        <div class="category-card__media category-card__media--restaurants"></div>
+        <div class="category-card__media category-card__media--restaurants">
+          <span class="category-card__icon" aria-hidden="true">{{ ux_icon('uil:restaurant') }}</span>
+        </div>
         <div class="category-card__body">
           <div class="category-card__title">Restaurants</div>
           <div class="category-card__text">Réservez une table</div>
@@ -67,7 +76,9 @@
       </a>
 
       <a class="category-card" href="#">
-        <div class="category-card__media category-card__media--beauty"></div>
+        <div class="category-card__media category-card__media--beauty">
+          <span class="category-card__icon" aria-hidden="true">{{ ux_icon('uil:star') }}</span>
+        </div>
         <div class="category-card__body">
           <div class="category-card__title">Coiffure & Beauté</div>
           <div class="category-card__text">Prenez rendez-vous</div>
@@ -75,7 +86,9 @@
       </a>
 
       <a class="category-card" href="#">
-        <div class="category-card__media category-card__media--health"></div>
+        <div class="category-card__media category-card__media--health">
+          <span class="category-card__icon" aria-hidden="true">{{ ux_icon('uil:medical-drip') }}</span>
+        </div>
         <div class="category-card__body">
           <div class="category-card__title">Santé</div>
           <div class="category-card__text">Consultations médicales</div>
@@ -83,7 +96,9 @@
       </a>
 
       <a class="category-card" href="#">
-        <div class="category-card__media category-card__media--sport"></div>
+        <div class="category-card__media category-card__media--sport">
+          <span class="category-card__icon" aria-hidden="true">{{ ux_icon('uil:dumbbell') }}</span>
+        </div>
         <div class="category-card__body">
           <div class="category-card__title">Sport & Fitness</div>
           <div class="category-card__text">Cours et sessions</div>
@@ -91,7 +106,9 @@
       </a>
 
       <a class="category-card" href="#">
-        <div class="category-card__media category-card__media--auto"></div>
+        <div class="category-card__media category-card__media--auto">
+          <span class="category-card__icon" aria-hidden="true">{{ ux_icon('uil:car') }}</span>
+        </div>
         <div class="category-card__body">
           <div class="category-card__title">Automobile</div>
           <div class="category-card__text">Entretien & réparation</div>
@@ -99,7 +116,9 @@
       </a>
 
       <a class="category-card" href="#">
-        <div class="category-card__media category-card__media--wellness"></div>
+        <div class="category-card__media category-card__media--wellness">
+          <span class="category-card__icon" aria-hidden="true">{{ ux_icon('uil:heart') }}</span>
+        </div>
         <div class="category-card__body">
           <div class="category-card__title">Bien-être</div>
           <div class="category-card__text">Spa & massages</div>
@@ -110,31 +129,31 @@
 </section>
 
 <section class="home-features">
-  <div class="container">
+  <div class="container container--wide">
     <h2 class="section-title">Pourquoi choisir OPTIC ?</h2>
     <p class="section-subtitle">La plateforme tout-en-un pour toutes vos réservations</p>
 
     <div class="feature-grid">
       <div class="feature-card">
-        <span class="feature-card__icon icon" aria-hidden="true">{{ ux_icon('uil:search') }}</span>
+        <div class="feature-card__iconwrap" aria-hidden="true">{{ ux_icon('uil:search') }}</div>
         <div class="feature-card__title">Recherche simplifiée</div>
         <div class="feature-card__text">Trouvez rapidement le service dont vous avez besoin près de chez vous.</div>
       </div>
 
       <div class="feature-card">
-        <span class="feature-card__icon icon" aria-hidden="true">{{ ux_icon('uil:calendar-alt') }}</span>
+        <div class="feature-card__iconwrap" aria-hidden="true">{{ ux_icon('uil:calendar-alt') }}</div>
         <div class="feature-card__title">Réservation en ligne</div>
         <div class="feature-card__text">Réservez votre créneau en quelques clics, 24/24.</div>
       </div>
 
       <div class="feature-card">
-        <span class="feature-card__icon icon" aria-hidden="true">{{ ux_icon('uil:check-circle') }}</span>
+        <div class="feature-card__iconwrap" aria-hidden="true">{{ ux_icon('uil:check-circle') }}</div>
         <div class="feature-card__title">Partenaires qualifiés</div>
         <div class="feature-card__text">Tous nos partenaires sont vérifiés et certifiés.</div>
       </div>
 
       <div class="feature-card">
-        <span class="feature-card__icon icon" aria-hidden="true">{{ ux_icon('uil:clock') }}</span>
+        <div class="feature-card__iconwrap" aria-hidden="true">{{ ux_icon('uil:clock') }}</div>
         <div class="feature-card__title">Gain de temps</div>
         <div class="feature-card__text">Plus besoin d’appeler, tout se passe en ligne.</div>
       </div>
@@ -143,18 +162,14 @@
 </section>
 
 <section class="home-testimonials">
-  <div class="container">
+  <div class="container container--wide">
     <h2 class="section-title">Ils nous font confiance</h2>
     <p class="section-subtitle">Des milliers d’utilisateurs satisfaits</p>
 
     <div class="testimonial-grid">
       <div class="testimonial">
-        <div class="testimonial__stars">
-          <span class="icon" aria-hidden="true">{{ ux_icon('uil:star') }}</span>
-          <span class="icon" aria-hidden="true">{{ ux_icon('uil:star') }}</span>
-          <span class="icon" aria-hidden="true">{{ ux_icon('uil:star') }}</span>
-          <span class="icon" aria-hidden="true">{{ ux_icon('uil:star') }}</span>
-          <span class="icon" aria-hidden="true">{{ ux_icon('uil:star') }}</span>
+        <div class="testimonial__stars" aria-hidden="true">
+          {{ ux_icon('uil:star') }}{{ ux_icon('uil:star') }}{{ ux_icon('uil:star') }}{{ ux_icon('uil:star') }}{{ ux_icon('uil:star') }}
         </div>
         <div class="testimonial__text">“Très pratique, réservation rapide et efficace.”</div>
         <div class="testimonial__author">Marie Laurent</div>
@@ -162,12 +177,8 @@
       </div>
 
       <div class="testimonial">
-        <div class="testimonial__stars">
-          <span class="icon" aria-hidden="true">{{ ux_icon('uil:star') }}</span>
-          <span class="icon" aria-hidden="true">{{ ux_icon('uil:star') }}</span>
-          <span class="icon" aria-hidden="true">{{ ux_icon('uil:star') }}</span>
-          <span class="icon" aria-hidden="true">{{ ux_icon('uil:star') }}</span>
-          <span class="icon" aria-hidden="true">{{ ux_icon('uil:star') }}</span>
+        <div class="testimonial__stars" aria-hidden="true">
+          {{ ux_icon('uil:star') }}{{ ux_icon('uil:star') }}{{ ux_icon('uil:star') }}{{ ux_icon('uil:star') }}{{ ux_icon('uil:star') }}
         </div>
         <div class="testimonial__text">“Interface simple, je réserve en 2 minutes.”</div>
         <div class="testimonial__author">Sophie Martin</div>
@@ -175,12 +186,8 @@
       </div>
 
       <div class="testimonial">
-        <div class="testimonial__stars">
-          <span class="icon" aria-hidden="true">{{ ux_icon('uil:star') }}</span>
-          <span class="icon" aria-hidden="true">{{ ux_icon('uil:star') }}</span>
-          <span class="icon" aria-hidden="true">{{ ux_icon('uil:star') }}</span>
-          <span class="icon" aria-hidden="true">{{ ux_icon('uil:star') }}</span>
-          <span class="icon" aria-hidden="true">{{ ux_icon('uil:star') }}</span>
+        <div class="testimonial__stars" aria-hidden="true">
+          {{ ux_icon('uil:star') }}{{ ux_icon('uil:star') }}{{ ux_icon('uil:star') }}{{ ux_icon('uil:star') }}{{ ux_icon('uil:star') }}
         </div>
         <div class="testimonial__text">“Service fiable et pro, je recommande.”</div>
         <div class="testimonial__author">Julien Moreau</div>

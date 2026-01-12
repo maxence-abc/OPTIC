@@ -1,0 +1,31 @@
+<section class="hero">
+  <div class="hero__inner">
+
+    <h1 class="hero__title">{{ title }}</h1>
+
+    {% if subtitle %}
+      <p class="hero__subtitle">{{ subtitle }}</p>
+    {% endif %}
+
+    <div class="hero__actions">
+      <twig:Button
+        label="{{ primaryLabel }}"
+        href="{{ primaryHref }}"
+        variant="outline"
+        size="md"
+        iconLeft="{{ primaryIconLeft }}"
+        class="hero__btn hero__btn--primary"
+      />
+
+      <twig:Button
+        label="{{ secondaryLabel }}"
+        href="{{ secondaryHref }}"
+        variant="outline"
+        size="md"
+        iconLeft="{{ secondaryIconLeft }}"
+        class="hero__btn hero__btn--secondary"
+      />
+    </div>
+
+  </div>
+</section>
