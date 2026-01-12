@@ -1,0 +1,122 @@
+/* =========================
+   HERO (Home)
+========================= */
+
+.hero {
+  min-height: 360px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 72px 24px;
+
+  /* dégradé sombre comme maquette */
+  background: radial-gradient(circle at 50% 35%, #2b2b2f 0%, #0f0f12 55%, #070708 100%);
+}
+
+.hero__inner {
+  width: 100%;
+  max-width: 1200px;
+  text-align: center;
+}
+
+.hero__title {
+  margin: 0;
+  font-size: 44px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  color: #fff;
+}
+
+.hero__subtitle {
+  margin: 18px auto 0;
+  max-width: 920px;
+  font-size: 22px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.hero__actions {
+  margin-top: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 24px;
+}
+
+/* Boutons du hero */
+.hero__btn {
+  padding: 12px 18px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: transparent;
+  color: #fff;
+}
+
+.hero__btn:hover {
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
+/* Primary (blanc) */
+.hero__btn--primary {
+  background: #fff;
+  color: #111;
+  border-color: #fff;
+}
+
+.hero__btn--primary:hover {
+  opacity: 0.92;
+}
+
+/* Secondary (outline sombre) */
+.hero__btn--secondary {
+  background: transparent;
+  color: #fff;
+}
+
+/* Ajustements icônes dans les boutons (UX Icons) */
+.hero .btn__icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* =========================
+   Responsive
+========================= */
+@media (max-width: 900px) {
+  .hero {
+    min-height: 320px;
+    padding: 56px 18px;
+  }
+
+  .hero__title {
+    font-size: 34px;
+  }
+
+  .hero__subtitle {
+    font-size: 18px;
+  }
+
+  .hero__actions {
+    gap: 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero__title {
+    font-size: 28px;
+  }
+
+  .hero__subtitle {
+    font-size: 16px;
+  }
+
+  .hero__actions {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .hero__btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -1,0 +1,58 @@
+{% set tag = this.isLink() ? 'a' : 'button' %}
+{% set style = this.computedStyle() %}
+{% set disabled = this.disabled or this.loading %}
+
+{% if tag == 'a' %}
+  <a
+    href="{{ this.href }}"
+    class="{{ this.computedClass() }}"
+    {% if style %}style="{{ style }}"{% endif %}
+    {{ attributes }}
+    aria-disabled="{{ disabled ? 'true' : 'false' }}"
+    {% if disabled %}tabindex="-1"{% endif %}
+  >
+    {% if this.loading %}
+      <span class="btn__spinner" aria-hidden="true"></span>
+    {% endif %}
+
+    {% if this.iconLeft %}
+      <span class="btn__icon" aria-hidden="true">
+        {{ ux_icon(this.iconLeft) }}
+      </span>
+    {% endif %}
+
+    <span class="btn__label">{{ this.label }}</span>
+
+    {% if this.iconRight %}
+      <span class="btn__icon" aria-hidden="true">
+        {{ ux_icon(this.iconRight) }}
+      </span>
+    {% endif %}
+  </a>
+{% else %}
+  <button
+    type="{{ this.type }}"
+    class="{{ this.computedClass() }}"
+    {% if style %}style="{{ style }}"{% endif %}
+    {% if disabled %}disabled{% endif %}
+    {{ attributes }}
+  >
+    {% if this.loading %}
+      <span class="btn__spinner" aria-hidden="true"></span>
+    {% endif %}
+
+    {% if this.iconLeft %}
+      <span class="btn__icon" aria-hidden="true">
+        {{ ux_icon(this.iconLeft) }}
+      </span>
+    {% endif %}
+
+    <span class="btn__label">{{ this.label }}</span>
+
+    {% if this.iconRight %}
+      <span class="btn__icon" aria-hidden="true">
+        {{ ux_icon(this.iconRight) }}
+      </span>
+    {% endif %}
+  </button>
+{% endif %}
