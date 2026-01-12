@@ -364,6 +364,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return (string) $this->email;
     }
 
+    /**
+     * Symfony ajoute ROLE_USER automatiquement si absent (comportement attendu).
+     */
     public function getRoles(): array
     {
         $roles = $this->roles;
@@ -375,32 +378,97 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return array_values(array_unique($roles));
     }
 
+    /**
+     * IMPORTANT :
+     * - On ne doit enregistrer en base qu'UN rôle métier: ROLE_CLIENT ou ROLE_PRO.
+     * - ROLE_USER ne doit pas être stocké, il est ajouté par getRoles().
+     * - On empêche ROLE_CLIENT et ROLE_PRO simultanément.
+     */
     public function setRoles(array $roles): static
     {
+        // Normalisation
+        $roles = array_values(array_unique(array_filter($roles, static fn ($r) => is_string($r) && $r !== '')));
+
+        // On retire ROLE_USER si jamais il est passé (il est ajouté automatiquement)
+        $roles = array_values(array_diff($roles, ['ROLE_USER']));
+
+        // Contrainte : pas de ROLE_CLIENT + ROLE_PRO en même temps
+        $hasClient = in_array('ROLE_CLIENT', $roles, true);
+        $hasPro = in_array('ROLE_PRO', $roles, true);
+
+        if ($hasClient && $hasPro) {
+            // Règle : si PRO est présent, on garde PRO seulement
+            $roles = array_values(array_diff($roles, ['ROLE_CLIENT']));
+        }
+
         $this->roles = $roles;
+
         return $this;
     }
 
+    /**
+     * Ajoute un rôle en respectant la règle ROLE_CLIENT xor ROLE_PRO.
+     */
     public function addRole(string $role): static
     {
+        $role = strtoupper($role);
+
+        if ($role === 'ROLE_USER') {
+            // inutile de le stocker
+            return $this;
+        }
+
+        // Si on ajoute PRO, on enlève CLIENT. Si on ajoute CLIENT, on enlève PRO.
+        if ($role === 'ROLE_PRO') {
+            $this->removeRole('ROLE_CLIENT');
+        } elseif ($role === 'ROLE_CLIENT') {
+            $this->removeRole('ROLE_PRO');
+        }
+
         if (!in_array($role, $this->roles, true)) {
             $this->roles[] = $role;
         }
-        return $this;
+
+        // Re-normalise
+        return $this->setRoles($this->roles);
     }
 
     public function removeRole(string $role): static
     {
+        $role = strtoupper($role);
+
         $this->roles = array_values(array_filter(
             $this->roles,
             static fn (string $r) => $r !== $role
         ));
+
         return $this;
     }
 
+    /**
+     * Pour la sécurité, tu peux garder hasRole() sur getRoles().
+     */
     public function hasRole(string $role): bool
     {
-        return in_array($role, $this->getRoles(), true);
+        return in_array(strtoupper($role), $this->getRoles(), true);
+    }
+
+    /**
+     * Méthodes "métier" (IMPORTANT : on lit $this->roles pour éviter l'effet ROLE_USER)
+     */
+    public function isPro(): bool
+    {
+        return in_array('ROLE_PRO', $this->roles ?? [], true);
+    }
+
+    public function isClient(): bool
+    {
+        return in_array('ROLE_CLIENT', $this->roles ?? [], true);
+    }
+
+    public function getAccountTypeLabel(): string
+    {
+        return $this->isPro() ? 'Professionnel' : 'Client';
     }
 
     public function eraseCredentials(): void

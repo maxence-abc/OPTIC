@@ -37,11 +37,13 @@ security:
 
     # Règles d'accès
     access_control:
-        - { path: ^/login, roles: PUBLIC_ACCESS }
-        - { path: ^/registration, roles: PUBLIC_ACCESS }
-        - { path: ^/home, roles: PUBLIC_ACCESS }
-        - { path: ^/admin, roles: ROLE_ADMIN }
-        - { path: ^/, roles: ROLE_USER }
+    - { path: ^/login, roles: PUBLIC_ACCESS }
+    - { path: ^/registration, roles: PUBLIC_ACCESS }
+    - { path: ^/$, roles: PUBLIC_ACCESS }          
+    - { path: ^/home, roles: PUBLIC_ACCESS }     
+    - { path: ^/admin, roles: ROLE_ADMIN }
+    - { path: ^/, roles: ROLE_USER }
+
         
 
 when@test:

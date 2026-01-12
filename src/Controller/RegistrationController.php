@@ -20,31 +20,33 @@ final class RegistrationController extends AbstractController
         UserPasswordHasherInterface $passwordHasher
     ): Response {
         $user = new User();
-        // ❌ PAS d'appel manuel à setCreatedAtValue()
-        // Doctrine le fera automatiquement via PrePersist
-        $user->setIsActive(true); // optionnel, mais OK
+        $user->setIsActive(true);
 
-        // Création du formulaire
         $form = $this->createForm(UserType::class, $user);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
 
-            // Hachage du mot de passe
+            // Hash du mot de passe
             $user->setPassword(
                 $passwordHasher->hashPassword($user, $user->getPassword())
             );
 
-            // Rôle par défaut (client)
-            $user->setRoles(['ROLE_USER']);
+            // accountType: "client" ou "pro"
+            $accountType = (string) $form->get('accountType')->getData();
+            $accountType = strtolower(trim($accountType));
 
-            // Sauvegarde en BDD
+            // Un seul rôle métier en base
+            if ($accountType === 'pro') {
+                $user->setRoles(['ROLE_PRO']);
+            } else {
+                $user->setRoles(['ROLE_CLIENT']);
+            }
+
             $em->persist($user);
             $em->flush();
 
-            $this->addFlash('success', 'Utilisateur créé avec succès !');
 
-            // Après inscription → login
             return $this->redirectToRoute('app_login');
         }
 

@@ -1,0 +1,17 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mon compte - OPTIC{% endblock %}
+
+{% block body %}
+  <div class="container" style="padding: 32px 0;">
+    <h1>Mon compte</h1>
+
+    <p>
+      Connecté en tant que <strong>{{ app.user.firstName }} {{ app.user.lastName }}</strong>
+      ({{ app.user.email }})
+    </p>
+
+    <p>Rôles: {{ app.user.roles|json_encode }}</p>
+    <a href="{{ path('app_logout') }}" class="btn btn-primary">Déconnexion</a>
+  </div>
+{% endblock %}
