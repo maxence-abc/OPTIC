@@ -16,7 +16,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class EstablishmentController extends AbstractController
 {
     #[Route(name: 'app_establishment_index', methods: ['GET'])]
-    #[IsGranted('ROLE_ADMIN')]
+    #[IsGranted('ROLE_PRO')]
     public function index(EstablishmentRepository $establishmentRepository): Response
     {
         return $this->render('establishment/index.html.twig', [
@@ -25,10 +25,21 @@ final class EstablishmentController extends AbstractController
     }
 
     #[Route('/new', name: 'app_establishment_new', methods: ['GET', 'POST'])]
-    #[IsGranted('ROLE_ADMIN')]
+    #[IsGranted('ROLE_PRO')]
     public function new(Request $request, EntityManagerInterface $entityManager): Response
     {
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->redirectToRoute('app_login');
+        }
+
         $establishment = new Establishment();
+
+        // IMPORTANT : l'établissement appartient au PRO connecté
+        if (method_exists($establishment, 'setOwner')) {
+            $establishment->setOwner($user);
+        }
+
         $form = $this->createForm(EstablishmentType::class, $establishment);
         $form->handleRequest($request);
 
@@ -38,7 +49,10 @@ final class EstablishmentController extends AbstractController
 
             $this->addFlash('success', 'Établissement créé avec succès');
 
-            return $this->redirectToRoute('app_establishment_index', [], Response::HTTP_SEE_OTHER);
+            // UX: après création, retour sur la page show
+            return $this->redirectToRoute('app_establishment_show', [
+                'id' => $establishment->getId(),
+            ], Response::HTTP_SEE_OTHER);
         }
 
         return $this->render('establishment/new.html.twig', [
@@ -51,22 +65,21 @@ final class EstablishmentController extends AbstractController
     #[IsGranted('ROLE_USER')]
     public function show(Establishment $establishment): Response
     {
-        // Admin : accès total
+        // Admin OK
         if ($this->isGranted('ROLE_ADMIN')) {
             return $this->render('establishment/show.html.twig', [
                 'establishment' => $establishment,
             ]);
         }
 
-        // Pro : accès uniquement à sa boutique
+        // PRO: uniquement si owner
         $user = $this->getUser();
         if (!$user) {
             return $this->redirectToRoute('app_login');
         }
 
         if (method_exists($establishment, 'getOwner') && $establishment->getOwner() !== $user) {
-            // Accès interdit si ce n'est pas le propriétaire
-            throw $this->createAccessDeniedException('Accès interdit à cet établissement.');
+            throw $this->createAccessDeniedException('Accès interdit : établissement non autorisé.');
         }
 
         return $this->render('establishment/show.html.twig', [
@@ -75,9 +88,21 @@ final class EstablishmentController extends AbstractController
     }
 
     #[Route('/{id}/edit', name: 'app_establishment_edit', methods: ['GET', 'POST'])]
-    #[IsGranted('ROLE_ADMIN')]
+    #[IsGranted('ROLE_PRO')]
     public function edit(Request $request, Establishment $establishment, EntityManagerInterface $entityManager): Response
     {
+        // Admin OK, sinon owner obligatoire
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            $user = $this->getUser();
+            if (!$user) {
+                return $this->redirectToRoute('app_login');
+            }
+
+            if (method_exists($establishment, 'getOwner') && $establishment->getOwner() !== $user) {
+                throw $this->createAccessDeniedException('Accès interdit : établissement non autorisé.');
+            }
+        }
+
         $form = $this->createForm(EstablishmentType::class, $establishment);
         $form->handleRequest($request);
 
@@ -86,7 +111,9 @@ final class EstablishmentController extends AbstractController
 
             $this->addFlash('success', 'Établissement modifié avec succès');
 
-            return $this->redirectToRoute('app_establishment_index', [], Response::HTTP_SEE_OTHER);
+            return $this->redirectToRoute('app_establishment_show', [
+                'id' => $establishment->getId(),
+            ], Response::HTTP_SEE_OTHER);
         }
 
         return $this->render('establishment/edit.html.twig', [
@@ -96,16 +123,28 @@ final class EstablishmentController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_establishment_delete', methods: ['POST'])]
-    #[IsGranted('ROLE_ADMIN')]
+    #[IsGranted('ROLE_PRO')]
     public function delete(Request $request, Establishment $establishment, EntityManagerInterface $entityManager): Response
     {
+        // Admin OK, sinon owner obligatoire
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            $user = $this->getUser();
+            if (!$user) {
+                return $this->redirectToRoute('app_login');
+            }
+
+            if (method_exists($establishment, 'getOwner') && $establishment->getOwner() !== $user) {
+                throw $this->createAccessDeniedException('Accès interdit : établissement non autorisé.');
+            }
+        }
+
         if ($this->isCsrfTokenValid('delete'.$establishment->getId(), $request->getPayload()->getString('_token'))) {
             $entityManager->remove($establishment);
             $entityManager->flush();
+            $this->addFlash('success', 'Établissement supprimé avec succès');
         }
 
-        $this->addFlash('success', 'Établissement supprimé avec succès');
-
-        return $this->redirectToRoute('app_establishment_index', [], Response::HTTP_SEE_OTHER);
+        // Après suppression, un PRO retourne typiquement sur son dashboard (à adapter)
+        return $this->redirectToRoute('app_home', [], Response::HTTP_SEE_OTHER);
     }
 }

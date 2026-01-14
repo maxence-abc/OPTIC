@@ -19,6 +19,7 @@ class ServiceType extends AbstractType
             ])
             ->add('description', null, [
                 'label' => 'Description',
+                'required' => false,
             ])
             ->add('duration', null, [
                 'label' => 'Durée (minutes)',
@@ -28,22 +29,29 @@ class ServiceType extends AbstractType
             ])
             ->add('bufferTime', null, [
                 'label' => 'Temps tampon (minutes)',
+                'required' => false,
             ])
-            ->add('establishment', EntityType::class, [
+        ;
+
+        // Champ établissement (affiché uniquement si non masqué)
+        if (!$options['hide_establishment']) {
+            $builder->add('establishment', EntityType::class, [
                 'class' => Establishment::class,
                 'choice_label' => function (Establishment $establishment) {
-                    // On affiche le nom + la ville, plus clair dans un select
                     return $establishment->getName() . ' (' . $establishment->getCity() . ')';
                 },
                 'label' => 'Établissement',
                 'placeholder' => 'Sélectionnez un établissement',
+                'required' => true,
             ]);
+        }
     }
 
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
             'data_class' => Service::class,
+            'hide_establishment' => false,
         ]);
     }
 }
