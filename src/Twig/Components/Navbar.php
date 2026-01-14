@@ -7,29 +7,24 @@ use Symfony\UX\TwigComponent\Attribute\AsTwigComponent;
 #[AsTwigComponent('Navbar')]
 final class Navbar
 {
-    /**
-     * Permet de désactiver la navbar sur certaines pages si besoin
-     */
     public bool $enabled = true;
 
-    // Brand
-    public ?string $brandHref = null;
     public string $brandLabel = 'OPTIC';
-    public ?string $brandIcon = 'uit:calendar';
+    public ?string $brandIcon = 'uil:calendar';
+    public ?string $brandHref = null;
 
-    // Links
     public ?string $homeHref = null;
     public ?string $searchHref = null;
 
-    // Auth links
-    public ?string $loginHref = null;
-    public ?string $registerHref = null;
+    public string $userIcon = 'uil:user';
 
     // Labels
     public string $accountLabel = 'Mon compte';
     public string $loginLabel = 'Connexion';
-    public string $registerLabel = "S'inscrire";
+    public string $registerLabel = 'Inscription';
 
-    // Icons
-    public ?string $userIcon = 'uil:user';
+    // Links
+    public ?string $accountHref = null;
+    public ?string $loginHref = null;
+    public ?string $registerHref = null;
 }

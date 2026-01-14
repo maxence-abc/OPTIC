@@ -41,12 +41,20 @@
   text-decoration: none;
   color: inherit;
   font-weight: 600;
+  line-height: 1;
 }
 
-.navbar__icon svg{
+.navbar__icon svg {
   width: 18px;
   height: 18px;
+  display: block;      
 }
+
+.navbar__name {
+  display: block;
+  line-height: 1;
+}
+
 
 /* Nav centre */
 .navbar__nav{

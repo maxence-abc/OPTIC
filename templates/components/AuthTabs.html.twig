@@ -1,0 +1,19 @@
+<div class="auth-tabs" role="tablist" aria-label="Connexion et inscription">
+  <a
+    class="auth-tabs__tab {{ active == 'login' ? 'is-active' : '' }}"
+    href="{{ loginHref ?? path('app_login') }}"
+    role="tab"
+    aria-selected="{{ active == 'login' ? 'true' : 'false' }}"
+  >
+    {{ loginLabel }}
+  </a>
+
+  <a
+    class="auth-tabs__tab {{ active == 'register' ? 'is-active' : '' }}"
+    href="{{ registerHref ?? path('app_registration') }}"
+    role="tab"
+    aria-selected="{{ active == 'register' ? 'true' : 'false' }}"
+  >
+    {{ registerLabel }}
+  </a>
+</div>

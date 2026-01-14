@@ -4,24 +4,34 @@ namespace App\Form;
 
 use App\Entity\User;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\EmailType;
-use Symfony\Component\Form\Extension\Core\Type\PasswordType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class UserType extends AbstractType
+final class UserType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
+            // --- Ton form existant ---
             ->add('firstName')
             ->add('lastName')
-            ->add('email', EmailType::class)
-            ->add('phone', null, [
-                'required' => false, // Numéro facultatif
-                'label' => 'Numéro de téléphone',
+            ->add('email')
+            ->add('phone')
+            ->add('password')
+
+            // --- Nouveau : type de compte (non mappé) ---
+            ->add('accountType', ChoiceType::class, [
+                'mapped' => false,
+                'expanded' => true,
+                'multiple' => false,
+                'data' => 'client', // default = Client
+                'choices' => [
+                    'Client' => 'client',
+                    'Professionnel' => 'pro',
+                ],
             ])
-            ->add('password', PasswordType::class);
+        ;
     }
 
     public function configureOptions(OptionsResolver $resolver): void

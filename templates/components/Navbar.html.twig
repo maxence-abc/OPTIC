@@ -1,6 +1,6 @@
 {% if this.enabled %}
 <header class="navbar" data-navbar>
-  <div class="navbar__container">
+  <div class="container container--wide navbar__container">
 
     {# Brand #}
     <div class="navbar__brand">
@@ -14,7 +14,7 @@
       </a>
     </div>
 
-    {# Burger (mobile only, masqué en desktop via CSS) #}
+    {# Burger (mobile only) #}
     <button class="navbar__burger" type="button" aria-label="Ouvrir le menu" aria-expanded="false">
       <span class="navbar__burger-icon" aria-hidden="true">{{ ux_icon('uil:bars') }}</span>
     </button>
@@ -36,7 +36,7 @@
 
           <twig:Button
             label="{{ this.accountLabel }}"
-            href="{{ this.loginHref ?? path('app_login') }}"
+            href="{{ this.accountHref ?? path('app_account') }}"
             variant="outline"
             size="md"
             iconLeft="{{ this.userIcon }}"

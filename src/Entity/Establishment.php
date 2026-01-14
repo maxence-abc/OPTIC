@@ -71,6 +71,12 @@ class Establishment
     #[ORM\OneToMany(targetEntity: Loyalty::class, mappedBy: 'establishment')]
     private Collection $loyalties;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $professionalEmail = null;
+
+    #[ORM\Column(length: 20, nullable: true)]
+    private ?string $professionalPhone = null;
+
     public function __construct()
     {
         $this->users = new ArrayCollection();
@@ -334,6 +340,30 @@ class Establishment
                 $loyalty->setEstablishment(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getProfessionalEmail(): ?string
+    {
+        return $this->professionalEmail;
+    }
+
+    public function setProfessionalEmail(?string $professionalEmail): static
+    {
+        $this->professionalEmail = $professionalEmail;
+
+        return $this;
+    }
+
+    public function getProfessionalPhone(): ?string
+    {
+        return $this->professionalPhone;
+    }
+
+    public function setProfessionalPhone(?string $professionalPhone): static
+    {
+        $this->professionalPhone = $professionalPhone;
 
         return $this;
     }

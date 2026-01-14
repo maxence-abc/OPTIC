@@ -1,0 +1,29 @@
+<section class="auth-card">
+  <div class="auth-card__inner">
+
+    {% if backHref %}
+      <a class="auth-card__back" href="{{ backHref }}" aria-label="Retour">
+        {{ ux_icon('uil:arrow-left') }}
+      </a>
+    {% endif %}
+
+    <div class="auth-card__top">
+      {% if topIcon %}
+        <div class="auth-card__icon" aria-hidden="true">
+          {{ ux_icon(topIcon) }}
+        </div>
+      {% endif %}
+
+      <h1 class="auth-card__title">{{ title }}</h1>
+
+      {% if subtitle %}
+        <p class="auth-card__subtitle">{{ subtitle }}</p>
+      {% endif %}
+    </div>
+
+    <div class="auth-card__content">
+      {{ block('content') }}
+    </div>
+
+  </div>
+</section>
