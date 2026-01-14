@@ -4,10 +4,10 @@ namespace App\Form;
 
 use App\Dto\EstablishmentDraft;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class PartnerStep1Type extends AbstractType
 {
@@ -17,16 +17,12 @@ class PartnerStep1Type extends AbstractType
             ->add('name', TextType::class, [
                 'label' => 'Nom de l’établissement',
             ])
-            ->add('type', TextType::class, [
-                'label' => 'Type d’établissement',
-            ])
             ->add('professionalEmail', EmailType::class, [
                 'label' => 'Email professionnel',
             ])
             ->add('professionalPhone', TextType::class, [
                 'label' => 'Téléphone professionnel',
-            ])
-        ;
+            ]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

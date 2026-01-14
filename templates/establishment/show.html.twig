@@ -44,9 +44,7 @@
     <hr>
     <h3>Services proposés</h3>
 
-    <a href="{{ path('app_service_new', { id: establishment.id }) }}" class="btn btn-primary">
-        ➕ Ajouter un service
-    </a>
+    <a href="{{ path('app_service_new') }}" class="btn btn-primary">➕ Ajouter un service</a>
 
     {% if establishment.services|length > 0 %}
         <ul>

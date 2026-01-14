@@ -1,0 +1,69 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Devenir partenaire - Étape {{ step }}{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="/css/pages/partner-onboarding.css">
+{% endblock %}
+
+{% block body %}
+  <div class="auth-page partner-onboarding">
+    <main class="main">
+      <div class="auth-card">
+        <div class="auth-card__inner">
+
+          <div class="partner-stepper" aria-label="Progression">
+            <div class="partner-stepper__dot {{ step >= 1 ? 'is-active' : '' }}">1</div>
+            <div class="partner-stepper__line"></div>
+            <div class="partner-stepper__dot {{ step >= 2 ? 'is-active' : '' }}">2</div>
+            <div class="partner-stepper__line"></div>
+            <div class="partner-stepper__dot {{ step >= 3 ? 'is-active' : '' }}">3</div>
+          </div>
+
+          <div class="auth-card__top">
+            <h1 class="auth-card__title">Créer votre établissement</h1>
+            <p class="auth-card__subtitle">Étape {{ step }} sur 3</p>
+          </div>
+
+          {% if form is defined and form.vars.submitted and not form.vars.valid %}
+            <div class="auth-alert auth-alert--error">
+              Certains champs sont incorrects. Vérifie les erreurs ci-dessous.
+            </div>
+          {% endif %}
+
+          {{ form_start(form, { attr: { class: 'auth-form' } }) }}
+
+            {% for child in form %}
+              {% if child.vars.name != '_token' %}
+                <div class="auth-field">
+                  {{ form_label(child, null, { label_attr: { class: 'auth-label' } }) }}
+                  <div class="auth-input">
+                    {{ form_widget(child) }}
+                  </div>
+                  {{ form_errors(child) }}
+                </div>
+              {% endif %}
+            {% endfor %}
+
+            {{ form_rest(form) }}
+
+            <div class="partner-actions">
+              {% if step > 1 %}
+                <button class="btn btn--outline btn--lg" type="submit" name="go_back" value="1">
+                  Retour
+                </button>
+              {% endif %}
+
+              <button class="btn btn--primary btn--lg btn--block" type="submit">
+                {{ step < 3 ? 'Continuer' : 'Terminer' }}
+              </button>
+            </div>
+
+          {{ form_end(form) }}
+
+        </div>
+      </div>
+    </main>
+  </div>
+{% endblock %}

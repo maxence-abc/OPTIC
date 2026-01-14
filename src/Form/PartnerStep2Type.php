@@ -4,9 +4,9 @@ namespace App\Form;
 
 use App\Dto\EstablishmentDraft;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
 
 class PartnerStep2Type extends AbstractType
 {
@@ -21,8 +21,7 @@ class PartnerStep2Type extends AbstractType
             ])
             ->add('city', TextType::class, [
                 'label' => 'Ville',
-            ])
-        ;
+            ]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void
