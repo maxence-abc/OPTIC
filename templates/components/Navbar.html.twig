@@ -34,7 +34,6 @@
             <span class="navbar__email">{{ app.user.email }}</span>
           </div>
 
-          {# Mon compte -> app_account #}
           <twig:Button
             label="{{ this.accountLabel }}"
             href="{{ this.accountHref ?? path('app_account') }}"
@@ -47,7 +46,7 @@
         <div class="navbar__user-info">
           <twig:Button
             label="{{ this.loginLabel }}"
-            href="{{ this.accountHref ?? path('app_account') }}"
+            href="{{ this.loginHref ?? path('app_login') }}"
             variant="outline"
             size="md"
             iconLeft="{{ this.userIcon }}"
