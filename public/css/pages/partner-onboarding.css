@@ -1,0 +1,59 @@
+.partner-onboarding .auth-card__inner{
+  /* garde ton style auth.css, on ajuste juste un peu l’espace */
+  padding-top: 34px;
+}
+
+.partner-stepper{
+  width: min(445px, 100%);
+  margin: 0 auto 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.partner-stepper__dot{
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,.18);
+  background: rgba(0,0,0,.05);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 13px;
+  color: rgba(0,0,0,.55);
+}
+
+.partner-stepper__dot.is-active{
+  background: #111;
+  border-color: #111;
+  color: #fff;
+}
+
+.partner-stepper__line{
+  flex: 1 1 auto;
+  height: 2px;
+  background: rgba(0,0,0,.12);
+  border-radius: 999px;
+}
+
+.partner-actions{
+  margin-top: 18px;
+  width: min(445px, 100%);
+  margin-left: auto;
+  margin-right: auto;
+
+  display: grid;
+  gap: 12px;
+}
+
+@media (min-width: 640px){
+  .partner-actions{
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+  }
+
+  .partner-actions .btn--block{
+    width: 100%;
+  }
+}
