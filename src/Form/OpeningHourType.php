@@ -18,6 +18,7 @@ class OpeningHourType extends AbstractType
         $builder
             ->add('dayOfWeek', ChoiceType::class, [
                 'label' => 'Jour de la semaine',
+                'placeholder' => 'Choisir un jour',
                 'choices' => [
                     'Lundi' => 'Monday',
                     'Mardi' => 'Tuesday',
@@ -27,21 +28,29 @@ class OpeningHourType extends AbstractType
                     'Samedi' => 'Saturday',
                     'Dimanche' => 'Sunday',
                 ],
+                'required' => true,
             ])
             ->add('openTime', TimeType::class, [
                 'label' => 'Heure d’ouverture',
                 'widget' => 'single_text',
+                'required' => true,
+                // Optionnel mais souvent utile
+                // 'minutes' => [0, 15, 30, 45],
             ])
             ->add('closeTime', TimeType::class, [
                 'label' => 'Heure de fermeture',
                 'widget' => 'single_text',
-            ]);
+                'required' => true,
+                // Optionnel mais souvent utile
+                // 'minutes' => [0, 15, 30, 45],
+            ])
+        ;
 
-        // Champ établissement affiché avec le nom
+        // Champ établissement (hors wizard)
         if (!$options['hide_establishment']) {
             $builder->add('establishment', EntityType::class, [
                 'class' => Establishment::class,
-                'choice_label' => 'name', // Ici on affiche le nom de l'établissement
+                'choice_label' => 'name',
                 'label' => 'Établissement',
                 'placeholder' => 'Sélectionnez un établissement',
                 'required' => true,

@@ -71,7 +71,7 @@ final class ServiceController extends AbstractController
         ]);
     }
 
-    // ✅ Route "sans friction" depuis la page établissement
+    // Route "sans friction" depuis la page établissement
     #[Route('/new/{id}', name: 'app_service_new_for_establishment', methods: ['GET', 'POST'])]
     #[IsGranted('ROLE_PRO')]
     public function newForEstablishment(

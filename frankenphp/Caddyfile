@@ -62,4 +62,13 @@
 	file_server {
 		hide *.php
 	}
+	
+}
+
+# Vhost HTTP interne pour les tests (Codeception) via le nom du container
+http://nom_du_container {
+    root * /app/public
+    encode zstd br gzip
+
+    php_server
 }

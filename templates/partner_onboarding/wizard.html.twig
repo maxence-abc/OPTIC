@@ -34,15 +34,73 @@
 
           {{ form_start(form, { attr: { class: 'auth-form' } }) }}
 
+            {# Rendu “smart” : on garde ton loop, mais on spécialise les collections #}
             {% for child in form %}
               {% if child.vars.name != '_token' %}
-                <div class="auth-field">
-                  {{ form_label(child, null, { label_attr: { class: 'auth-label' } }) }}
-                  <div class="auth-input">
-                    {{ form_widget(child) }}
+
+                {# SERVICES #}
+                {% if child.vars.name == 'services' %}
+                  <div class="auth-field">
+                    <div class="auth-label">Services proposés</div>
+
+                    <div
+                      id="services-collection"
+                      data-prototype="{{ form_widget(child.vars.prototype)|e('html_attr') }}"
+                      data-index="{{ child|length }}"
+                    >
+                      {% for item in child %}
+                        <div class="auth-input js-item">
+                          {{ form_widget(item) }}
+                        </div>
+                      {% endfor %}
+                    </div>
+
+                    <div style="margin-top: 12px;">
+                      <button type="button" class="btn btn--outline btn--lg" id="add-service">
+                        Ajouter un service
+                      </button>
+                    </div>
+
+                    {{ form_errors(child) }}
                   </div>
-                  {{ form_errors(child) }}
-                </div>
+
+                {# OPENING HOURS #}
+                {% elseif child.vars.name == 'openingHours' %}
+                  <div class="auth-field">
+                    <div class="auth-label">Horaires d’ouverture</div>
+
+                    <div
+                      id="hours-collection"
+                      data-prototype="{{ form_widget(child.vars.prototype)|e('html_attr') }}"
+                      data-index="{{ child|length }}"
+                    >
+                      {% for item in child %}
+                        <div class="auth-input js-item">
+                          {{ form_widget(item) }}
+                        </div>
+                      {% endfor %}
+                    </div>
+
+                    <div style="margin-top: 12px;">
+                      <button type="button" class="btn btn--outline btn--lg" id="add-hour">
+                        Ajouter un horaire
+                      </button>
+                    </div>
+
+                    {{ form_errors(child) }}
+                  </div>
+
+                {# DEFAULT #}
+                {% else %}
+                  <div class="auth-field">
+                    {{ form_label(child, null, { label_attr: { class: 'auth-label' } }) }}
+                    <div class="auth-input">
+                      {{ form_widget(child) }}
+                    </div>
+                    {{ form_errors(child) }}
+                  </div>
+                {% endif %}
+
               {% endif %}
             {% endfor %}
 
@@ -66,4 +124,36 @@
       </div>
     </main>
   </div>
+
+  {# JS minimal pour ajouter des items aux CollectionType #}
+  <script>
+    function addCollectionItem(containerId) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      const prototype = container.dataset.prototype;
+      let index = parseInt(container.dataset.index || "0", 10);
+
+      const html = prototype.replace(/__name__/g, index);
+      container.dataset.index = (index + 1).toString();
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'auth-input js-item';
+      wrapper.innerHTML = html;
+
+      container.appendChild(wrapper);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const addServiceBtn = document.getElementById('add-service');
+      if (addServiceBtn) {
+        addServiceBtn.addEventListener('click', () => addCollectionItem('services-collection'));
+      }
+
+      const addHourBtn = document.getElementById('add-hour');
+      if (addHourBtn) {
+        addHourBtn.addEventListener('click', () => addCollectionItem('hours-collection'));
+      }
+    });
+  </script>
 {% endblock %}

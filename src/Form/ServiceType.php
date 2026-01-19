@@ -30,16 +30,13 @@ class ServiceType extends AbstractType
             ->add('bufferTime', null, [
                 'label' => 'Temps tampon (minutes)',
                 'required' => false,
-            ])
-        ;
+            ]);
 
-        // Champ établissement (affiché uniquement si non masqué)
+        // Affiché seulement hors wizard (création "générique")
         if (!$options['hide_establishment']) {
             $builder->add('establishment', EntityType::class, [
                 'class' => Establishment::class,
-                'choice_label' => function (Establishment $establishment) {
-                    return $establishment->getName() . ' (' . $establishment->getCity() . ')';
-                },
+                'choice_label' => fn (Establishment $e) => $e->getName().' ('.$e->getCity().')',
                 'label' => 'Établissement',
                 'placeholder' => 'Sélectionnez un établissement',
                 'required' => true,
