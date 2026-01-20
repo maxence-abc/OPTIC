@@ -34,9 +34,7 @@
 
     {{ form_start(form, { attr: { class: 'auth-form' } }) }}
 
-      {# =========================
-         TYPE DE COMPTE (Figma)
-      ========================= #}
+    
       <div class="auth-field">
         <div class="auth-label">Type de compte</div>
 
@@ -105,7 +103,11 @@
         <label class="auth-label" for="{{ form.password.vars.id }}">Mot de passe</label>
         <div class="auth-input">
           {{ ux_icon('uil:lock') }}
-          {{ form_widget(form.password, { attr: { placeholder: '..........................' } }) }}
+          {{ form_widget(form.password.first, { attr: { placeholder: '..........................' } }) }}
+        </div>
+        <div class="auth-input">
+          {{ ux_icon('uil:lock') }}
+          {{ form_widget(form.password.second, { attr: { placeholder: '..........................' } }) }}
         </div>
         {{ form_errors(form.password) }}
       </div>

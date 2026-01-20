@@ -30,6 +30,10 @@ class UserLog
     #[ORM\JoinColumn(nullable: false)]
     private ?User $relatedUser = null;
 
+    // #[ORM\ManyToOne(inversedBy: 'userlogs')]
+    // #[ORM\JoinColumn(nullable: false)]
+    // private ?User $relatedUser = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -82,6 +86,18 @@ class UserLog
 
         return $this;
     }
+
+    // public function getRelatedUser(): ?User
+    // {
+    //     return $this->relatedUser;
+    // }
+
+    // public function setRelatedUser(?User $relatedUser): static
+    // {
+    //     $this->relatedUser = $relatedUser;
+
+    //     return $this;
+    // }
 
     public function getRelatedUser(): ?User
     {

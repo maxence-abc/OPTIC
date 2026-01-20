@@ -13,6 +13,7 @@
         "doctrine/doctrine-bundle": "^2.16",
         "doctrine/doctrine-migrations-bundle": "^3.4",
         "doctrine/orm": "^3.5",
+        "easycorp/easyadmin-bundle": "^4.27",
         "runtime/frankenphp-symfony": "*",
         "symfony/asset": "7.3.*",
         "symfony/console": "7.3.*",

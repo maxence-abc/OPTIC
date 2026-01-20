@@ -6,13 +6,12 @@ use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
-use App\Entity\UserLog;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
-#[ORM\HasLifecycleCallbacks]
+#[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -20,23 +19,29 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?int $id = null;
 
+    #[ORM\Column(length: 180)]
+    private ?string $email = null;
+
+    /**
+     * @var list<string> The user roles
+     */
+    #[ORM\Column]
+    private array $roles = [];
+
+    /**
+     * @var string The hashed password
+     */
+    #[ORM\Column]
+    private ?string $password = null;
+
     #[ORM\Column(length: 255)]
-    private ?string $firstName = null;
+    private ?string $first_name = null;
 
     #[ORM\Column(length: 255)]
     private ?string $lastName = null;
 
-    #[ORM\Column(length: 255, unique: true)]
-    private ?string $email = null;
-
-    #[ORM\Column(length: 255)]
-    private ?string $password = null;
-
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $phone = null;
-
-    #[ORM\Column(type: 'json')]
-    private array $roles = [];
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $specialization = null;
@@ -47,10 +52,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
 
-    #[ORM\Column(nullable: true)]
+    #[ORM\Column]
     private ?\DateTime $updateAt = null;
 
     #[ORM\ManyToOne(inversedBy: 'users')]
+    #[ORM\JoinColumn(nullable: true)]
     private ?Establishment $establishment = null;
 
     /**
@@ -106,21 +112,96 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->appointments = new ArrayCollection();
     }
 
-    // GETTERS & SETTERS
-
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getFirstName(): ?string
+    public function getEmail(): ?string
     {
-        return $this->firstName;
+        return $this->email;
     }
 
-    public function setFirstName(string $firstName): static
+    public function setEmail(string $email): static
     {
-        $this->firstName = $firstName;
+        $this->email = $email;
+
+        return $this;
+    }
+
+    /**
+     * A visual identifier that represents this user.
+     *
+     * @see UserInterface
+     */
+    public function getUserIdentifier(): string
+    {
+        return (string) $this->email;
+    }
+
+    /**
+     * @see UserInterface
+     */
+    public function getRoles(): array
+    {
+        $roles = $this->roles;
+        // guarantee every user at least has ROLE_USER
+        $roles[] = 'ROLE_USER';
+
+        return array_unique($roles);
+    }
+
+    /**
+     * @param list<string> $roles
+     */
+    public function setRoles(array $roles): static
+    {
+        $this->roles = $roles;
+
+        return $this;
+    }
+
+    /**
+     * @see PasswordAuthenticatedUserInterface
+     */
+    public function getPassword(): ?string
+    {
+        return $this->password;
+    }
+
+    public function setPassword(string $password): static
+    {
+        $this->password = $password;
+
+        return $this;
+    }
+
+    /**
+     * Ensure the session doesn't contain actual password hashes by CRC32C-hashing them, as supported since Symfony 7.3.
+     */
+    public function __serialize(): array
+    {
+        $data = (array) $this;
+        $data["\0".self::class."\0password"] = hash('crc32c', $this->password);
+
+        return $data;
+    }
+
+    #[\Deprecated]
+    public function eraseCredentials(): void
+    {
+        // @deprecated, to be removed when upgrading to Symfony 8
+    }
+
+    public function getFirstName(): ?string
+    {
+        return $this->first_name;
+    }
+
+    public function setFirstName(string $first_name): static
+    {
+        $this->first_name = $first_name;
+
         return $this;
     }
 
@@ -132,28 +213,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setLastName(string $lastName): static
     {
         $this->lastName = $lastName;
-        return $this;
-    }
 
-    public function getEmail(): ?string
-    {
-        return $this->email;
-    }
-
-    public function setEmail(string $email): static
-    {
-        $this->email = $email;
-        return $this;
-    }
-
-    public function getPassword(): ?string
-    {
-        return $this->password;
-    }
-
-    public function setPassword(string $password): static
-    {
-        $this->password = $password;
         return $this;
     }
 
@@ -162,9 +222,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->phone;
     }
 
-    public function setPhone(string $phone): static
+    public function setPhone(?string $phone): static
     {
         $this->phone = $phone;
+
         return $this;
     }
 
@@ -173,9 +234,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->specialization;
     }
 
-    public function setSpecialization(string $specialization): static
+    public function setSpecialization(?string $specialization): static
     {
         $this->specialization = $specialization;
+
         return $this;
     }
 
@@ -187,6 +249,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setIsActive(?bool $isActive): static
     {
         $this->isActive = $isActive;
+
         return $this;
     }
 
@@ -195,9 +258,23 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->createdAt;
     }
 
+    public function setCreatedAt(\DateTimeImmutable $createdAt): static
+    {
+        $this->createdAt = $createdAt;
+
+        return $this;
+    }
+
     public function getUpdateAt(): ?\DateTime
     {
         return $this->updateAt;
+    }
+
+    public function setUpdateAt(\DateTime $updateAt): static
+    {
+        $this->updateAt = $updateAt;
+
+        return $this;
     }
 
     public function getEstablishment(): ?Establishment
@@ -208,11 +285,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setEstablishment(?Establishment $establishment): static
     {
         $this->establishment = $establishment;
+
         return $this;
     }
 
-    // RELATIONS (inchangées)
-
+    /**
+     * @return Collection<int, Appointment>
+     */
     public function getAppointmentsAsClient(): Collection
     {
         return $this->appointmentsAsClient;
@@ -224,19 +303,25 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $this->appointmentsAsClient->add($appointmentsAsClient);
             $appointmentsAsClient->setClient($this);
         }
+
         return $this;
     }
 
     public function removeAppointmentsAsClient(Appointment $appointmentsAsClient): static
     {
         if ($this->appointmentsAsClient->removeElement($appointmentsAsClient)) {
+            // set the owning side to null (unless already changed)
             if ($appointmentsAsClient->getClient() === $this) {
                 $appointmentsAsClient->setClient(null);
             }
         }
+
         return $this;
     }
 
+    /**
+     * @return Collection<int, Establishment>
+     */
     public function getEstablishments(): Collection
     {
         return $this->establishments;
@@ -248,19 +333,25 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $this->establishments->add($establishment);
             $establishment->setOwner($this);
         }
+
         return $this;
     }
 
     public function removeEstablishment(Establishment $establishment): static
     {
         if ($this->establishments->removeElement($establishment)) {
+            // set the owning side to null (unless already changed)
             if ($establishment->getOwner() === $this) {
                 $establishment->setOwner(null);
             }
         }
+
         return $this;
     }
 
+    /**
+     * @return Collection<int, Loyalty>
+     */
     public function getLoyalties(): Collection
     {
         return $this->loyalties;
@@ -272,19 +363,25 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $this->loyalties->add($loyalty);
             $loyalty->setClient($this);
         }
+
         return $this;
     }
 
     public function removeLoyalty(Loyalty $loyalty): static
     {
         if ($this->loyalties->removeElement($loyalty)) {
+            // set the owning side to null (unless already changed)
             if ($loyalty->getClient() === $this) {
                 $loyalty->setClient(null);
             }
         }
+
         return $this;
     }
 
+    /**
+     * @return Collection<int, UserLog>
+     */
     public function getUserlogs(): Collection
     {
         return $this->userlogs;
@@ -296,19 +393,25 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $this->userlogs->add($userlog);
             $userlog->setRelatedUser($this);
         }
+
         return $this;
     }
 
     public function removeUserlog(UserLog $userlog): static
     {
         if ($this->userlogs->removeElement($userlog)) {
+            // set the owning side to null (unless already changed)
             if ($userlog->getRelatedUser() === $this) {
                 $userlog->setRelatedUser(null);
             }
         }
+
         return $this;
     }
 
+    /**
+     * @return Collection<int, AccountSuspension>
+     */
     public function getAccountSuspensions(): Collection
     {
         return $this->accountSuspensions;
@@ -320,19 +423,25 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $this->accountSuspensions->add($accountSuspension);
             $accountSuspension->setSuspendedUser($this);
         }
+
         return $this;
     }
 
     public function removeAccountSuspension(AccountSuspension $accountSuspension): static
     {
         if ($this->accountSuspensions->removeElement($accountSuspension)) {
+            // set the owning side to null (unless already changed)
             if ($accountSuspension->getSuspendedUser() === $this) {
                 $accountSuspension->setSuspendedUser(null);
             }
         }
+
         return $this;
     }
 
+    /**
+     * @return Collection<int, AccountSuspension>
+     */
     public function getAdminSuspensions(): Collection
     {
         return $this->adminSuspensions;
@@ -344,155 +453,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $this->adminSuspensions->add($adminSuspension);
             $adminSuspension->setAdminUser($this);
         }
+
         return $this;
     }
 
     public function removeAdminSuspension(AccountSuspension $adminSuspension): static
     {
         if ($this->adminSuspensions->removeElement($adminSuspension)) {
+            // set the owning side to null (unless already changed)
             if ($adminSuspension->getAdminUser() === $this) {
                 $adminSuspension->setAdminUser(null);
             }
         }
-        return $this;
-    }
-
-    // SECURITY
-
-    public function getUserIdentifier(): string
-    {
-        return (string) $this->email;
-    }
-
-    /**
-     * Symfony ajoute ROLE_USER automatiquement si absent (comportement attendu).
-     */
-    public function getRoles(): array
-    {
-        $roles = $this->roles;
-
-        if (!in_array('ROLE_USER', $roles, true)) {
-            $roles[] = 'ROLE_USER';
-        }
-
-        return array_values(array_unique($roles));
-    }
-
-    /**
-     * IMPORTANT :
-     * - On ne doit enregistrer en base qu'UN rôle métier: ROLE_CLIENT ou ROLE_PRO.
-     * - ROLE_USER ne doit pas être stocké, il est ajouté par getRoles().
-     * - On empêche ROLE_CLIENT et ROLE_PRO simultanément.
-     */
-    public function setRoles(array $roles): static
-    {
-        // Normalisation
-        $roles = array_values(array_unique(array_filter($roles, static fn ($r) => is_string($r) && $r !== '')));
-
-        // On retire ROLE_USER si jamais il est passé (il est ajouté automatiquement)
-        $roles = array_values(array_diff($roles, ['ROLE_USER']));
-
-        // Contrainte : pas de ROLE_CLIENT + ROLE_PRO en même temps
-        $hasClient = in_array('ROLE_CLIENT', $roles, true);
-        $hasPro = in_array('ROLE_PRO', $roles, true);
-
-        if ($hasClient && $hasPro) {
-            // Règle : si PRO est présent, on garde PRO seulement
-            $roles = array_values(array_diff($roles, ['ROLE_CLIENT']));
-        }
-
-        $this->roles = $roles;
 
         return $this;
-    }
-
-    /**
-     * Ajoute un rôle en respectant la règle ROLE_CLIENT xor ROLE_PRO.
-     */
-    public function addRole(string $role): static
-    {
-        $role = strtoupper($role);
-
-        if ($role === 'ROLE_USER') {
-            // inutile de le stocker
-            return $this;
-        }
-
-        // Si on ajoute PRO, on enlève CLIENT. Si on ajoute CLIENT, on enlève PRO.
-        if ($role === 'ROLE_PRO') {
-            $this->removeRole('ROLE_CLIENT');
-        } elseif ($role === 'ROLE_CLIENT') {
-            $this->removeRole('ROLE_PRO');
-        }
-
-        if (!in_array($role, $this->roles, true)) {
-            $this->roles[] = $role;
-        }
-
-        // Re-normalise
-        return $this->setRoles($this->roles);
-    }
-
-    public function removeRole(string $role): static
-    {
-        $role = strtoupper($role);
-
-        $this->roles = array_values(array_filter(
-            $this->roles,
-            static fn (string $r) => $r !== $role
-        ));
-
-        return $this;
-    }
-
-    /**
-     * Pour la sécurité, tu peux garder hasRole() sur getRoles().
-     */
-    public function hasRole(string $role): bool
-    {
-        return in_array(strtoupper($role), $this->getRoles(), true);
-    }
-
-    /**
-     * Méthodes "métier" (IMPORTANT : on lit $this->roles pour éviter l'effet ROLE_USER)
-     */
-    public function isPro(): bool
-    {
-        return in_array('ROLE_PRO', $this->roles ?? [], true);
-    }
-
-    public function isClient(): bool
-    {
-        return in_array('ROLE_CLIENT', $this->roles ?? [], true);
-    }
-
-    public function getAccountTypeLabel(): string
-    {
-        return $this->isPro() ? 'Professionnel' : 'Client';
-    }
-
-    public function eraseCredentials(): void
-    {
-        // nettoyer les données sensibles si besoin
-    }
-
-    // LIFECYCLE CALLBACKS
-
-    #[ORM\PrePersist]
-    public function setCreatedAtValue(): void
-    {
-        $this->createdAt = new \DateTimeImmutable();
-        $this->updateAt = new \DateTime();
-
-        if ($this->isActive === null) {
-            $this->isActive = true;
-        }
-    }
-
-    #[ORM\PreUpdate]
-    public function setUpdateAtValue(): void
-    {
-        $this->updateAt = new \DateTime();
     }
 
     /**
@@ -509,16 +483,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $this->appointments->add($appointment);
             $appointment->setProfessional($this);
         }
+
         return $this;
     }
 
     public function removeAppointment(Appointment $appointment): static
     {
         if ($this->appointments->removeElement($appointment)) {
+            // set the owning side to null (unless already changed)
             if ($appointment->getProfessional() === $this) {
                 $appointment->setProfessional(null);
             }
         }
+
         return $this;
     }
 }

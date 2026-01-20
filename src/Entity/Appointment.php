@@ -29,9 +29,9 @@ class Appointment
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
 
-    #[ORM\ManyToOne(inversedBy: 'appointmentsAsClient')]
-    #[ORM\JoinColumn(nullable: false)]
-    private ?User $client = null;
+    // #[ORM\ManyToOne(inversedBy: 'appointmentsAsClient')]
+    // #[ORM\JoinColumn(nullable: false)]
+    // private ?User $client = null;
 
     #[ORM\ManyToOne(inversedBy: 'appointments')]
     #[ORM\JoinColumn(nullable: false)]
@@ -40,9 +40,16 @@ class Appointment
     #[ORM\ManyToOne(inversedBy: 'appointments')]
     private ?Equipement $equipement = null;
 
-    #[ORM\ManyToOne(inversedBy: 'appointments')]
+    #[ORM\ManyToOne(inversedBy: 'appointmentsAsClient')]
     #[ORM\JoinColumn(nullable: false)]
+    private ?User $client = null;
+
+    #[ORM\ManyToOne(inversedBy: 'appointments')]
     private ?User $professional = null;
+
+    // #[ORM\ManyToOne(inversedBy: 'appointments')]
+    // #[ORM\JoinColumn(nullable: false)]
+    // private ?User $professional = null;
 
     public function getId(): ?int
     {
@@ -104,16 +111,16 @@ class Appointment
         return $this;
     }
 
-    public function getClient(): ?User
-    {
-        return $this->client;
-    }
+    // public function getClient(): ?User
+    // {
+    //     return $this->client;
+    // }
 
-    public function setClient(?User $client): static
-    {
-        $this->client = $client;
-        return $this;
-    }
+    // public function setClient(?User $client): static
+    // {
+    //     $this->client = $client;
+    //     return $this;
+    // }
 
     public function getService(): ?Service
     {
@@ -134,6 +141,30 @@ class Appointment
     public function setEquipement(?Equipement $equipement): static
     {
         $this->equipement = $equipement;
+        return $this;
+    }
+
+    // public function getProfessional(): ?User
+    // {
+    //     return $this->professional;
+    // }
+
+    // public function setProfessional(?User $professional): static
+    // {
+    //     $this->professional = $professional;
+
+    //     return $this;
+    // }
+
+    public function getClient(): ?User
+    {
+        return $this->client;
+    }
+
+    public function setClient(?User $client): static
+    {
+        $this->client = $client;
+
         return $this;
     }
 

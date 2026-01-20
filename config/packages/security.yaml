@@ -9,12 +9,14 @@ security:
         App\Entity\User:
             algorithm: auto
 
+
     # Provider basé sur ton entité User (connexion avec l'email)
     providers:
         app_user_provider:
             entity:
                 class: App\Entity\User
                 property: email
+        # used to reload user from session & other features (e.g. switch_user)
 
     firewalls:
         dev:
