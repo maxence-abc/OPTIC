@@ -1,159 +1,367 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}Devenir partenaire - Étape {{ step }}{% endblock %}
+{% block body_class %}auth-page partner-onboarding{% endblock %}
+{% block header %}{% endblock %}
 
 {% block stylesheets %}
   {{ parent() }}
+  <link rel="stylesheet" href="/css/components/auth.css">
   <link rel="stylesheet" href="/css/pages/partner-onboarding.css">
 {% endblock %}
 
+{% set panelTitle =
+  step == 1 ? 'Informations de base' :
+  (step == 2 ? 'Localisation' : 'Service et disponibilités')
+%}
+
 {% block body %}
-  <div class="auth-page partner-onboarding">
-    <main class="main">
-      <div class="auth-card">
-        <div class="auth-card__inner">
+  <main class="main">
+    <div class="auth-card">
+      <div class="auth-card__inner">
 
-          <div class="partner-stepper" aria-label="Progression">
-            <div class="partner-stepper__dot {{ step >= 1 ? 'is-active' : '' }}">1</div>
-            <div class="partner-stepper__line"></div>
-            <div class="partner-stepper__dot {{ step >= 2 ? 'is-active' : '' }}">2</div>
-            <div class="partner-stepper__line"></div>
-            <div class="partner-stepper__dot {{ step >= 3 ? 'is-active' : '' }}">3</div>
+        <a class="auth-backlink" href="{{ app.request.headers.get('referer') ?: path('app_home') }}">
+          {{ ux_icon('uil:arrow-left') }}
+          Retour
+        </a>
+
+        <div class="partner-header">
+          <div class="partner-header__icon" aria-hidden="true">
+            {{ ux_icon('uil:store') }}
           </div>
+          <h1 class="partner-header__title">Devenir partenaire OPTIC</h1>
+          <p class="partner-header__subtitle">
+            Rejoignez notre réseau de partenaires et développez votre activité.
+            Augmentez votre visibilité et touchez de nouveaux clients.
+          </p>
+        </div>
 
-          <div class="auth-card__top">
-            <h1 class="auth-card__title">Créer votre établissement</h1>
-            <p class="auth-card__subtitle">Étape {{ step }} sur 3</p>
+        <div class="partner-stepper" aria-label="Progression">
+          <div class="partner-stepper__dot {{ step >= 1 ? 'is-active' : '' }}">1</div>
+          <div class="partner-stepper__line"></div>
+          <div class="partner-stepper__dot {{ step >= 2 ? 'is-active' : '' }}">2</div>
+          <div class="partner-stepper__line"></div>
+          <div class="partner-stepper__dot {{ step >= 3 ? 'is-active' : '' }}">3</div>
+        </div>
+
+        {% if form.vars.submitted and not form.vars.valid %}
+          <div class="auth-alert auth-alert--error">
+            Certains champs sont incorrects. Vérifie les erreurs ci-dessous.
           </div>
-
-          {% if form is defined and form.vars.submitted and not form.vars.valid %}
-            <div class="auth-alert auth-alert--error">
-              Certains champs sont incorrects. Vérifie les erreurs ci-dessous.
-            </div>
+          {% if form_errors(form) %}
+            <div class="auth-error">{{ form_errors(form) }}</div>
           {% endif %}
+        {% endif %}
 
-          {{ form_start(form, { attr: { class: 'auth-form' } }) }}
+        <div class="partner-panel">
+          <div class="partner-panel__title">{{ panelTitle }}</div>
 
-            {# Rendu “smart” : on garde ton loop, mais on spécialise les collections #}
-            {% for child in form %}
-              {% if child.vars.name != '_token' %}
+          {{ form_start(form) }}
 
-                {# SERVICES #}
-                {% if child.vars.name == 'services' %}
-                  <div class="auth-field">
-                    <div class="auth-label">Services proposés</div>
+            {# =========================
+               STEP 1 : wizard controls
+            ========================= #}
+            {% if step == 1 %}
 
-                    <div
-                      id="services-collection"
-                      data-prototype="{{ form_widget(child.vars.prototype)|e('html_attr') }}"
-                      data-index="{{ child|length }}"
-                    >
-                      {% for item in child %}
-                        <div class="auth-input js-item">
-                          {{ form_widget(item) }}
-                        </div>
-                      {% endfor %}
-                    </div>
+              {% for child in form %}
+                {% if child.vars.name != '_token' %}
+                  <div class="wizard-section">
+                    <label class="wizard-label">
+                      {{ form_label(child) }}
+                    </label>
 
-                    <div style="margin-top: 12px;">
-                      <button type="button" class="btn btn--outline btn--lg" id="add-service">
-                        Ajouter un service
-                      </button>
-                    </div>
+                    {{ form_widget(child, { attr: { class: 'wizard-control' } }) }}
 
-                    {{ form_errors(child) }}
-                  </div>
-
-                {# OPENING HOURS #}
-                {% elseif child.vars.name == 'openingHours' %}
-                  <div class="auth-field">
-                    <div class="auth-label">Horaires d’ouverture</div>
-
-                    <div
-                      id="hours-collection"
-                      data-prototype="{{ form_widget(child.vars.prototype)|e('html_attr') }}"
-                      data-index="{{ child|length }}"
-                    >
-                      {% for item in child %}
-                        <div class="auth-input js-item">
-                          {{ form_widget(item) }}
-                        </div>
-                      {% endfor %}
-                    </div>
-
-                    <div style="margin-top: 12px;">
-                      <button type="button" class="btn btn--outline btn--lg" id="add-hour">
-                        Ajouter un horaire
-                      </button>
-                    </div>
-
-                    {{ form_errors(child) }}
-                  </div>
-
-                {# DEFAULT #}
-                {% else %}
-                  <div class="auth-field">
-                    {{ form_label(child, null, { label_attr: { class: 'auth-label' } }) }}
-                    <div class="auth-input">
-                      {{ form_widget(child) }}
-                    </div>
-                    {{ form_errors(child) }}
+                    {% if form_errors(child) %}
+                      <div class="auth-error">{{ form_errors(child) }}</div>
+                    {% endif %}
                   </div>
                 {% endif %}
+              {% endfor %}
 
+              {{ form_rest(form) }}
+
+              <div class="wizard-actions-row" style="grid-template-columns: 1fr;">
+                <button class="wizard-btn" type="submit">Continuer</button>
+              </div>
+
+            {# =========================
+               STEP 2 : wizard controls + grid
+            ========================= #}
+            {% elseif step == 2 %}
+
+              <div class="wizard-section">
+                <label class="wizard-label">{{ form_label(form.address) }}</label>
+                {{ form_widget(form.address, { attr: { class: 'wizard-control' } }) }}
+                {% if form_errors(form.address) %}<div class="auth-error">{{ form_errors(form.address) }}</div>{% endif %}
+              </div>
+
+              <div class="partner-grid-2">
+                <div class="wizard-section">
+                  <label class="wizard-label">{{ form_label(form.postalCode) }}</label>
+                  {{ form_widget(form.postalCode, { attr: { class: 'wizard-control' } }) }}
+                  {% if form_errors(form.postalCode) %}<div class="auth-error">{{ form_errors(form.postalCode) }}</div>{% endif %}
+                </div>
+
+                <div class="wizard-section">
+                  <label class="wizard-label">{{ form_label(form.city) }}</label>
+                  {{ form_widget(form.city, { attr: { class: 'wizard-control' } }) }}
+                  {% if form_errors(form.city) %}<div class="auth-error">{{ form_errors(form.city) }}</div>{% endif %}
+                </div>
+              </div>
+
+              {{ form_rest(form) }}
+
+              <div class="wizard-actions-row">
+                <button class="wizard-btn--ghost" type="submit" name="go_back" value="1">Retour</button>
+                <button class="wizard-btn" type="submit">Continuer</button>
+              </div>
+
+            {# =========================
+               STEP 3 : inchangé (style wizard)
+            ========================= #}
+            {% else %}
+
+              <div class="wizard-section">
+                <label class="wizard-label">Description de votre établissement <span style="color:red">*</span></label>
+                {{ form_widget(form.description, { attr: { class: 'wizard-textarea' } }) }}
+                {% if form_errors(form.description) %}<div class="auth-error">{{ form_errors(form.description) }}</div>{% endif %}
+              </div>
+
+              {# SERVICES #}
+              {% if form.services is defined %}
+                <div class="wizard-section wizard-services">
+                  <label class="wizard-label">Services proposés</label>
+
+                  <div
+                    id="services-collection"
+                    data-index="{{ form.services|length }}"
+                    data-prototype="
+                      {% apply escape('html_attr') %}
+                        <div class='wizard-card js-service-card'>
+                          <div class='wizard-card__header'>
+                            <div class='wizard-card__title'>Service</div>
+                            <button type='button' class='wizard-remove js-remove-service' aria-label='Supprimer'>✕</button>
+                          </div>
+
+                          <div class='wizard-section' style='margin:0;'>
+                            <label class='wizard-label'>Nom du service</label>
+                            {{ form_widget(form.services.vars.prototype.name, { attr: { class: 'wizard-control' } }) }}
+                          </div>
+
+                          <div class='wizard-section' style='margin:10px 0 0;'>
+                            <label class='wizard-label'>Description</label>
+                            {{ form_widget(form.services.vars.prototype.description, { attr: { class: 'wizard-textarea', style: 'min-height:72px;' } }) }}
+                          </div>
+
+                          <div class='wizard-service-grid' style='margin-top:10px;'>
+                            <div class='wizard-section' style='margin:0;'>
+                              <label class='wizard-label'>Durée (minutes)</label>
+                              {{ form_widget(form.services.vars.prototype.duration, { attr: { class: 'wizard-control' } }) }}
+                            </div>
+                            <div class='wizard-section' style='margin:0;'>
+                              <label class='wizard-label'>Prix (€)</label>
+                              {{ form_widget(form.services.vars.prototype.price, { attr: { class: 'wizard-control' } }) }}
+                            </div>
+                            <div class='wizard-section' style='margin:0;'>
+                              <label class='wizard-label'>Temps tampon</label>
+                              {{ form_widget(form.services.vars.prototype.bufferTime, { attr: { class: 'wizard-control' } }) }}
+                            </div>
+                          </div>
+                        </div>
+                      {% endapply %}
+                    "
+                  >
+                    {% for s in form.services %}
+                      <div class="wizard-card js-service-card">
+                        <div class="wizard-card__header">
+                          <div class="wizard-card__title">Service</div>
+                          <button type="button" class="wizard-remove js-remove-service" aria-label="Supprimer">✕</button>
+                        </div>
+
+                        <div class="wizard-section" style="margin:0;">
+                          <label class="wizard-label">Nom du service</label>
+                          {{ form_widget(s.name, { attr: { class: 'wizard-control' } }) }}
+                        </div>
+
+                        <div class="wizard-section" style="margin:10px 0 0;">
+                          <label class="wizard-label">Description</label>
+                          {{ form_widget(s.description, { attr: { class: 'wizard-textarea', style: 'min-height:72px;' } }) }}
+                        </div>
+
+                        <div class="wizard-service-grid" style="margin-top:10px;">
+                          <div class="wizard-section" style="margin:0;">
+                            <label class="wizard-label">Durée (minutes)</label>
+                            {{ form_widget(s.duration, { attr: { class: 'wizard-control' } }) }}
+                          </div>
+                          <div class="wizard-section" style="margin:0;">
+                            <label class="wizard-label">Prix (€)</label>
+                            {{ form_widget(s.price, { attr: { class: 'wizard-control' } }) }}
+                          </div>
+                          <div class="wizard-section" style="margin:0;">
+                            <label class="wizard-label">Temps tampon</label>
+                            {{ form_widget(s.bufferTime, { attr: { class: 'wizard-control' } }) }}
+                          </div>
+                        </div>
+                      </div>
+                    {% endfor %}
+                  </div>
+
+                  <button type="button" class="wizard-add" id="add-service">Ajouter</button>
+                </div>
               {% endif %}
-            {% endfor %}
 
-            {{ form_rest(form) }}
+              {# OPENING HOURS #}
+              {% if form.openingHours is defined %}
+                <div class="wizard-section wizard-hours">
+                  <label class="wizard-label">Horaires d’ouverture</label>
 
-            <div class="partner-actions">
-              {% if step > 1 %}
-                <button class="btn btn--outline btn--lg" type="submit" name="go_back" value="1">
-                  Retour
-                </button>
+                  <div
+                    id="hours-collection"
+                    data-index="{{ form.openingHours|length }}"
+                    data-prototype="
+                      {% apply escape('html_attr') %}
+                        <div class='wizard-hours__row js-hour-row'>
+                          <div class='wizard-section' style='margin:0;'>
+                            <label class='wizard-label'>Jour</label>
+                            {{ form_widget(form.openingHours.vars.prototype.dayOfWeek, { attr: { class: 'wizard-control' } }) }}
+                          </div>
+                          <div class='wizard-section' style='margin:0;'>
+                            <label class='wizard-label'>Ouverture</label>
+                            {{ form_widget(form.openingHours.vars.prototype.openTime, { attr: { class: 'wizard-control' } }) }}
+                          </div>
+                          <div class='wizard-section' style='margin:0;'>
+                            <label class='wizard-label'>Fermeture</label>
+                            {{ form_widget(form.openingHours.vars.prototype.closeTime, { attr: { class: 'wizard-control' } }) }}
+                          </div>
+                          <button type='button' class='wizard-remove js-remove-hour' aria-label='Supprimer'>✕</button>
+                        </div>
+                      {% endapply %}
+                    "
+                  >
+                    {% for item in form.openingHours %}
+                      <div class="wizard-hours__row js-hour-row">
+                        <div class="wizard-section" style="margin:0;">
+                          <label class="wizard-label">Jour</label>
+                          {{ form_widget(item.dayOfWeek, { attr: { class: 'wizard-control' } }) }}
+                        </div>
+                        <div class="wizard-section" style="margin:0;">
+                          <label class="wizard-label">Ouverture</label>
+                          {{ form_widget(item.openTime, { attr: { class: 'wizard-control' } }) }}
+                        </div>
+                        <div class="wizard-section" style="margin:0;">
+                          <label class="wizard-label">Fermeture</label>
+                          {{ form_widget(item.closeTime, { attr: { class: 'wizard-control' } }) }}
+                        </div>
+                        <button type="button" class="wizard-remove js-remove-hour" aria-label="Supprimer">✕</button>
+                      </div>
+                    {% endfor %}
+                  </div>
+
+                  <button type="button" class="wizard-add" id="add-hour">Ajouter</button>
+                </div>
               {% endif %}
 
-              <button class="btn btn--primary btn--lg btn--block" type="submit">
-                {{ step < 3 ? 'Continuer' : 'Terminer' }}
-              </button>
-            </div>
+              <div class="wizard-section">
+                <label class="wizard-label">Photos de votre établissement (recommandé)</label>
+                <div class="wizard-upload">
+                  Glissez-déposez vos images ou cliquez pour parcourir<br>
+                  PNG, JPG, JPEG jusqu’à 10MB
+                </div>
+              </div>
+
+              {{ form_rest(form) }}
+
+              <div class="wizard-actions-row">
+                <button class="wizard-btn--ghost" type="submit" name="go_back" value="1">Retour</button>
+                <button class="wizard-btn" type="submit">Terminer</button>
+              </div>
+
+            {% endif %}
 
           {{ form_end(form) }}
-
         </div>
+
+        <div class="partner-benefits" aria-label="Avantages">
+          <div class="partner-benefit">
+            <div class="partner-benefit__icon partner-benefit__icon--blue" aria-hidden="true">
+              {{ ux_icon('uil:store') }}
+            </div>
+            <p class="partner-benefit__title">Visibilité accrue</p>
+            <p class="partner-benefit__desc">Touchez de nouveaux clients</p>
+          </div>
+
+          <div class="partner-benefit">
+            <div class="partner-benefit__icon partner-benefit__icon--purple" aria-hidden="true">
+              {{ ux_icon('uil:clock') }}
+            </div>
+            <p class="partner-benefit__title">Gestion simplifiée</p>
+            <p class="partner-benefit__desc">Gérez vos réservations facilement</p>
+          </div>
+
+          <div class="partner-benefit">
+            <div class="partner-benefit__icon partner-benefit__icon--green" aria-hidden="true">
+              {{ ux_icon('uil:check') }}
+            </div>
+            <p class="partner-benefit__title">Inscription rapide</p>
+            <p class="partner-benefit__desc">Rejoignez-nous gratuitement</p>
+          </div>
+        </div>
+
       </div>
-    </main>
-  </div>
+    </div>
+  </main>
 
-  {# JS minimal pour ajouter des items aux CollectionType #}
-  <script>
-    function addCollectionItem(containerId) {
-      const container = document.getElementById(containerId);
-      if (!container) return;
+  {% if step == 3 %}
+    <script>
+      function addItem(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
 
-      const prototype = container.dataset.prototype;
-      let index = parseInt(container.dataset.index || "0", 10);
+        const prototype = container.dataset.prototype;
+        let index = parseInt(container.dataset.index || "0", 10);
 
-      const html = prototype.replace(/__name__/g, index);
-      container.dataset.index = (index + 1).toString();
+        const html = prototype.replace(/__name__/g, index);
+        container.dataset.index = (index + 1).toString();
 
-      const wrapper = document.createElement('div');
-      wrapper.className = 'auth-input js-item';
-      wrapper.innerHTML = html;
-
-      container.appendChild(wrapper);
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const addServiceBtn = document.getElementById('add-service');
-      if (addServiceBtn) {
-        addServiceBtn.addEventListener('click', () => addCollectionItem('services-collection'));
+        const temp = document.createElement('div');
+        temp.innerHTML = html.trim();
+        const node = temp.firstElementChild;
+        if (node) container.appendChild(node);
       }
 
-      const addHourBtn = document.getElementById('add-hour');
-      if (addHourBtn) {
-        addHourBtn.addEventListener('click', () => addCollectionItem('hours-collection'));
+      function bindRemovers(selector, rootSelector) {
+        document.querySelectorAll(selector).forEach(btn => {
+          if (btn.dataset.bound === "1") return;
+          btn.dataset.bound = "1";
+
+          btn.addEventListener('click', (e) => {
+            const root = e.currentTarget.closest(rootSelector);
+            if (root) root.remove();
+          });
+        });
       }
-    });
-  </script>
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const addService = document.getElementById('add-service');
+        if (addService) {
+          addService.addEventListener('click', () => {
+            addItem('services-collection');
+            bindRemovers('.js-remove-service', '.js-service-card');
+          });
+        }
+
+        const addHour = document.getElementById('add-hour');
+        if (addHour) {
+          addHour.addEventListener('click', () => {
+            addItem('hours-collection');
+            bindRemovers('.js-remove-hour', '.js-hour-row');
+          });
+        }
+
+        bindRemovers('.js-remove-service', '.js-service-card');
+        bindRemovers('.js-remove-hour', '.js-hour-row');
+      });
+    </script>
+  {% endif %}
 {% endblock %}

@@ -1,11 +1,58 @@
+/* public/css/pages/partner-onboarding.css */
+
 .partner-onboarding .auth-card__inner{
-  /* garde ton style auth.css, on ajuste juste un peu l’espace */
   padding-top: 34px;
 }
 
+.partner-onboarding .auth-card{
+  width: min(920px, 100%);
+}
+
+/* =========================
+   HEADER (Figma)
+========================= */
+.partner-header{
+  text-align: center;
+  margin-top: 6px;
+  margin-bottom: 18px;
+}
+
+.partner-header__icon{
+  width: 74px;
+  height: 74px;
+  margin: 0 auto 14px;
+  border-radius: 999px;
+  background: rgba(59,130,246,.18);
+  display: grid;
+  place-items: center;
+  color: #2F6BFF;
+}
+
+.partner-header__icon svg{
+  width: 30px;
+  height: 30px;
+}
+
+.partner-header__title{
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111;
+}
+
+.partner-header__subtitle{
+  margin: 0 auto;
+  font-size: 14px;
+  color: rgba(0,0,0,.55);
+  max-width: 520px;
+}
+
+/* =========================
+   Stepper
+========================= */
 .partner-stepper{
-  width: min(445px, 100%);
-  margin: 0 auto 18px;
+  width: min(520px, 100%);
+  margin: 0 auto 22px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -37,23 +84,307 @@
   border-radius: 999px;
 }
 
-.partner-actions{
-  margin-top: 18px;
-  width: min(445px, 100%);
-  margin-left: auto;
-  margin-right: auto;
+/* =========================
+   Panel
+========================= */
+.partner-panel{
+  width: min(660px, 100%);
+  margin: 0 auto;
+  padding: 18px 18px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,.14);
+  background: #fff;
+}
 
+.partner-panel__title{
+  font-size: 13px;
+  font-weight: 800;
+  color: rgba(0,0,0,.75);
+  margin-bottom: 14px;
+}
+
+/* =========================
+   Wizard sections
+========================= */
+.wizard-section{
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.wizard-label{
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(0,0,0,.85);
+}
+
+.wizard-help{
+  font-size: 12px;
+  color: rgba(0,0,0,.55);
+  margin-top: -6px;
+}
+
+/* =========================
+   Wizard controls (Step 1/2/3 unified)
+   -> Blanc + border gris (comme Step 3)
+========================= */
+.wizard-control{
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,.18);
+  outline: 0;
+  background: #fff;
+  font-size: 13px;
+  color: #111;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.wizard-control:focus{
+  border-color: rgba(0,0,0,.28);
+  box-shadow: 0 0 0 3px rgba(0,0,0,.06);
+}
+
+.wizard-control::placeholder{
+  color: rgba(0,0,0,.45);
+}
+
+/* Textareas */
+.wizard-textarea{
+  width: 100%;
+  min-height: 88px;
+  max-height: 260px;
+  padding: 12px 14px;
+
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,.18);
+  outline: 0;
+
+  background: #fff;
+  resize: vertical;
+  overflow: auto;
+
+  font-size: 13px;
+  line-height: 1.4;
+  color: #111;
+  box-sizing: border-box;
+}
+
+.wizard-textarea:focus{
+  border-color: rgba(0,0,0,.28);
+  box-shadow: 0 0 0 3px rgba(0,0,0,.06);
+}
+
+.wizard-textarea::placeholder{
+  color: rgba(0,0,0,.45);
+}
+
+/* Grid Step 2 */
+.partner-grid-2{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 640px){
+  .partner-grid-2{ grid-template-columns: 1fr; }
+}
+
+/* =========================
+   Wizard buttons (Figma)
+========================= */
+.wizard-actions-row{
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 640px){
+  .wizard-actions-row{ grid-template-columns: 1fr; }
+}
+
+.wizard-btn{
+  width: 100%;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: #000;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter .15s ease, transform .05s ease;
+}
+.wizard-btn:hover{ filter: brightness(.92); }
+.wizard-btn:active{ transform: translateY(1px); }
+
+.wizard-btn--ghost{
+  width: 100%;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,.18);
+  background: #fff;
+  color: #111;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.wizard-btn--ghost:hover{ background: rgba(0,0,0,.03); }
+
+/* Upload placeholder */
+.wizard-upload{
+  border-radius: 14px;
+  border: 1px dashed rgba(0,0,0,.25);
+  padding: 24px 16px;
+  text-align: center;
+  background: #f5f5f5;
+  font-size: 12px;
+  color: rgba(0,0,0,.65);
+}
+
+/* =========================
+   SERVICES – Cards
+========================= */
+.wizard-services{
   display: grid;
   gap: 12px;
 }
 
-@media (min-width: 640px){
-  .partner-actions{
-    grid-template-columns: 1fr 1fr;
-    align-items: center;
-  }
+.wizard-card{
+  border: 1px solid rgba(0,0,0,.12);
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff;
+}
 
-  .partner-actions .btn--block{
+.wizard-card__header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.wizard-card__title{
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(0,0,0,.72);
+}
+
+.wizard-remove{
+  height: 34px;
+  width: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,.18);
+  background: #fff;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.wizard-remove:hover{ background: rgba(0,0,0,.03); }
+
+.wizard-service-grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 640px){
+  .wizard-service-grid{ grid-template-columns: 1fr; }
+}
+
+.wizard-control--textarea{
+  height: auto;
+  min-height: 72px;
+  padding: 10px 14px;
+  resize: vertical;
+}
+
+.wizard-add{
+  height: 36px;
+  width: 160px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,.2);
+  background: #fff;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+}
+.wizard-add:hover{ background: rgba(0,0,0,.03); }
+
+/* =========================
+   OPENING HOURS
+========================= */
+.wizard-hours{
+  display: grid;
+  gap: 12px;
+}
+
+.wizard-hours__row{
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+@media (max-width: 640px){
+  .wizard-hours__row{
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+}
+
+/* =========================
+   Avantages
+========================= */
+.partner-benefits{
+  width: min(720px, 100%);
+  margin: 26px auto 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 26px;
+  text-align: center;
+  justify-items: center;
+}
+
+.partner-benefit{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.partner-benefit__icon{
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 10px;
+}
+
+.partner-benefit__title{
+  margin: 0;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.partner-benefit__desc{
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: rgba(0,0,0,.65);
+  line-height: 1.35;
+}
+
+.partner-benefit__icon--blue{ background: rgba(59,130,246,.18); }
+.partner-benefit__icon--purple{ background: rgba(168,85,247,.18); }
+.partner-benefit__icon--green{ background: rgba(34,197,94,.18); }
+
+@media (max-width: 640px){
+  .partner-panel{
+    width: 100%;
+    padding: 16px 14px 12px;
+  }
+  .partner-benefits{
+    grid-template-columns: 1fr;
+    gap: 18px;
     width: 100%;
   }
 }

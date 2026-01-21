@@ -38,7 +38,7 @@ final class UserType extends AbstractType
                     ]),
                     new Assert\Regex([
                         'pattern' => '/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_]).+$/',
-                        'message' => 'Mot de passe trop faible',
+                        'message' => 'Mot de passe trop faible : il doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.',
                     ]),
                 ],
             ])

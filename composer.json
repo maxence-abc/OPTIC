@@ -14,6 +14,8 @@
         "doctrine/doctrine-migrations-bundle": "^3.4",
         "doctrine/orm": "^3.5",
         "easycorp/easyadmin-bundle": "^4.27",
+        "league/flysystem-bundle": "^3.6",
+        "oneup/flysystem-bundle": "^4.14",
         "runtime/frankenphp-symfony": "*",
         "symfony/asset": "7.3.*",
         "symfony/console": "7.3.*",
@@ -22,13 +24,15 @@
         "symfony/form": "7.3.*",
         "symfony/framework-bundle": "7.3.*",
         "symfony/http-client": "7.3.*",
+        "symfony/mailer": "7.3.*",
         "symfony/runtime": "7.3.*",
         "symfony/security-bundle": "7.3.*",
         "symfony/twig-bundle": "7.3.*",
         "symfony/ux-icons": "^2.32",
         "symfony/ux-twig-component": "^2.32",
         "symfony/validator": "7.3.*",
-        "symfony/yaml": "7.3.*"
+        "symfony/yaml": "7.3.*",
+        "symfonycasts/reset-password-bundle": "^1.24"
     },
     "config": {
         "allow-plugins": {

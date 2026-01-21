@@ -29,8 +29,10 @@ class EstablishmentDraft
     #[Assert\NotBlank(groups: ['step2'])]
     public ?string $city = null;
 
-    #[Assert\NotBlank(groups: ['step2'])]
+    #[Assert\NotBlank(groups: ['step3'])]
     public ?string $description = null;
+
+    public ?string $servicesText = null;
 
     /** @var Collection<int, Service> */
     private Collection $services;

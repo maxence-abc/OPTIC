@@ -39,6 +39,7 @@ security:
 
     # Règles d'accès
     access_control:
+    - { path: ^/reset-password, roles: PUBLIC_ACCESS }
     - { path: ^/login, roles: PUBLIC_ACCESS }
     - { path: ^/registration, roles: PUBLIC_ACCESS }
     - { path: ^/$, roles: PUBLIC_ACCESS }
