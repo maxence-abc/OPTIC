@@ -87,6 +87,15 @@ class Establishment
     #[ORM\JoinColumn(nullable: false)]
     private ?User $owner = null;
 
+    /**
+     * @var Collection<int, EstablishmentImage>
+     */
+    #[ORM\OneToMany(targetEntity: EstablishmentImage::class, mappedBy: 'establishment', orphanRemoval: true)]
+    private Collection $establishmentImages;
+
+    #[ORM\Column(length: 40, nullable: true)]
+    private ?string $category = null;
+
     public function __construct()
     {
         // $this->users = new ArrayCollection();
@@ -95,6 +104,7 @@ class Establishment
         $this->openingHours = new ArrayCollection();
         $this->availabilities = new ArrayCollection();
         $this->loyalties = new ArrayCollection();
+        $this->establishmentImages = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -416,6 +426,48 @@ class Establishment
     public function setOwner(?User $owner): static
     {
         $this->owner = $owner;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, EstablishmentImage>
+     */
+    public function getEstablishmentImages(): Collection
+    {
+        return $this->establishmentImages;
+    }
+
+    public function addEstablishmentImage(EstablishmentImage $establishmentImage): static
+    {
+        if (!$this->establishmentImages->contains($establishmentImage)) {
+            $this->establishmentImages->add($establishmentImage);
+            $establishmentImage->setEstablishment($this);
+        }
+
+        return $this;
+    }
+
+    public function removeEstablishmentImage(EstablishmentImage $establishmentImage): static
+    {
+        if ($this->establishmentImages->removeElement($establishmentImage)) {
+            // set the owning side to null (unless already changed)
+            if ($establishmentImage->getEstablishment() === $this) {
+                $establishmentImage->setEstablishment(null);
+            }
+        }
+
+        return $this;
+    }
+
+    public function getCategory(): ?string
+    {
+        return $this->category;
+    }
+
+    public function setCategory(?string $category): static
+    {
+        $this->category = $category;
 
         return $this;
     }

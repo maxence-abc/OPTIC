@@ -5,9 +5,11 @@ namespace App\Form;
 use App\Dto\EstablishmentDraft;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
+use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints as Assert;
 
 class PartnerStep3Type extends AbstractType
 {
@@ -47,6 +49,36 @@ class PartnerStep3Type extends AbstractType
                 'prototype' => true,
                 'label' => false,
                 'required' => false,
+            ])
+
+            // ✅ Photos (multi) - non mappé
+            ->add('photos', FileType::class, [
+                'mapped' => false,
+                'required' => false,
+                'multiple' => true,
+                'label' => false,
+
+                // important: refléter multiple + accept dans l’HTML aussi
+                'attr' => [
+                    'multiple' => true,
+                    'accept' => 'image/*',
+                ],
+
+                'constraints' => [
+                    new Assert\All([
+                        new Assert\Image([
+                            'maxSize' => '10M',
+                            'maxSizeMessage' => 'Chaque image doit faire moins de {{ limit }}.',
+                            // Optionnel mais utile : éviter les fichiers chelous
+                            'mimeTypes' => [
+                                'image/jpeg',
+                                'image/png',
+                                'image/webp',
+                            ],
+                            'mimeTypesMessage' => 'Formats acceptés : JPG, PNG, WEBP.',
+                        ]),
+                    ]),
+                ],
             ])
         ;
     }

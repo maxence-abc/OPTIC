@@ -1,0 +1,53 @@
+{# templates/components/EstablishmentCard.html.twig #}
+
+{% set e = this.establishment %}
+
+{# Image principale = première image si existante #}
+{% set cover = null %}
+{% if e.establishmentImages is defined and e.establishmentImages|length > 0 %}
+  {% set cover = e.establishmentImages|first %}
+{% endif %}
+
+<article class="est-card">
+  <div class="est-card__media">
+    {% if cover %}
+      <img class="est-card__img" src="{{ asset('uploads/' ~ cover.path) }}" alt="Photo {{ e.name }}">
+    {% else %}
+      <img class="est-card__img" src="{{ this.placeholderSrc }}" alt="Photo {{ e.name }}">
+    {% endif %}
+  </div>
+
+  <div class="est-card__body">
+    <div class="est-card__top">
+      <h3 class="est-card__title">{{ e.name }}</h3>
+      <p class="est-card__meta">
+        <span class="est-card__pin" aria-hidden="true">{{ ux_icon('uil:map-marker') }}</span>
+        {{ e.address }}, {{ e.postalCode }} {{ e.city }}
+      </p>
+      <p 
+    </div>
+
+    <div class="est-card__chips">
+      <span class="chip">{{ e.services is defined ? (e.services|length ~ ' service' ~ (e.services|length > 1 ? 's' : '')) : '0 service' }}</span>
+
+      {# Exemple : afficher 2 services max en chips #}
+      {% if e.services is defined %}
+        {% for s in e.services|slice(0, 2) %}
+          {% if s.name %}
+            <span class="chip chip--muted">{{ s.name }}</span>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+    </div>
+
+    <div class="est-card__actions">
+      {% if this.bookHref %}
+        <twig:Button label="Réserver" href="{{ this.bookHref }}" variant="primary" size="sm" class="est-card__btn" />
+      {% else %}
+        <twig:Button label="Réserver" href="{{ this.detailsHref }}" variant="primary" size="sm" class="est-card__btn" />
+      {% endif %}
+
+      <twig:Button label="Voir les détails" href="{{ this.detailsHref }}" variant="outline" size="sm" class="est-card__btn" />
+    </div>
+  </div>
+</article>

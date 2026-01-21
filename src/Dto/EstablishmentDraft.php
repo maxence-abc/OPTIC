@@ -14,6 +14,9 @@ class EstablishmentDraft
     public ?string $name = null;
 
     #[Assert\NotBlank(groups: ['step1'])]
+    public ?string $category = null;
+
+    #[Assert\NotBlank(groups: ['step1'])]
     #[Assert\Email(groups: ['step1'])]
     public ?string $professionalEmail = null;
 

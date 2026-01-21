@@ -56,7 +56,8 @@
         <div class="partner-panel">
           <div class="partner-panel__title">{{ panelTitle }}</div>
 
-          {{ form_start(form) }}
+          {# IMPORTANT: multipart pour upload photos #}
+          {{ form_start(form, { attr: { enctype: 'multipart/form-data' } }) }}
 
             {# =========================
                STEP 1 : wizard controls
@@ -118,7 +119,7 @@
               </div>
 
             {# =========================
-               STEP 3 : inchangé (style wizard)
+               STEP 3 : wizard
             ========================= #}
             {% else %}
 
@@ -208,6 +209,10 @@
                   </div>
 
                   <button type="button" class="wizard-add" id="add-service">Ajouter</button>
+
+                  {% if form_errors(form.services) %}
+                    <div class="auth-error">{{ form_errors(form.services) }}</div>
+                  {% endif %}
                 </div>
               {% endif %}
 
@@ -259,16 +264,39 @@
                   </div>
 
                   <button type="button" class="wizard-add" id="add-hour">Ajouter</button>
+
+                  {% if form_errors(form.openingHours) %}
+                    <div class="auth-error">{{ form_errors(form.openingHours) }}</div>
+                  {% endif %}
                 </div>
               {% endif %}
 
-              <div class="wizard-section">
-                <label class="wizard-label">Photos de votre établissement (recommandé)</label>
-                <div class="wizard-upload">
-                  Glissez-déposez vos images ou cliquez pour parcourir<br>
-                  PNG, JPG, JPEG jusqu’à 10MB
+              {# PHOTOS (Flysystem + FileType multiple) #}
+              {% if form.photos is defined %}
+                <div class="wizard-section">
+                  <label class="wizard-label">Photos de votre établissement (recommandé)</label>
+
+                  {# label cliquable => ouvre le file picker #}
+                  <label class="wizard-upload" style="cursor:pointer;">
+                    {{ form_widget(form.photos, { attr: { style: 'display:none;', accept: 'image/*' } }) }}
+                    Glissez-déposez vos images ou cliquez pour parcourir<br>
+                    PNG, JPG, JPEG jusqu’à 10MB
+                  </label>
+
+                  {% if form_errors(form.photos) %}
+                    <div class="auth-error">{{ form_errors(form.photos) }}</div>
+                  {% endif %}
                 </div>
-              </div>
+              {% else %}
+                {# fallback si jamais le champ n’existe pas #}
+                <div class="wizard-section">
+                  <label class="wizard-label">Photos de votre établissement (recommandé)</label>
+                  <div class="wizard-upload">
+                    Glissez-déposez vos images ou cliquez pour parcourir<br>
+                    PNG, JPG, JPEG jusqu’à 10MB
+                  </div>
+                </div>
+              {% endif %}
 
               {{ form_rest(form) }}
 

@@ -4,13 +4,17 @@ namespace App\Controller;
 
 use App\Dto\EstablishmentDraft;
 use App\Entity\Establishment;
+use App\Entity\EstablishmentImage;
 use App\Entity\OpeningHour;
 use App\Entity\Service;
 use App\Form\PartnerStep1Type;
 use App\Form\PartnerStep2Type;
 use App\Form\PartnerStep3Type;
 use Doctrine\ORM\EntityManagerInterface;
+use League\Flysystem\FilesystemOperator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Target;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -55,6 +59,7 @@ final class PartnerOnboardingController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             // Pas de DB ici (NOT NULL)
             $request->getSession()->set(self::SESSION_DRAFT, $draft);
+
             return $this->redirectToRoute('partner_step2');
         }
 
@@ -91,11 +96,13 @@ final class PartnerOnboardingController extends AbstractController
 
         if ($form->isSubmitted() && $request->request->has('go_back')) {
             $request->getSession()->set(self::SESSION_DRAFT, $draft);
+
             return $this->redirectToRoute('partner_step1');
         }
 
         if ($form->isSubmitted() && $form->isValid()) {
             $request->getSession()->set(self::SESSION_DRAFT, $draft);
+
             return $this->redirectToRoute('partner_step3');
         }
 
@@ -106,8 +113,12 @@ final class PartnerOnboardingController extends AbstractController
     }
 
     #[Route('/step-3', name: 'partner_step3', methods: ['GET', 'POST'])]
-    public function step3(Request $request, EntityManagerInterface $em): Response
-    {
+    public function step3(
+        Request $request,
+        EntityManagerInterface $em,
+        #[Target('uploads.storage')]
+        FilesystemOperator $uploadsStorage
+    ): Response {
         $user = $this->getUser();
         if (!$user) {
             return $this->redirectToRoute('app_login');
@@ -123,12 +134,12 @@ final class PartnerOnboardingController extends AbstractController
 
         if ($form->isSubmitted() && $request->request->has('go_back')) {
             $request->getSession()->set(self::SESSION_DRAFT, $draft);
+
             return $this->redirectToRoute('partner_step2');
         }
 
         if ($form->isSubmitted() && $form->isValid()) {
-
-            //  Création finale (tous les champs NOT NULL sont présents)
+            // Création finale (tous les champs NOT NULL sont présents)
             $establishment = new Establishment();
 
             // owner
@@ -139,6 +150,9 @@ final class PartnerOnboardingController extends AbstractController
             // step1 fields
             if (method_exists($establishment, 'setName')) {
                 $establishment->setName($draft->name);
+            }
+            if (method_exists($establishment, 'setCategory')) {
+                $establishment->setCategory($draft->category);
             }
             if (method_exists($establishment, 'setProfessionalEmail')) {
                 $establishment->setProfessionalEmail($draft->professionalEmail);
@@ -163,6 +177,9 @@ final class PartnerOnboardingController extends AbstractController
 
             $em->persist($establishment);
 
+            // ⚠️ flush maintenant pour avoir un ID (utile pour le path images)
+            $em->flush();
+
             // Services
             foreach ($draft->getServices() as $service) {
                 // ignore ligne vide
@@ -186,6 +203,16 @@ final class PartnerOnboardingController extends AbstractController
                 $em->persist($oh);
             }
 
+            // Photos (multi) -> Flysystem + DB (EstablishmentImage)
+            // Le champ photos est "mapped=false" dans PartnerStep3Type
+            $files = [];
+            if ($form->has('photos')) {
+                $files = $form->get('photos')->getData() ?? [];
+            }
+
+            $this->saveImagesToEstablishment($uploadsStorage, $establishment, $files, $em);
+
+            // flush final (services + openingHours + images)
             $em->flush();
 
             // nettoyage session
@@ -200,5 +227,54 @@ final class PartnerOnboardingController extends AbstractController
             'step' => 3,
             'form' => $form,
         ]);
+    }
+
+    /**
+     * @param array<int, mixed> $files
+     */
+    private function saveImagesToEstablishment(
+        FilesystemOperator $uploadsStorage,
+        Establishment $establishment,
+        array $files,
+        EntityManagerInterface $em
+    ): void {
+        foreach ($files as $i => $file) {
+            if (!$file instanceof UploadedFile) {
+                continue;
+            }
+
+            // Sécurité simple : on refuse si upload KO
+            if (!$file->isValid()) {
+                continue;
+            }
+
+            $ext = $file->guessExtension() ?: 'bin';
+            $name = bin2hex(random_bytes(10)) . '.' . $ext;
+
+            // Stockage dans public/uploads via Flysystem
+            // -> URL finale : /uploads/establishments/{id}/{file}
+            $path = sprintf('establishments/%d/%s', $establishment->getId(), $name);
+
+            $stream = fopen($file->getPathname(), 'r');
+            $uploadsStorage->writeStream($path, $stream);
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+
+            $img = new EstablishmentImage();
+            $img->setCreatedAt(new \DateTimeImmutable());
+
+            if (method_exists($img, 'setEstablishment')) {
+                $img->setEstablishment($establishment);
+            }
+            if (method_exists($img, 'setPath')) {
+                $img->setPath($path);
+            }
+            if (method_exists($img, 'setPosition')) {
+                $img->setPosition((int) $i);
+            }
+
+            $em->persist($img);
+        }
     }
 }

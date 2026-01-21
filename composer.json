@@ -15,7 +15,6 @@
         "doctrine/orm": "^3.5",
         "easycorp/easyadmin-bundle": "^4.27",
         "league/flysystem-bundle": "^3.6",
-        "oneup/flysystem-bundle": "^4.14",
         "runtime/frankenphp-symfony": "*",
         "symfony/asset": "7.3.*",
         "symfony/console": "7.3.*",

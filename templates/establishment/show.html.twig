@@ -15,11 +15,32 @@
       <div class="mt-2">
         <a href="{{ path('app_establishment_index') }}">Retour</a>
         <a href="{{ path('app_establishment_edit', {'id': establishment.id}) }}">Modifier</a>
-        {# Si tu as gardé la route “sans friction” pour les services #}
         <a href="{{ path('app_service_new_for_establishment', { id: establishment.id }) }}">Ajouter un service</a>
       </div>
     </div>
   </div>
+
+  {# PHOTOS #}
+  {% if establishment.establishmentImages is defined and establishment.establishmentImages|length > 0 %}
+    <div class="mb-4">
+      <h2 class="h5">Photos</h2>
+
+      <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        {% for img in establishment.establishmentImages %}
+          <div style="width:220px; aspect-ratio: 4/3; overflow:hidden; border-radius:12px; border:1px solid #e5e5e5;">
+            <img
+              src="{{ asset('uploads/' ~ img.path) }}"
+              alt="Photo {{ establishment.name }}"
+              style="width:100%; height:100%; object-fit:cover;"
+              loading="lazy"
+            >
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <hr class="my-4">
+  {% endif %}
 
   <h2 class="h5 mt-4">À propos</h2>
   {% if establishment.description %}
@@ -73,7 +94,6 @@
   } %}
 
   {% if establishment.openingHours is defined and establishment.openingHours|length > 0 %}
-    {# Tri par jour (si possible) #}
     {% set hours = establishment.openingHours|sort((a,b) => (dayOrder[a.dayOfWeek] ?? 99) <=> (dayOrder[b.dayOfWeek] ?? 99)) %}
 
     <ul>
