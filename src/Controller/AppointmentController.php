@@ -13,6 +13,7 @@ use Doctrine\DBAL\Exception\DriverException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -26,6 +27,41 @@ final class AppointmentController extends AbstractController
         return $this->render('appointment/index.html.twig', [
             'appointments' => $appointmentRepository->findAll(),
         ]);
+    }
+
+    /**
+     * Parse une date venant du front.
+     * Supporte:
+     *  - YYYY-MM-DD (input type="date")
+     *  - DD/MM/YYYY (format FR)
+     */
+    private function parseDateFromRequest(?string $dateStr): ?\DateTime
+    {
+        if (!$dateStr) {
+            return null;
+        }
+
+        $dateStr = trim($dateStr);
+
+        $d = \DateTime::createFromFormat('Y-m-d', $dateStr);
+        if ($d instanceof \DateTime) {
+            $d->setTime(0, 0, 0);
+            return $d;
+        }
+
+        $d = \DateTime::createFromFormat('d/m/Y', $dateStr);
+        if ($d instanceof \DateTime) {
+            $d->setTime(0, 0, 0);
+            return $d;
+        }
+
+        try {
+            $d = new \DateTime($dateStr);
+            $d->setTime(0, 0, 0);
+            return $d;
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**
@@ -46,9 +82,8 @@ final class AppointmentController extends AbstractController
             return $this->json(['slots' => []]);
         }
 
-        try {
-            $date = new \DateTime($dateStr);
-        } catch (\Throwable) {
+        $date = $this->parseDateFromRequest(is_string($dateStr) ? $dateStr : null);
+        if (!$date) {
             return $this->json(['slots' => []], 400);
         }
 
@@ -60,7 +95,6 @@ final class AppointmentController extends AbstractController
 
         $establishment = $service->getEstablishment();
 
-        // Sécurité équipement (optionnel)
         $equipement = null;
         if ($equipementId > 0) {
             /** @var Equipement|null $equipement */
@@ -70,7 +104,6 @@ final class AppointmentController extends AbstractController
             }
         }
 
-        // Sécurité pro (optionnel, pour le mode manuel)
         $professional = null;
         if ($professionalId > 0) {
             /** @var User|null $professional */
@@ -96,20 +129,14 @@ final class AppointmentController extends AbstractController
     public function new(Request $request, EntityManagerInterface $entityManager, AppointmentRepository $appointmentRepository): Response
     {
         $appointment = new Appointment();
-
-        // --- IMPORTANT ---
-        // Pour éviter "The selected choice is invalid" avec un ChoiceType rempli en AJAX :
-        // On doit reconstruire les choices côté serveur au moment du POST.
         $availableSlotsForForm = [];
 
-        // Récupération via POST (soumission) ou GET (préremplissage)
         $posted = $request->request->all('appointment');
 
         $selectedServiceId = $posted['service'] ?? $request->query->get('service') ?? null;
         $selectedDate = $posted['date'] ?? $request->query->get('date') ?? null;
-        $selectedEquipementId = $posted['equipement'] ?? null; // peut être "" ou un id
+        $selectedEquipementId = $posted['equipement'] ?? null;
 
-        // Pré-remplissage entité appointment (service/date)
         if ($selectedServiceId) {
             $service = $entityManager->getRepository(Service::class)->find($selectedServiceId);
             if ($service) {
@@ -118,14 +145,12 @@ final class AppointmentController extends AbstractController
         }
 
         if ($selectedDate) {
-            try {
-                $appointment->setDate(new \DateTime($selectedDate));
-            } catch (\Throwable) {
-                // ignore
+            $d = $this->parseDateFromRequest(is_string($selectedDate) ? $selectedDate : null);
+            if ($d) {
+                $appointment->setDate($d);
             }
         }
 
-        // Si service+date dispo, on calcule les slots serveur (mêmes règles que /slots)
         if ($appointment->getService() && $appointment->getDate()) {
             $equipementId = null;
             if (!empty($selectedEquipementId)) {
@@ -141,14 +166,11 @@ final class AppointmentController extends AbstractController
                 null
             );
 
-            // Symfony ChoiceType attend un tableau label => value
-            // ex: ['08:00' => '08:00', '09:05' => '09:05']
             if (!empty($slots)) {
                 $availableSlotsForForm = array_combine($slots, $slots) ?: [];
             }
         }
 
-        // Création du formulaire avec slots "serveur" (vide en GET sans service/date, rempli en POST)
         $form = $this->createForm(AppointmentType::class, $appointment, [
             'available_slots' => $availableSlotsForForm,
         ]);
@@ -166,7 +188,7 @@ final class AppointmentController extends AbstractController
             }
 
             $selectedDateObj = $appointment->getDate();
-            $selectedTime = $form->get('startTime')->getData(); // ex: "14:30"
+            $selectedTime = $form->get('startTime')->getData();
 
             if (!$selectedDateObj || !$selectedTime) {
                 $this->addFlash('error', 'Veuillez sélectionner une date et un créneau horaire.');
@@ -176,8 +198,6 @@ final class AppointmentController extends AbstractController
                 ]);
             }
 
-            // (optionnel mais robuste) : revalider que la valeur fait partie des slots serveur
-            // (ça protège contre un POST "forgé")
             $validTimes = array_values($availableSlotsForForm);
             if (!in_array($selectedTime, $validTimes, true)) {
                 $this->addFlash('error', 'Ce créneau n’est plus disponible. Merci de choisir un autre horaire.');
@@ -187,7 +207,6 @@ final class AppointmentController extends AbstractController
                 ]);
             }
 
-            // Fusion date + heure
             [$hour, $minute] = explode(':', $selectedTime);
             $startTime = (clone $selectedDateObj)->setTime((int) $hour, (int) $minute);
 
@@ -200,9 +219,7 @@ final class AppointmentController extends AbstractController
             $appointment->setStatus('pending');
             $appointment->setCreatedAt(new \DateTimeImmutable());
 
-            // --- MULTI-PRO (AUTO) ---
             $proIds = $appointmentRepository->findProfessionalIdsForEstablishment($establishment->getId());
-
             if (!$proIds && $establishment->getOwner()) {
                 $proIds = [$establishment->getOwner()->getId()];
             }
@@ -236,10 +253,8 @@ final class AppointmentController extends AbstractController
                     break;
                 } catch (DriverException $e) {
                     if ($e->getSQLState() === '23P01') {
-                        // collision => essayer un autre pro
                         $entityManager->clear();
 
-                        // Recréer un Appointment propre
                         $appointment = new Appointment();
                         $appointment->setClient($this->getUser());
                         $appointment->setService($service);
@@ -249,7 +264,6 @@ final class AppointmentController extends AbstractController
                         $appointment->setStatus('pending');
                         $appointment->setCreatedAt(new \DateTimeImmutable());
 
-                        // conserver l'équipement si fourni
                         $equipId = !empty($selectedEquipementId) ? (int) $selectedEquipementId : 0;
                         if ($equipId > 0) {
                             $equip = $entityManager->getRepository(Equipement::class)->find($equipId);
@@ -320,10 +334,69 @@ final class AppointmentController extends AbstractController
         ]);
     }
 
+    /**
+     * Annuler une réservation (client propriétaire, uniquement si à venir).
+     */
+    #[Route('/{id}/cancel', name: 'app_appointment_cancel', methods: ['POST'])]
+    public function cancel(Request $request, Appointment $appointment, EntityManagerInterface $entityManager): RedirectResponse
+    {
+        $this->denyAccessUnlessGranted('ROLE_USER');
+
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if ($appointment->getClient()?->getId() !== $user->getId()) {
+            throw $this->createAccessDeniedException("Vous ne pouvez pas annuler cette réservation.");
+        }
+
+        if (!$this->isCsrfTokenValid('cancel'.$appointment->getId(), (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'Token invalide.');
+            return $this->redirectToRoute('app_account', ['tab' => 'reservations']);
+        }
+
+        // Vérifie que c'est à venir
+        $now = new \DateTimeImmutable();
+
+        $date = $appointment->getDate();
+        $start = $appointment->getStartTime();
+
+        if (!$date || !$start) {
+            $this->addFlash('error', "Réservation invalide.");
+            return $this->redirectToRoute('app_account', ['tab' => 'reservations']);
+        }
+
+        $apptDate = \DateTimeImmutable::createFromMutable($date);
+        $apptStart = \DateTimeImmutable::createFromMutable($start);
+
+        $apptDateTime = $apptDate->setTime(
+            (int) $apptStart->format('H'),
+            (int) $apptStart->format('i'),
+            (int) $apptStart->format('s')
+        );
+
+        if ($apptDateTime < $now) {
+            $this->addFlash('error', "Impossible d'annuler une réservation passée.");
+            return $this->redirectToRoute('app_account', ['tab' => 'reservations']);
+        }
+
+        if ($appointment->getStatus() === 'cancelled') {
+            $this->addFlash('info', "Cette réservation est déjà annulée.");
+            return $this->redirectToRoute('app_account', ['tab' => 'reservations']);
+        }
+
+        $appointment->setStatus('cancelled');
+        $entityManager->flush();
+
+        $this->addFlash('success', 'Réservation annulée.');
+        return $this->redirectToRoute('app_account', ['tab' => 'reservations']);
+    }
+
     #[Route('/{id}', name: 'app_appointment_delete', methods: ['POST'])]
     public function delete(Request $request, Appointment $appointment, EntityManagerInterface $entityManager): Response
     {
-        if ($this->isCsrfTokenValid('delete' . $appointment->getId(), $request->request->get('_token'))) {
+        if ($this->isCsrfTokenValid('delete' . $appointment->getId(), (string) $request->request->get('_token'))) {
             $entityManager->remove($appointment);
             $entityManager->flush();
             $this->addFlash('success', 'Rendez-vous supprimé avec succès.');
@@ -334,10 +407,6 @@ final class AppointmentController extends AbstractController
 
     /**
      * Générateur AJAX de créneaux (multi-pro + équipement optionnel)
-     *
-     * - Si $professionalId est fourni => slots pour ce pro uniquement
-     * - Sinon => slot dispo si au moins un pro est libre
-     * - Si $equipementId est fourni => slot dispo seulement si équipement libre
      */
     private function generateAvailableSlotsAjax(
         Service $service,
@@ -376,7 +445,6 @@ final class AppointmentController extends AbstractController
         $buffer = (int) ($service->getBufferTime() ?? 0);
         $stepMinutes = max(1, $duration + $buffer);
 
-        // Pros
         $proIds = [];
         if ($professionalId) {
             $proIds = [$professionalId];
@@ -402,7 +470,6 @@ final class AppointmentController extends AbstractController
                 break;
             }
 
-            // Check équipement si sélectionné
             if ($equipementId) {
                 if ($repo->hasOverlapForEquipment($equipementId, $date, $slotStart, $slotEndBlocking)) {
                     $current->modify("+{$stepMinutes} minutes");
@@ -410,7 +477,6 @@ final class AppointmentController extends AbstractController
                 }
             }
 
-            // Check pro: soit pro spécifique, soit "au moins un pro libre"
             $hasAnyPro = false;
             foreach ($proIds as $pid) {
                 if (!$repo->hasOverlapForProfessional($pid, $date, $slotStart, $slotEndBlocking)) {

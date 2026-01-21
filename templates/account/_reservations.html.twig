@@ -1,0 +1,44 @@
+{# templates/account/_reservations.html.twig #}
+
+{# Réservations à venir #}
+<div class="account-card">
+  <div class="account-card__header">
+    <h2 class="account-card__title">Réservations à venir ({{ upcomingAppointments|length }})</h2>
+  </div>
+
+  {% if upcomingAppointments is empty %}
+    <p class="account-muted">Aucune réservation à venir pour le moment.</p>
+  {% endif %}
+</div>
+
+{% if upcomingAppointments is not empty %}
+  <div class="reservation-stack">
+    {% for a in upcomingAppointments %}
+      <div class="account-card">
+        {% include 'account/_reservation_card.html.twig' with { appointment: a } %}
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+
+{# Historique #}
+<div class="account-card" style="margin-top: 14px;">
+  <div class="account-card__header">
+    <h2 class="account-card__title">Historique</h2>
+  </div>
+
+  {% if pastAppointments is empty %}
+    <p class="account-muted">Aucun historique pour le moment.</p>
+  {% endif %}
+</div>
+
+{% if pastAppointments is not empty %}
+  <div class="reservation-stack">
+    {% for a in pastAppointments %}
+      <div class="account-card">
+        {% include 'account/_reservation_card.html.twig' with { appointment: a, compact: true } %}
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}

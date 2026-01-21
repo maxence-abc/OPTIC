@@ -1,0 +1,123 @@
+{# templates/account/_reservation_card.html.twig #}
+
+{% set service = appointment.service %}
+{% set establishment = service ? service.establishment : null %}
+
+{# ===== Image principale : même logique que EstablishmentCard ===== #}
+{% set cover = null %}
+{% if establishment and establishment.establishmentImages is defined and establishment.establishmentImages|length > 0 %}
+  {% set cover = establishment.establishmentImages|first %}
+{% endif %}
+
+{% set imgUrl = cover ? asset('uploads/' ~ cover.path) : asset('uploads/establishments/default.jpg') %}
+
+{# ===== Status ===== #}
+{% set status = appointment.status ?? 'pending' %}
+{% set statusLabel = {
+  'pending': 'En attente',
+  'confirmed': 'Confirmée',
+  'cancelled': 'Annulée',
+  'completed': 'Terminée'
+}[status] ?? status %}
+
+{% set statusClass = {
+  'pending': 'reservation-status--pending',
+  'confirmed': 'reservation-status--confirmed',
+  'cancelled': 'reservation-status--cancelled',
+  'completed': 'reservation-status--completed'
+}[status] ?? 'reservation-status--pending' %}
+
+<article class="reservation-card">
+  <div class="reservation-card__media">
+    <img
+      class="reservation-card__img"
+      src="{{ imgUrl }}"
+      alt="Photo {{ establishment ? establishment.name : 'Établissement' }}"
+      loading="lazy"
+      onerror="this.onerror=null;this.src='{{ asset('uploads/establishments/default.jpg') }}';"
+    />
+  </div>
+
+  <div class="reservation-card__body">
+    <div class="reservation-card__top">
+      <div>
+        <h3 class="reservation-card__title">
+          {{ establishment ? establishment.name : (service ? service.name : 'Réservation') }}
+        </h3>
+
+        <div class="reservation-card__meta">
+          <span class="reservation-pill">{{ establishment ? 'Établissement' : 'Service' }}</span>
+        </div>
+      </div>
+
+      <span class="reservation-status {{ statusClass }}">{{ statusLabel }}</span>
+    </div>
+
+    <div class="reservation-card__infos">
+      <div class="reservation-info">
+        <span class="reservation-info__icon" aria-hidden="true">{{ ux_icon('uil:calendar-alt') }}</span>
+        <span class="reservation-info__text">
+          {{ appointment.date ? appointment.date|date('l j F Y') : '—' }}
+        </span>
+      </div>
+
+      <div class="reservation-info">
+        <span class="reservation-info__icon" aria-hidden="true">{{ ux_icon('uil:clock') }}</span>
+        <span class="reservation-info__text">
+          {% if appointment.startTime %}{{ appointment.startTime|date('H:i') }}{% else %}—{% endif %}
+          {% if appointment.endTime %} — {{ appointment.endTime|date('H:i') }}{% endif %}
+        </span>
+      </div>
+
+      {% if establishment %}
+        <div class="reservation-info">
+          <span class="reservation-info__icon" aria-hidden="true">{{ ux_icon('uil:map-marker') }}</span>
+          <span class="reservation-info__text">
+            {{ establishment.address }}, {{ establishment.postalCode }} {{ establishment.city }}
+          </span>
+        </div>
+      {% endif %}
+
+      {% if appointment.professional %}
+        <div class="reservation-info">
+          <span class="reservation-info__icon" aria-hidden="true">{{ ux_icon('uil:user') }}</span>
+          <span class="reservation-info__text">
+            Professionnel : {{ appointment.professional.firstName }} {{ appointment.professional.lastName }}
+          </span>
+        </div>
+      {% endif %}
+
+      {% if service %}
+        <div class="reservation-info reservation-info--service">
+          <span class="reservation-info__label">Service :</span>
+          <span class="reservation-info__text">
+            {{ service.name }}
+            {% if service.price is defined and service.price is not null %}
+              <span class="reservation-info__muted">• {{ service.price }} €</span>
+            {% endif %}
+            {% if service.duration is defined and service.duration %}
+              <span class="reservation-info__muted">• {{ service.duration }} min</span>
+            {% endif %}
+          </span>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="reservation-card__actions">
+      <twig:Button
+        label="Modifier"
+        href="{{ path('app_appointment_edit', { id: appointment.id }) }}"
+        variant="outline"
+        size="sm"
+        iconLeft="uil:edit"
+      />
+
+      {% if appointment.status != 'cancelled' %}
+        <form method="post" action="{{ path('app_appointment_cancel', { id: appointment.id }) }}">
+          <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ appointment.id) }}">
+          <button class="btn btn--danger" type="submit">Annuler</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+</article>
