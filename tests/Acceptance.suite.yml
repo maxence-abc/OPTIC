@@ -1,22 +1,24 @@
-# Codeception Acceptance Test Suite Configuration
-#
-# Perform tests in a browser by either emulating one using PhpBrowser, or in a real browser using WebDriver.
-# If you need both WebDriver and PhpBrowser tests, create a separate suite for each.
-
 actor: AcceptanceTester
+
 modules:
-    enabled:
-        - WebDriver:
-            url: https://localhost:8000
-            browser: chrome
-            window_size: 1920x1080
-            capabilities:
-                "goog:chromeOptions":
-                    args:
-                        - '--lang=fr'
-        
-# Add Codeception\Step\Retry trait to AcceptanceTester to enable retries
+  enabled:
+    - WebDriver:
+        url: http://php:80
+        host: optic_selenium
+        port: 4444
+        path: /wd/hub
+        browser: chrome
+        window_size: 1920x1080
+        capabilities:
+          browserName: chrome
+          "goog:chromeOptions":
+            args:
+              - "--headless=new"
+              - "--no-sandbox"
+              - "--disable-dev-shm-usage"
+              - "--disable-gpu"
+
 step_decorators:
-    - Codeception\Step\ConditionalAssertion
-    - Codeception\Step\TryTo
-    - Codeception\Step\Retry
+  - Codeception\Step\ConditionalAssertion
+  - Codeception\Step\TryTo
+  - Codeception\Step\Retry

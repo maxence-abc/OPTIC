@@ -44,7 +44,9 @@ $runCommand('doctrine:schema:drop', [
     '--force' => true,
     '--full-database' => true,
 ]);
-$runCommand('doctrine:migrations:migrate');
+$runCommand('doctrine:migrations:migrate', [
+    '--no-interaction' => true,
+]);
 $runCommand('doctrine:fixtures:load', [
     '--group' => ['CodeceptionFixtures'],
     '--no-interaction' => true,
