@@ -7,6 +7,9 @@ use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Form\Extension\Core\Type\PasswordType;
+use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
+use Symfony\Component\Validator\Constraints as Assert;
 
 final class UserType extends AbstractType
 {
@@ -18,7 +21,27 @@ final class UserType extends AbstractType
             ->add('lastName')
             ->add('email')
             ->add('phone')
-            ->add('password')
+            ->add('password', RepeatedType::class, [
+                'type' => PasswordType::class,
+                'invalid_message' => 'The password fields must match.',
+                'options' => ['attr' => ['class' => 'password-field']],
+                'required' => true,
+                'first_options'  => ['label' => 'Password'],
+                'second_options' => ['label' => 'Repeat Password'],
+                'constraints' => [
+                    new Assert\NotBlank([
+                        'message' => 'Le mot de passe est obligatoire',
+                    ]),
+                    new Assert\Length([
+                        'min' => 8,
+                        'minMessage' => 'Minimum {{ limit }} caractères',
+                    ]),
+                    new Assert\Regex([
+                        'pattern' => '/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_]).+$/',
+                        'message' => 'Mot de passe trop faible : il doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.',
+                    ]),
+                ],
+            ])
 
             // --- Nouveau : type de compte (non mappé) ---
             ->add('accountType', ChoiceType::class, [

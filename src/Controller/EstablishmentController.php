@@ -49,7 +49,6 @@ final class EstablishmentController extends AbstractController
 
             $this->addFlash('success', 'Établissement créé avec succès');
 
-            // UX: après création, retour sur la page show
             return $this->redirectToRoute('app_establishment_show', [
                 'id' => $establishment->getId(),
             ], Response::HTTP_SEE_OTHER);
@@ -61,27 +60,17 @@ final class EstablishmentController extends AbstractController
         ]);
     }
 
+    /**
+     * PAGE PUBLIQUE (côté client) : consultation + réservation.
+     * Accessible à tout ROLE_USER (client ou pro connecté).
+     *
+     * IMPORTANT : on NE bloque PAS sur "owner" ici.
+     * Les actions de gestion restent dans edit/delete, protégées par ownership.
+     */
     #[Route('/{id}', name: 'app_establishment_show', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
     public function show(Establishment $establishment): Response
     {
-        // Admin OK
-        if ($this->isGranted('ROLE_ADMIN')) {
-            return $this->render('establishment/show.html.twig', [
-                'establishment' => $establishment,
-            ]);
-        }
-
-        // PRO: uniquement si owner
-        $user = $this->getUser();
-        if (!$user) {
-            return $this->redirectToRoute('app_login');
-        }
-
-        if (method_exists($establishment, 'getOwner') && $establishment->getOwner() !== $user) {
-            throw $this->createAccessDeniedException('Accès interdit : établissement non autorisé.');
-        }
-
         return $this->render('establishment/show.html.twig', [
             'establishment' => $establishment,
         ]);
@@ -144,7 +133,6 @@ final class EstablishmentController extends AbstractController
             $this->addFlash('success', 'Établissement supprimé avec succès');
         }
 
-        // Après suppression, un PRO retourne typiquement sur son dashboard (à adapter)
         return $this->redirectToRoute('app_home', [], Response::HTTP_SEE_OTHER);
     }
 }

@@ -34,9 +34,6 @@
 
     {{ form_start(form, { attr: { class: 'auth-form' } }) }}
 
-      {# =========================
-         TYPE DE COMPTE (Figma)
-      ========================= #}
       <div class="auth-field">
         <div class="auth-label">Type de compte</div>
 
@@ -101,14 +98,39 @@
         {{ form_errors(form.phone) }}
       </div>
 
+      {# Détection erreurs password (champ composé) #}
+      {% set pwHasError =
+        (form.password.first.vars.errors|length > 0)
+        or (form.password.second.vars.errors|length > 0)
+        or (form.password.vars.errors|length > 0)
+      %}
+
+      {# MOT DE PASSE #}
       <div class="auth-field">
-        <label class="auth-label" for="{{ form.password.vars.id }}">Mot de passe</label>
-        <div class="auth-input">
+        <label class="auth-label" for="{{ form.password.first.vars.id }}">Mot de passe</label>
+        <div class="auth-input {{ pwHasError ? 'is-error' : '' }}">
           {{ ux_icon('uil:lock') }}
-          {{ form_widget(form.password, { attr: { placeholder: '..........................' } }) }}
+          {{ form_widget(form.password.first, { attr: { placeholder: '..........................' } }) }}
         </div>
-        {{ form_errors(form.password) }}
       </div>
+
+      {# CONFIRMATION #}
+      <div class="auth-field">
+        <label class="auth-label" for="{{ form.password.second.vars.id }}">Confirmez le mot de passe</label>
+        <div class="auth-input {{ pwHasError ? 'is-error' : '' }}">
+          {{ ux_icon('uil:lock') }}
+          {{ form_widget(form.password.second, { attr: { placeholder: '..........................' } }) }}
+        </div>
+      </div>
+
+      {# ERREURS groupées (sous les deux champs) #}
+      {% if pwHasError %}
+        <div class="auth-error">
+          {{ form_errors(form.password) }}
+          {{ form_errors(form.password.first) }}
+          {{ form_errors(form.password.second) }}
+        </div>
+      {% endif %}
 
       {{ form_rest(form) }}
 

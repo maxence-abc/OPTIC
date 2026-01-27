@@ -297,6 +297,207 @@
   vertical-align: -2px;
 }
 
+/* =============================== */
+/* Reservations (Figma-like cards) */
+/* =============================== */
+
+/* grille des cartes */
+.reservation-list {
+  display: grid;
+  gap: 14px;
+}
+
+/* carte principale */
+.reservation-card {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+
+/* variante “compact” (historique) si tu veux réutiliser */
+.reservation-list--compact .reservation-card {
+  grid-template-columns: 300px 1fr;
+}
+
+/* media */
+.reservation-card__media {
+  background: rgba(0,0,0,0.03);
+}
+
+.reservation-card__img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  min-height: 240px;
+}
+
+/* body */
+.reservation-card__body {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.reservation-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.reservation-card__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 650;
+  color: rgba(0,0,0,0.88);
+}
+
+.reservation-card__meta {
+  margin-top: 6px;
+}
+
+/* pill type */
+.reservation-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  border: 1px solid rgba(0,0,0,0.14);
+  background: rgba(0,0,0,0.03);
+  color: rgba(0,0,0,0.7);
+}
+
+/* status badge (proche figma) */
+.reservation-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 650;
+  border: 1px solid rgba(0,0,0,0.14);
+  background: rgba(0,0,0,0.03);
+  color: rgba(0,0,0,0.7);
+  white-space: nowrap;
+}
+
+.reservation-status--pending {
+  background: rgba(255, 193, 7, 0.14);
+  border-color: rgba(255, 193, 7, 0.35);
+  color: rgba(120, 72, 0, 0.95);
+}
+
+.reservation-status--confirmed {
+  background: rgba(46, 204, 113, 0.14);
+  border-color: rgba(46, 204, 113, 0.35);
+  color: rgba(10, 90, 40, 0.95);
+}
+
+.reservation-status--cancelled {
+  background: rgba(209, 59, 59, 0.10);
+  border-color: rgba(209, 59, 59, 0.28);
+  color: rgba(140, 20, 20, 0.95);
+}
+
+.reservation-status--completed {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.30);
+  color: rgba(25, 35, 120, 0.95);
+}
+
+/* infos list */
+.reservation-card__infos {
+  display: grid;
+  gap: 8px;
+}
+
+.reservation-info {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  color: rgba(0,0,0,0.72);
+  font-size: 13px;
+}
+
+.reservation-info__icon {
+  opacity: 0.8;
+}
+
+.reservation-info__icon svg {
+  width: 16px;
+  height: 16px;
+  vertical-align: -2px;
+}
+
+.reservation-info__label {
+  font-weight: 650;
+  color: rgba(0,0,0,0.85);
+}
+
+.reservation-info__muted {
+  color: rgba(0,0,0,0.55);
+  font-weight: 500;
+  margin-left: 6px;
+}
+
+/* actions */
+.reservation-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+/* stack = plusieurs account-card d'affilée */
+.reservation-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Uniformise l'espacement entre sections (comme sur le Figma) */
+.reservation-list {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 18px; /* même espacement que .account-card */
+}
+
+
+/* bouton danger simple (pour le form POST annuler) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.18);
+  background: #fff;
+  color: rgba(0,0,0,0.85);
+  font-weight: 650;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btn--danger {
+  border-color: rgba(209, 59, 59, 0.35);
+  color: #d13b3b;
+}
+
+.btn--danger:hover {
+  background: rgba(209, 59, 59, 0.06);
+}
+
+.account-tabs__tab {
+  text-decoration: none; /* <a> */
+}
 
 /* Responsive */
 @media (max-width: 840px) {
@@ -318,5 +519,14 @@
   .account-list__item {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  /* reservations responsive */
+  .reservation-card {
+    grid-template-columns: 1fr;
+  }
+
+  .reservation-card__img {
+    min-height: 180px;
   }
 }

@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Appointment;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -75,25 +76,78 @@ class AppointmentRepository extends ServiceEntityRepository
     /**
      * Retourne les IDs des professionnels rattachés à un établissement.
      *
-     * Règles (alignées avec security.yaml) :
+     * Règles :
      * - user.establishment_id = :eid
-     * - role = ROLE_PRO
-     * - actif (is_active = true ou NULL)
+     * - roles contient ROLE_PRO (colonne JSON stockée par Symfony)
      */
     public function findProfessionalIdsForEstablishment(int $establishmentId): array
     {
         $conn = $this->getEntityManager()->getConnection();
 
-        $sql = "SELECT id
-                FROM \"user\"
-                WHERE establishment_id = :eid
-                  AND role = 'ROLE_PRO'
-                  AND (is_active = true OR is_active IS NULL)";
+        $sql = '
+            SELECT id
+            FROM "user"
+            WHERE establishment_id = :eid
+            AND EXISTS (
+                SELECT 1
+                FROM jsonb_array_elements_text(roles::jsonb) AS r(val)
+                WHERE r.val = :role
+            )
+        ';
 
         $rows = $conn->fetchAllAssociative($sql, [
             'eid' => $establishmentId,
+            'role' => 'ROLE_PRO',
         ]);
 
         return array_map(static fn(array $row) => (int) $row['id'], $rows);
+    }
+
+    /**
+     * Réservations à venir d'un client (>= maintenant), hors annulées.
+     * Tri ascendant.
+     */
+    public function findUpcomingForClient(User $client, int $limit = 50): array
+    {
+        $now = new \DateTimeImmutable();
+        $today = new \DateTimeImmutable($now->format('Y-m-d'));
+        $nowTime = new \DateTimeImmutable($now->format('H:i:s'));
+
+        return $this->createQueryBuilder('a')
+            ->andWhere('a.client = :client')
+            ->andWhere('a.status != :cancelled')
+            ->andWhere('(a.date > :today) OR (a.date = :today AND a.startTime >= :nowTime)')
+            ->setParameter('client', $client)
+            ->setParameter('cancelled', 'cancelled')
+            ->setParameter('today', $today)
+            ->setParameter('nowTime', $nowTime)
+            ->addOrderBy('a.date', 'ASC')
+            ->addOrderBy('a.startTime', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Réservations passées d'un client (< maintenant).
+     * Tri descendant.
+     */
+    public function findPastForClient(User $client, int $limit = 20): array
+    {
+        $now = new \DateTimeImmutable();
+        $today = new \DateTimeImmutable($now->format('Y-m-d'));
+        $nowTime = new \DateTimeImmutable($now->format('H:i:s'));
+
+        return $this->createQueryBuilder('a')
+            ->andWhere('a.client = :client')
+            ->andWhere('(a.date < :today) OR (a.date = :today AND a.startTime < :nowTime)')
+            ->setParameter('client', $client)
+            ->setParameter('today', $today)
+            ->setParameter('nowTime', $nowTime)
+            ->addOrderBy('a.date', 'DESC')
+            ->addOrderBy('a.startTime', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
     }
 }

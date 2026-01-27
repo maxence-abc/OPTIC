@@ -3,6 +3,10 @@
 {% block title %}{{ establishment.name }}{% endblock %}
 
 {% block body %}
+{# Autorisations UI : un PRO ne gère que SON établissement, Admin peut tout gérer #}
+{% set isOwner = establishment.owner is defined and app.user and establishment.owner and establishment.owner.id == app.user.id %}
+{% set canManage = is_granted('ROLE_ADMIN') or (is_granted('ROLE_PRO') and isOwner) %}
+
 <div class="container py-4">
 
   <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
@@ -13,13 +17,43 @@
       </div>
 
       <div class="mt-2">
-        <a href="{{ path('app_establishment_index') }}">Retour</a>
-        <a href="{{ path('app_establishment_edit', {'id': establishment.id}) }}">Modifier</a>
-        {# Si tu as gardé la route “sans friction” pour les services #}
-        <a href="{{ path('app_service_new_for_establishment', { id: establishment.id }) }}">Ajouter un service</a>
+        {# Retour : clients -> recherche, pros -> index (gestion) #}
+        {% if is_granted('ROLE_PRO') %}
+          <a href="{{ path('app_establishment_index') }}">Retour</a>
+        {% else %}
+          <a href="{{ path('app_store_search') }}">Retour</a>
+        {% endif %}
+
+        {# Actions de gestion visibles uniquement pour owner/admin #}
+        {% if canManage %}
+          <a href="{{ path('app_establishment_edit', {'id': establishment.id}) }}">Modifier</a>
+          <a href="{{ path('app_service_new_for_establishment', { id: establishment.id }) }}">Ajouter un service</a>
+        {% endif %}
       </div>
     </div>
   </div>
+
+  {# PHOTOS #}
+  {% if establishment.establishmentImages is defined and establishment.establishmentImages|length > 0 %}
+    <div class="mb-4">
+      <h2 class="h5">Photos</h2>
+
+      <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        {% for img in establishment.establishmentImages %}
+          <div style="width:220px; aspect-ratio: 4/3; overflow:hidden; border-radius:12px; border:1px solid #e5e5e5;">
+            <img
+              src="{{ asset('uploads/' ~ img.path) }}"
+              alt="Photo {{ establishment.name }}"
+              style="width:100%; height:100%; object-fit:cover;"
+              loading="lazy"
+            >
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <hr class="my-4">
+  {% endif %}
 
   <h2 class="h5 mt-4">À propos</h2>
   {% if establishment.description %}
@@ -36,11 +70,24 @@
   {% if establishment.services|length > 0 %}
     <ul>
       {% for service in establishment.services %}
-        <li style="margin-bottom: 8px;">
-          <strong>{{ service.name }}</strong>
-          {% if service.description %}- {{ service.description }}{% endif %}
-          — {{ service.duration }} min — {{ service.price }} €
-          {% if service.bufferTime %}(+{{ service.bufferTime }} min){% endif %}
+        <li style="margin-bottom: 12px;">
+          <div>
+            <strong>{{ service.name }}</strong>
+            {% if service.description %}- {{ service.description }}{% endif %}
+            — {{ service.duration }} min — {{ service.price }} €
+            {% if service.bufferTime %}(+{{ service.bufferTime }} min){% endif %}
+          </div>
+
+          {# CTA réservation : visible pour tout ROLE_USER (clients et pros) #}
+          <div class="mt-1">
+            <a href="{{ path('app_appointment_new', { service: service.id }) }}">Réserver</a>
+
+            {# Optionnel : liens de gestion service si tu en as (à adapter aux routes existantes) #}
+            {# {% if canManage %}
+              <a href="{{ path('app_service_edit', { id: service.id }) }}">Modifier</a>
+              {{ include('service/_delete_form.html.twig', { service: service }) }}
+            {% endif %} #}
+          </div>
         </li>
       {% endfor %}
     </ul>
@@ -73,7 +120,6 @@
   } %}
 
   {% if establishment.openingHours is defined and establishment.openingHours|length > 0 %}
-    {# Tri par jour (si possible) #}
     {% set hours = establishment.openingHours|sort((a,b) => (dayOrder[a.dayOfWeek] ?? 99) <=> (dayOrder[b.dayOfWeek] ?? 99)) %}
 
     <ul>
@@ -92,7 +138,11 @@
 
   <hr class="my-4">
 
-  {{ include('establishment/_delete_form.html.twig') }}
+  {# Suppression établissement : uniquement owner/admin #}
+  {% if canManage %}
+    {{ include('establishment/_delete_form.html.twig') }}
+  {% endif %}
 
 </div>
 {% endblock %}
+

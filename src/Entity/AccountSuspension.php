@@ -31,6 +31,14 @@ class AccountSuspension
     #[ORM\JoinColumn(nullable: false)]
     private ?User $adminUser = null;
 
+    // #[ORM\ManyToOne(inversedBy: 'accountSuspensions')]
+    // #[ORM\JoinColumn(nullable: false)]
+    // private ?User $suspendedUser = null;
+
+    // #[ORM\ManyToOne(inversedBy: 'adminSuspensions')]
+    // #[ORM\JoinColumn(nullable: false)]
+    // private ?User $adminUser = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -69,6 +77,28 @@ class AccountSuspension
         return $this;
     }
 
+    // public function getSuspendedUser(): ?User
+    // {
+    //     return $this->suspendedUser;
+    // }
+
+    // public function setSuspendedUser(?User $suspendedUser): static
+    // {
+    //     $this->suspendedUser = $suspendedUser;
+    //     return $this;
+    // }
+
+    // public function getAdminUser(): ?User
+    // {
+    //     return $this->adminUser;
+    // }
+
+    // public function setAdminUser(?User $adminUser): static
+    // {
+    //     $this->adminUser = $adminUser;
+    //     return $this;
+    // }
+
     public function getSuspendedUser(): ?User
     {
         return $this->suspendedUser;
@@ -77,6 +107,7 @@ class AccountSuspension
     public function setSuspendedUser(?User $suspendedUser): static
     {
         $this->suspendedUser = $suspendedUser;
+
         return $this;
     }
 
@@ -88,6 +119,7 @@ class AccountSuspension
     public function setAdminUser(?User $adminUser): static
     {
         $this->adminUser = $adminUser;
+
         return $this;
     }
 }

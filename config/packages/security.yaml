@@ -9,12 +9,14 @@ security:
         App\Entity\User:
             algorithm: auto
 
+
     # Provider basé sur ton entité User (connexion avec l'email)
     providers:
         app_user_provider:
             entity:
                 class: App\Entity\User
                 property: email
+        # used to reload user from session & other features (e.g. switch_user)
 
     firewalls:
         dev:
@@ -37,6 +39,7 @@ security:
 
     # Règles d'accès
     access_control:
+    - { path: ^/reset-password, roles: PUBLIC_ACCESS }
     - { path: ^/login, roles: PUBLIC_ACCESS }
     - { path: ^/registration, roles: PUBLIC_ACCESS }
     - { path: ^/$, roles: PUBLIC_ACCESS }

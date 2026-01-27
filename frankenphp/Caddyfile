@@ -66,7 +66,7 @@
 }
 
 # Vhost HTTP interne pour les tests (Codeception) via le nom du container
-http://nom_du_container {
+http://php {
     root * /app/public
     encode zstd br gzip
 

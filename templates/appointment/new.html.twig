@@ -20,14 +20,18 @@
             <div class="col-md-6 mb-3">
                 {{ form_row(form.startTime) }}
             </div>
-            <div class="col-md-6 mb-3">
+
+            {# Équipement caché tant qu'on n'a pas de créneaux, et seulement si des choix existent #}
+            <div class="col-md-6 mb-3" id="equipement-row" style="display:none;">
                 {{ form_row(form.equipement) }}
             </div>
         </div>
 
         <div class="mt-4">
             <button class="btn btn-success">Enregistrer</button>
-            <a href="{{ path('app_appointment_index') }}" class="btn btn-secondary">Retour</a>
+
+            {# Retour plus logique côté client #}
+            <a href="{{ path('app_store_search') }}" class="btn btn-secondary">Retour</a>
         </div>
     {{ form_end(form) }}
 
@@ -43,9 +47,30 @@ document.addEventListener('DOMContentLoaded', () => {
   const serviceField = document.querySelector('#appointment_service');
   const dateField = document.querySelector('#appointment_date');
   const equipField = document.querySelector('#appointment_equipement');
-  const slotField = document.querySelector('#appointment_startTime');
+  const equipRow   = document.querySelector('#equipement-row');
+  const slotField  = document.querySelector('#appointment_startTime');
 
   if (!slotField) return;
+
+  function hasRealEquipChoices() {
+    // 0: "Aucun équipement" / placeholder ; >1 = il existe au moins un équipement
+    return !!(equipField && equipField.options && equipField.options.length > 1);
+  }
+
+  function toggleEquipVisibility(slots) {
+    if (!equipRow) return;
+
+    const hasSlots = Array.isArray(slots) && slots.length > 0;
+    const hasEquip = hasRealEquipChoices();
+
+    // Affiche uniquement si slots OK et qu'il y a des équipements à choisir
+    equipRow.style.display = (hasSlots && hasEquip) ? '' : 'none';
+
+    // Si on cache, on reset le choix pour éviter d’envoyer un equipement qui filtre les slots
+    if (equipRow.style.display === 'none' && equipField) {
+      equipField.value = '';
+    }
+  }
 
   function setSlots(slots) {
     slotField.innerHTML = '';
@@ -67,6 +92,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     slotField.disabled = !(slots && slots.length);
+
+    // UI: on ne montre l’équipement que si tout marche et slots disponibles
+    toggleEquipVisibility(slots);
   }
 
   async function refreshSlots() {
@@ -85,7 +113,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams();
     params.set('service', service);
     params.set('date', date);
-    if (equip) params.set('equipement', equip);
+
+    // On ne filtre par équipement que si le bloc est visible (donc slots OK)
+    if (equipRow && equipRow.style.display !== 'none' && equip) {
+      params.set('equipement', equip);
+    }
 
     const url = "{{ path('app_appointment_slots') }}" + '?' + params.toString();
 
@@ -98,9 +130,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  serviceField?.addEventListener('change', refreshSlots);
+  serviceField?.addEventListener('change', () => {
+    // si on change de service, on reset l’équipement (il peut être lié à un établissement différent)
+    if (equipField) equipField.value = '';
+    refreshSlots();
+  });
+
   dateField?.addEventListener('change', refreshSlots);
-  equipField?.addEventListener('change', refreshSlots);
+
+  equipField?.addEventListener('change', () => {
+    // Ne pas recalculer si l'équipement n’est pas visible (sinon on se re-filtre à vide)
+    if (equipRow && equipRow.style.display === 'none') return;
+    refreshSlots();
+  });
+
+  // Au chargement : cache équipement tant qu’on n’a pas des slots
+  if (equipRow) equipRow.style.display = 'none';
 
   refreshSlots();
 });

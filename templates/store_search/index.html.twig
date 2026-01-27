@@ -1,35 +1,155 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Boutique{% endblock %}
+{% block title %}Rechercher un service{% endblock %}
+{% block body_class %}page-establishments{% endblock %}
+
+{% block stylesheets %}
+  <link rel="stylesheet" href="/css/pages/establishments.css">
+{% endblock %}
 
 {% block body %}
-    <div class="container mt-5">
-        <h1 class="mb-4 text-center">Nos établissements</h1>
 
-        {% if establishments is empty %}
-            <p class="text-center text-muted">Aucun établissement trouvé pour le moment.</p>
-        {% else %}
-            <div class="row">
-                {% for establishment in establishments %}
-                    <div class="col-md-4 mb-4">
-                        <div class="card shadow-sm">
-                            <div class="card-body">
-                                <h5 class="card-title">{{ establishment.name }}</h5>
-                                <p class="card-text">
-                                    {{ establishment.description|default('Aucune description')|slice(0, 120) ~ '...' }}
-                                </p>
-                                <p class="text-muted">
-                                    📍 {{ establishment.address }}, {{ establishment.city }}
-                                </p>
+  {# ====== Filtres (sécurisés) ====== #}
+  {% set f = filters|default({}) %}
+  {% set qv = f.q|default('') %}
+  {% set cv = f.city|default('') %}
+  {% set cat = f.category|default('all') %}
 
-                                <a href="{{ path('app_establishment_show', { id: establishment.id }) }}" class="btn btn-primary w-100">
-                                    Voir les détails
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
+  {# =========================
+     HERO / SEARCH BAR (GET)
+     ========================= #}
+     
+  <section class="est-hero">
+    <div class="container container--wide">
+      <p class="est-hero__kicker">
+        Recherchez parmi des milliers de professionnels près de chez vous
+      </p>
+
+      <form class="est-search" method="get" action="{{ path('app_store_search') }}">
+        <div class="est-search__row">
+          <div class="est-field">
+            <span class="est-field__icon" aria-hidden="true">
+              {{ ux_icon('uil:search') }}
+            </span>
+            <input
+              class="est-field__input"
+              type="text"
+              name="q"
+              value="{{ qv }}"
+              placeholder="Service, établissement..."
+            >
+          </div>
+
+          <div class="est-field">
+            <span class="est-field__icon" aria-hidden="true">
+              {{ ux_icon('uil:location-point') }}
+            </span>
+            <input
+              class="est-field__input"
+              type="text"
+              name="city"
+              value="{{ cv }}"
+              placeholder="Ville, code postal..."
+            >
+          </div>
+        </div>
+
+        {# Conserver category seulement si on filtre vraiment (≠ all) #}
+        {% if cat is not empty and cat != 'all' %}
+          <input type="hidden" name="category" value="{{ cat }}">
         {% endif %}
+
+        <div class="est-search__actions">
+          <button class="btn btn--primary btn--md btn--block" type="submit">
+            Rechercher
+        </button>
+
+        </div>
+      </form>
     </div>
+  </section>
+
+  {# =========================
+     LISTING
+     ========================= #}
+  <section class="est-wrap">
+    <div class="container container--wide">
+
+      {# ===== Pills (catégories) ===== #}
+      <div class="est-pills">
+        <a
+          class="pill {{ cat in ['all', ''] ? 'is-active' : '' }}"
+          href="{{ path('app_store_search', { q: qv, city: cv, category: 'all' }) }}"
+        >Tous</a>
+
+        <a
+          class="pill {{ cat == 'restaurant' ? 'is-active' : '' }}"
+          href="{{ path('app_store_search', { q: qv, city: cv, category: 'restaurant' }) }}"
+        >Restaurant</a>
+
+        <a
+          class="pill {{ cat == 'coiffure' ? 'is-active' : '' }}"
+          href="{{ path('app_store_search', { q: qv, city: cv, category: 'coiffure' }) }}"
+        >Coiffure</a>
+
+        <a
+          class="pill {{ cat == 'sante' ? 'is-active' : '' }}"
+          href="{{ path('app_store_search', { q: qv, city: cv, category: 'sante' }) }}"
+        >Santé</a>
+
+        <a
+          class="pill {{ cat == 'sport' ? 'is-active' : '' }}"
+          href="{{ path('app_store_search', { q: qv, city: cv, category: 'sport' }) }}"
+        >Sport</a>
+
+        <a
+          class="pill {{ cat == 'automobile' ? 'is-active' : '' }}"
+          href="{{ path('app_store_search', { q: qv, city: cv, category: 'automobile' }) }}"
+        >Automobile</a>
+
+        <a
+          class="pill {{ cat == 'bien-etre' ? 'is-active' : '' }}"
+          href="{{ path('app_store_search', { q: qv, city: cv, category: 'bien-etre' }) }}"
+        >Bien-être</a>
+      </div>
+
+      {# ===== Toolbar ===== #}
+      <div class="est-toolbar">
+        <div>
+          <h1 class="est-title">Établissements disponibles</h1>
+          <p class="est-subtitle">
+            {{ establishments|length }}
+            résultat{{ establishments|length > 1 ? 's' : '' }}
+            trouvé{{ establishments|length > 1 ? 's' : '' }}
+          </p>
+        </div>
+
+        <twig:Button
+          label="Filtres"
+          variant="outline"
+          size="sm"
+          iconLeft="uil:sliders-v-alt"
+        />
+      </div>
+
+      {# ===== Résultats ===== #}
+      {% if establishments is empty %}
+        <div class="est-empty">
+          <h2>Aucun établissement</h2>
+          <p>Modifie tes critères ou essaie une autre recherche.</p>
+        </div>
+      {% else %}
+        <div class="est-grid">
+          {% for establishment in establishments %}
+            <twig:EstablishmentCard
+              establishment="{{ establishment }}"
+              detailsHref="{{ path('app_establishment_show', { id: establishment.id }) }}"
+            />
+          {% endfor %}
+        </div>
+      {% endif %}
+
+    </div>
+  </section>
+
 {% endblock %}

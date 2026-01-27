@@ -16,13 +16,17 @@ class Loyalty
     #[ORM\Column]
     private ?int $points = null;
 
-    #[ORM\ManyToOne(inversedBy: 'loyalties')]
-    #[ORM\JoinColumn(nullable: false)]
-    private ?User $client = null;
+    // #[ORM\ManyToOne(inversedBy: 'loyalties')]
+    // #[ORM\JoinColumn(nullable: false)]
+    // private ?User $client = null;
 
     #[ORM\ManyToOne(inversedBy: 'loyalties')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Establishment $establishment = null;
+
+    #[ORM\ManyToOne(inversedBy: 'loyalties')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?User $client = null;
 
     public function getId(): ?int
     {
@@ -41,17 +45,17 @@ class Loyalty
         return $this;
     }
 
-    public function getClient(): ?User
-    {
-        return $this->client;
-    }
+    // public function getClient(): ?User
+    // {
+    //     return $this->client;
+    // }
 
-    public function setClient(?User $client): static
-    {
-        $this->client = $client;
+    // public function setClient(?User $client): static
+    // {
+    //     $this->client = $client;
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
     public function getEstablishment(): ?Establishment
     {
@@ -61,6 +65,18 @@ class Loyalty
     public function setEstablishment(?Establishment $establishment): static
     {
         $this->establishment = $establishment;
+
+        return $this;
+    }
+
+    public function getClient(): ?User
+    {
+        return $this->client;
+    }
+
+    public function setClient(?User $client): static
+    {
+        $this->client = $client;
 
         return $this;
     }

@@ -1,6 +1,7 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}Mon compte - OPTIC{% endblock %}
+{% block body_class %}page-account{% endblock %}
 
 {% block stylesheets %}
   <link rel="stylesheet" href="/css/pages/account.css">
@@ -10,172 +11,133 @@
 {% block header %}{% endblock %}
 
 {% block body %}
-  {% set activeTab = app.request.query.get('tab') ?: 'profile' %}
 
-  {# HERO / HEADER #}
-  <section class="account-hero">
-    <div class="container container--wide account-hero__container">
-      <a class="account-hero__back" href="{{ app.request.headers.get('referer') ?: path('app_home') }}">
-        <span class="account-hero__back-icon" aria-hidden="true">{{ ux_icon('uil:arrow-left') }}</span>
-        Retour
-      </a>
+{% set activeTab = app.request.query.get('tab') ?: 'reservations' %}
 
-      <div class="account-hero__identity">
-        <div class="account-hero__avatar" aria-hidden="true">
-          <span class="account-hero__avatar-icon" aria-hidden="true">{{ ux_icon('uil:user') }}</span>
-        </div>
+{# HERO #}
+<section class="account-hero">
+  <div class="container container--wide account-hero__container">
+    <a class="account-hero__back" href="{{ path('app_home') }}">
+      <span class="account-hero__back-icon" aria-hidden="true">
+        {{ ux_icon('uil:arrow-left') }}
+      </span>
+      Retour
+    </a>
 
-        <div class="account-hero__text">
-          <div class="account-hero__title">Mon Compte Client</div>
-          <div class="account-hero__email">{{ app.user.email }}</div>
-        </div>
+
+    <div class="account-hero__identity">
+      <div class="account-hero__avatar" aria-hidden="true">
+        <span class="account-hero__avatar-icon" aria-hidden="true">{{ ux_icon('uil:user') }}</span>
+      </div>
+
+      <div class="account-hero__text">
+        <div class="account-hero__title">Mon Compte Client</div>
+        <div class="account-hero__email">{{ app.user.email }}</div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  {# CONTENT #}
-  <section class="account">
-    <div class="container container--wide account__container">
+{# CONTENT #}
+<section class="account">
+  <div class="container container--wide account__container">
 
-      <div class="account-tabs" role="tablist" aria-label="Onglets compte">
-        <button
-          class="account-tabs__tab {{ activeTab == 'reservations' ? 'is-active' : '' }}"
-          type="button"
-          role="tab"
-          aria-selected="{{ activeTab == 'reservations' ? 'true' : 'false' }}"
-          data-tab="reservations"
-        >
-          <span class="account-tabs__icon" aria-hidden="true">{{ ux_icon('uil:calendar-alt') }}</span>
-          Mes réservations
-        </button>
+    {# TABS (liens, stable) #}
+    <div class="account-tabs" role="tablist" aria-label="Onglets compte">
 
-        <button
-          class="account-tabs__tab {{ activeTab == 'reviews' ? 'is-active' : '' }}"
-          type="button"
-          role="tab"
-          aria-selected="{{ activeTab == 'reviews' ? 'true' : 'false' }}"
-          data-tab="reviews"
-        >
-          <span class="account-tabs__icon" aria-hidden="true">{{ ux_icon('uil:star') }}</span>
-          Mes avis
-        </button>
+      <a
+        class="account-tabs__tab {{ activeTab == 'reservations' ? 'is-active' : '' }}"
+        href="{{ path('app_account', { tab: 'reservations' }) }}"
+        role="tab"
+        aria-selected="{{ activeTab == 'reservations' ? 'true' : 'false' }}"
+      >
+        <span class="account-tabs__icon" aria-hidden="true">{{ ux_icon('uil:calendar-alt') }}</span>
+        Mes réservations
+      </a>
 
-        <button
-          class="account-tabs__tab {{ activeTab == 'profile' ? 'is-active' : '' }}"
-          type="button"
-          role="tab"
-          aria-selected="{{ activeTab == 'profile' ? 'true' : 'false' }}"
-          data-tab="profile"
-        >
-          <span class="account-tabs__icon" aria-hidden="true">{{ ux_icon('uil:setting') }}</span>
-          Profil
-        </button>
-      </div>
+      <a
+        class="account-tabs__tab {{ activeTab == 'reviews' ? 'is-active' : '' }}"
+        href="{{ path('app_account', { tab: 'reviews' }) }}"
+        role="tab"
+        aria-selected="{{ activeTab == 'reviews' ? 'true' : 'false' }}"
+      >
+        <span class="account-tabs__icon" aria-hidden="true">{{ ux_icon('uil:star') }}</span>
+        Mes avis
+      </a>
 
-      {# PANELS #}
-      <div class="account-panels">
+      <a
+        class="account-tabs__tab {{ activeTab == 'profile' ? 'is-active' : '' }}"
+        href="{{ path('app_account', { tab: 'profile' }) }}"
+        role="tab"
+        aria-selected="{{ activeTab == 'profile' ? 'true' : 'false' }}"
+      >
+        <span class="account-tabs__icon" aria-hidden="true">{{ ux_icon('uil:setting') }}</span>
+        Profil
+      </a>
 
-        {# --- RÉSERVATIONS (RÉEL) --- #}
-        <div class="account-panel {{ activeTab == 'reservations' ? 'is-active' : '' }}" role="tabpanel" data-panel="reservations">
+    </div>
+
+    {# PANELS #}
+    <div class="account-panels">
+
+      {# ===================== RÉSERVATIONS ===================== #}
+      {% if activeTab == 'reservations' %}
+        <div class="account-panel is-active" role="tabpanel">
+
           <div class="account-card">
             <div class="account-card__header">
-              <h2 class="account-card__title">Mes réservations</h2>
+              <h2 class="account-card__title">
+                Réservations à venir ({{ upcomingAppointments|default([])|length }})
+              </h2>
             </div>
 
-            {% if appointments is empty %}
-              <p class="account-muted">Aucune réservation pour le moment.</p>
-            {% else %}
-              <div class="account-list">
-                {% for a in appointments %}
-                  <div class="account-list__item">
-                    <div class="account-list__main">
-                      <div class="account-list__title">
-                        {{ a.service ? (a.service.name ?? 'Service') : 'Service' }}
-                      </div>
-
-                      <div class="account-list__meta">
-                        <span>
-                          {{ a.date ? a.date|date('d/m/Y') : '—' }}
-                          {% if a.startTime %} • {{ a.startTime|date('H:i') }}{% endif %}
-                          {% if a.endTime %} – {{ a.endTime|date('H:i') }}{% endif %}
-                        </span>
-
-                        <span class="account-badge account-badge--neutral">
-                          {{ a.status ?? 'En attente' }}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div class="account-list__actions">
-                      <twig:Button
-                        label="Détails"
-                        href="#"
-                        variant="outline"
-                        size="sm"
-                        iconLeft="uil:info-circle"
-                      />
-                    </div>
-                  </div>
-                {% endfor %}
-              </div>
+            {% if upcomingAppointments is not defined or upcomingAppointments is empty %}
+              <p class="account-muted">Aucune réservation à venir pour le moment.</p>
             {% endif %}
           </div>
-        </div>
 
-        {# --- AVIS (MOCK) --- #}
-        <div class="account-panel {{ activeTab == 'reviews' ? 'is-active' : '' }}" role="tabpanel" data-panel="reviews">
+          {% if upcomingAppointments is defined and upcomingAppointments is not empty %}
+            <div class="reservation-list">
+              {% for a in upcomingAppointments %}
+                {% include 'account/_reservation_card.html.twig' with { appointment: a } %}
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="account-card account-card--spaced">
+            <div class="account-card__header">
+              <h2 class="account-card__title">Historique</h2>
+            </div>
+
+            {% if pastAppointments is defined and pastAppointments is not empty %}
+              <div class="reservation-list reservation-list--compact">
+                {% for a in pastAppointments %}
+                  {% include 'account/_reservation_card.html.twig' with { appointment: a, compact: true } %}
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="account-muted">Aucun historique pour le moment.</p>
+            {% endif %}
+          </div>
+
+        </div>
+      {% endif %}
+
+      {# ===================== AVIS ===================== #}
+      {% if activeTab == 'reviews' %}
+        <div class="account-panel is-active" role="tabpanel">
           <div class="account-card">
             <div class="account-card__header">
               <h2 class="account-card__title">Mes avis</h2>
             </div>
-
-            <p class="account-muted">
-              Fonctionnalité en cours. Voici un aperçu mocké pour valider le design.
-            </p>
-
-            <div class="account-list">
-              <div class="account-list__item">
-                <div class="account-list__main">
-                  <div class="account-list__title">Service : Consultation</div>
-                  <div class="account-list__meta">
-                    <span class="account-stars" aria-label="4 sur 5">
-                      {{ ux_icon('uil:star') }} {{ ux_icon('uil:star') }} {{ ux_icon('uil:star') }} {{ ux_icon('uil:star') }} {{ ux_icon('uil:star') }}
-                    </span>
-                    <span class="account-muted">“Très bon accueil, rapide et pro.”</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="account-list__item">
-                <div class="account-list__main">
-                  <div class="account-list__title">Service : Ajustement</div>
-                  <div class="account-list__meta">
-                    <span class="account-stars" aria-label="5 sur 5">
-                      {{ ux_icon('uil:star') }} {{ ux_icon('uil:star') }} {{ ux_icon('uil:star') }} {{ ux_icon('uil:star') }} {{ ux_icon('uil:star') }}
-                    </span>
-                    <span class="account-muted">“Top, rien à dire.”</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="account-list__item">
-                <div class="account-list__main">
-                  <div class="account-list__title">Service : Contrôle</div>
-                  <div class="account-list__meta">
-                    <span class="account-stars" aria-label="3 sur 5">
-                      {{ ux_icon('uil:star') }} {{ ux_icon('uil:star') }} {{ ux_icon('uil:star') }} {{ ux_icon('uil:star') }} {{ ux_icon('uil:star') }}
-                    </span>
-                    <span class="account-muted">“Correct, délai un peu long.”</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
+            <p class="account-muted">Fonctionnalité en cours.</p>
           </div>
         </div>
+      {% endif %}
 
-        {# --- PROFIL (RÉEL + PREFERENCES MOCK) --- #}
-        <div class="account-panel {{ activeTab == 'profile' ? 'is-active' : '' }}" role="tabpanel" data-panel="profile">
+      {# ===================== PROFIL ===================== #}
+      {% if activeTab == 'profile' %}
+        <div class="account-panel is-active" role="tabpanel">
 
           <div class="account-card">
             <div class="account-card__header account-card__header--withAction">
@@ -220,7 +182,7 @@
 
             <twig:Button
               label="Changer le mot de passe"
-              href="#"
+              href="{{ path('app_forgot_password_request') }}"
               variant="outline"
               size="md"
               iconLeft="uil:lock"
@@ -258,34 +220,10 @@
           </div>
 
         </div>
-      </div>
+      {% endif %}
+
     </div>
-  </section>
+  </div>
+</section>
 
-{% endblock %}
-
-{% block javascripts %}
-  <script>
-    (function () {
-      const tabs = document.querySelectorAll('.account-tabs__tab');
-      const panels = document.querySelectorAll('.account-panel');
-
-      function setActive(tabName) {
-        tabs.forEach(t => {
-          const isActive = t.getAttribute('data-tab') === tabName;
-          t.classList.toggle('is-active', isActive);
-          t.setAttribute('aria-selected', isActive ? 'true' : 'false');
-        });
-
-        panels.forEach(p => {
-          const isActive = p.getAttribute('data-panel') === tabName;
-          p.classList.toggle('is-active', isActive);
-        });
-      }
-
-      tabs.forEach(t => {
-        t.addEventListener('click', () => setActive(t.getAttribute('data-tab')));
-      });
-    })();
-  </script>
 {% endblock %}

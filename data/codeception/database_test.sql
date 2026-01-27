@@ -1,113 +1,96 @@
+-- Seed file generated from pg_dump COPY data (converted to INSERT)
+-- Source: dump-app-202601230755.sql
+-- Generated: 2026-01-23T07:00:23
 
--- ----------------------------
--- USERS
--- ----------------------------
--- Note: password = placeholders (format bcrypt-like) pour tests
+TRUNCATE
+    public.account_suspension,
+    public.appointment,
+    public.availability,
+    public.doctrine_migration_versions,
+    public.equipement,
+    public.establishment,
+    public.establishment_image,
+    public.loyalty,
+    public.opening_hour,
+    public.reset_password_request,
+    public.service,
+    public."user",
+    public.user_log
+RESTART IDENTITY CASCADE;
+
+-- Table: public.doctrine_migration_versions (8 rows)
+INSERT INTO public.doctrine_migration_versions (version, executed_at, execution_time) VALUES
+('DoctrineMigrations\\Version20260119100543', '2026-01-19 10:06:36', 160),
+('DoctrineMigrations\\Version20260119120022', '2026-01-19 12:00:28', 11),
+('DoctrineMigrations\\Version20260120155058', '2026-01-20 15:51:02', 1),
+('DoctrineMigrations\\Version20260120161356', '2026-01-20 16:14:05', 42),
+('DoctrineMigrations\\Version20260121084414', '2026-01-21 08:44:20', 55),
+('DoctrineMigrations\\Version20260121095944', '2026-01-21 09:59:53', 9),
+('DoctrineMigrations\\Version20260121175331', '2026-01-21 17:54:11', 121),
+('DoctrineMigrations\\Version20260121180005', '2026-01-21 18:01:56', 10);
+
+-- Table: public."user" (6 rows)
+-- NOTE: on met establishment_id = NULL pour l'owner (id=12) afin de casser le cycle FK.
 INSERT INTO public."user"
-(id, establishment_id, first_name, last_name, email, password, phone, specialization, is_active, created_at, update_at, roles)
+(id, establishment_id, email, roles, password, first_name, last_name, phone, specialization, is_active, created_at, update_at)
 VALUES
--- Admin
-(1, NULL, 'Admin', 'Root', 'admin@test.local', '$2y$13$testtesttesttesttesttesttesttesttesttesttesttest', NULL, NULL, TRUE, '2026-01-10 09:00:00', NULL, '["ROLE_ADMIN"]'),
+(6, NULL, 'user@test.com', '["ROLE_ADMIN"]', '$2y$13$rKghRrqATW7ZMDaucph54OLDNUPhwOE6wMtuykotP5oQsCdRH0kQy', 'user', 'test', NULL, NULL, NULL, '2026-01-19 00:00:00', '2026-01-19 00:00:00'),
+(9, NULL, 'dylan.azaz@gmail.com', '["ROLE_CLIENT"]', '$2y$13$3tKMhpKaNFECun0fNCekN.CCzHS5zS6SejjiiTlyJ4CJVDIGB5ndW', 'dylan', 'azaz', 0770086660, NULL, TRUE, '2026-01-19 12:28:45', '2026-01-19 12:28:45'),
+(10, NULL, 'dylan.azazi@gmail.com', '["ROLE_CLIENT"]', '$2y$13$0H9T2J.uYpqU5uB1rWbpS.FCGcMcatHZvmb7iO49B7TrytN7jRLuO', 'dylan', 'azazi', 0770096660, NULL, TRUE, '2026-01-19 14:45:09', '2026-01-19 14:45:09'),
+(11, NULL, 'jonathan.gravelat05@gmail.com', '["ROLE_CLIENT"]', '$2y$13$Dcv9NcQMRI.fiDYEeToT6OeUQNotZBjDUZjO4Bylu1LVZufUPT2L2', 'Jonathan', 'GRAVELAT', 0602072792, NULL, TRUE, '2026-01-20 08:26:53', '2026-01-20 08:26:53'),
+(13, NULL, 'maxence@gmail.com', '["ROLE_CLIENT"]', '$2y$13$avNGiKaIc9ve8VIQlmmF0uui7v8bNQUWl8jDlNEm6xEfPBH4GG5ea', 'Maxence', 'Abric', 0770086660, NULL, TRUE, '2026-01-21 17:58:16', '2026-01-21 17:58:16'),
+(12, NULL, 'maxence.abric87@gmail.com', '["ROLE_PRO"]', '$2y$13$T5Yk2e1E6bCOmBZEpYavF.6B4dIEQSgXOFCgf2c8mqamsY3NBTMeS', 'Maxence', 'Abric', 0770086660, NULL, TRUE, '2026-01-21 07:02:53', '2026-01-21 07:02:53');
 
--- Pros
-(2, NULL, 'Victor', 'Hugo', 'pro.victor@test.local', '$2y$13$testtesttesttesttesttesttesttesttesttesttesttest', '0611111111', 'Coiffeur', TRUE, '2026-01-10 09:05:00', NULL, '["ROLE_PRO"]'),
-(3, NULL, 'dylan', 'azaz', 'dylan.azaz@gmail.com', 'azertyuiop', '0622222222', NULL, TRUE, '2026-01-10 09:06:00', NULL, '["ROLE_PRO"]'),
-(4, NULL, 'Adrienne', 'Segalat', 'pro.adrienne@test.local', '$2y$13$testtesttesttesttesttesttesttesttesttesttesttest', '0633333333', 'Esthétique', TRUE, '2026-01-10 09:07:00', NULL, '["ROLE_PRO"]'),
-
--- Clients
-(10, NULL, 'user', 'test', 'user@test.com', 'azertyuiop', '0644444444', NULL, TRUE, '2026-01-10 09:10:00', NULL, '["ROLE_CLIENT"]'),
-(11, NULL, 'Bob', 'Durand', 'bob@test.local', '$2y$13$testtesttesttesttesttesttesttesttesttesttesttest', '0655555555', NULL, TRUE, '2026-01-10 09:11:00', NULL, '["ROLE_CLIENT"]'),
-
--- ----------------------------
--- ESTABLISHMENTS
--- ----------------------------
+-- Table: public.establishment (3 rows)
+-- Maintenant que user(id=12) existe, owner_id=12 est OK.
 INSERT INTO public.establishment
-(id, owner_id, name, address, city, postal_code, description, professional_email, professional_phone)
+(id, owner_id, name, address, city, postal_code, description, professional_email, professional_phone, category)
 VALUES
-(1, 2, 'CoiffeurSla', '46 avenue Gambetta', 'Limoges', '87100', 'Salon de coiffure', 'contact@coiffeursla.test', '0555000001'),
-(2, 3, 'Bosphore Kebab', '246 rue Armand Dutreix', 'Limoges', '87100', 'Restauration rapide', 'contact@bosphore.test', '0555000002'),
-(3, 4, 'Studio Adrienne', '12 rue de la Paix', 'Limoges', '87000', 'Soins esthétiques', 'contact@adrienne.test', '0555000003');
+(2, 12, 'Impérial du thé bys', '216 A rue armand dutreix', 'Limoges', 87100, 'the', 'maxence.abric87@gmail.com', 0770086660, NULL),
+(3, 12, 'Impérial du thé bysbys', '216 A rue armand dutreix', 'Limoges', 87100, 'eaf', 'maxence.abric87@gmail.com', 0770086660, NULL),
+(4, 12, 'KFC', '219 A rue armand dutreix', 'Limoges', 87100, 'Fast Food', 'maxence.abric87@gmail.com', 0770086660, 'restaurant');
 
--- Lier certains users à leur établissement (pro rattaché)
-UPDATE public."user" SET establishment_id = 1 WHERE id = 2;
-UPDATE public."user" SET establishment_id = 2 WHERE id = 3;
-UPDATE public."user" SET establishment_id = 3 WHERE id = 4;
+-- Réparation du cycle FK : on rattache maintenant le PRO (id=12) à son établissement (id=4)
+UPDATE public."user"
+SET establishment_id = 4
+WHERE id = 12;
 
--- ----------------------------
--- SERVICES
--- ----------------------------
+-- Table: public.service (3 rows)
 INSERT INTO public.service
 (id, establishment_id, name, description, duration, price, buffer_time)
 VALUES
--- CoiffeurSla
-(1, 1, 'Coupe homme', 'Shampoing + coiffage', 30, 20.00, 15),
-(2, 1, 'Brushing', 'Brushing + shampoing', 45, 35.00, 10),
-(3, 1, 'Coloration', 'Couleur + brushing', 90, 95.00, 20),
+(2, 2, 'lala', 'eafcae', 10, 10.00, 5),
+(3, 3, 'fac', 'fca', 5, 5.00, 5),
+(4, 4, 'Menu burger', 'burger + frites + boisson', 5, 10.00, 0);
 
--- Bosphore
-(4, 2, 'Menu kebab', 'Kebab + frites + boisson', 10, 11.50, NULL),
-(5, 2, 'Menu assiette', 'Assiette + boisson', 12, 13.90, NULL),
+-- Table: public.establishment_image (3 rows)
+INSERT INTO public.establishment_image
+(id, establishment_id, path, "position", created_at)
+VALUES
+(2, 2, 'establishments/2/2f13b888e26c50002517.jpg', 0, '2026-01-21 09:09:49'),
+(3, 3, 'establishments/3/f6372b2f1aa6991d03ed.jpg', 0, '2026-01-21 09:25:53'),
+(4, 4, 'establishments/4/51e9ffc194ec194c23d5.jpg', 0, '2026-01-21 10:07:31');
 
--- Studio Adrienne
-(6, 3, 'Soin visage', 'Nettoyage + hydratation', 60, 55.00, 10),
-(7, 3, 'Épilation', 'Jambes complètes', 30, 30.00, 5);
-
--- ----------------------------
--- OPENING HOURS (exemple complet 7j pour 2 établissements)
--- ----------------------------
+-- Table: public.opening_hour (3 rows)
 INSERT INTO public.opening_hour
 (id, establishment_id, day_of_week, open_time, close_time)
 VALUES
--- CoiffeurSla
-(1, 1, 'Monday',    '08:00:00', '18:00:00'),
+(2, 2, 'Monday', '10:59:00', '11:59:00'),
+(3, 3, 'Wednesday', '10:21:00', '13:21:00'),
+(4, 4, 'Monday', '12:06:00', '15:09:00');
 
--- Studio Adrienne
-(7, 3, 'Monday',    '10:00:00', '19:00:00'),
-(8, 3, 'Tuesday',   '10:00:00', '19:00:00'),
-(9, 3, 'Thursday',  '10:00:00', '19:00:00'),
-(10,3, 'Friday',    '10:00:00', '19:00:00');
-
--- ----------------------------
--- APPOINTMENTS
--- IMPORTANT: pas de chevauchement pour un même pro / même équipement
--- sur status pending/confirmed
--- ----------------------------
-INSERT INTO public.appointment
-(id, client_id, service_id, equipement_id, date, start_time, end_time, status, created_at, professional_id)
+-- Table: public.reset_password_request (2 rows)
+INSERT INTO public.reset_password_request
+(id, user_id, selector, hashed_token, requested_at, expires_at)
 VALUES
--- Pro Victor (id=2) chez CoiffeurSla (services 1..3), le 2026-01-20
-(1, 10, 1, 1, '2026-01-20', '09:00:00', '09:30:00', 'confirmed', '2026-01-15 10:00:00', 2),
-(2, 11, 2, 1, '2026-01-20', '09:45:00', '10:30:00', 'pending',   '2026-01-15 10:05:00', 2),
-(3, 12, 3, 2, '2026-01-20', '10:45:00', '12:15:00', 'confirmed', '2026-01-15 10:10:00', 2),
+(1, 11, 'GvjWjLPMIumyq70gxqtF', 'IHgioCYOJwckYNsGwSK0FnbX8y23kCNzcA4UpAaEnrI=', '2026-01-20 16:15:53', '2026-01-20 17:15:53'),
+(2, 11, 'FjXti6VHryLaxRChXmSt', 'NYQyCCkI72XALN+DtVWw3aLRgcn+457EX/nwwJzVR0Y=', '2026-01-21 06:57:53', '2026-01-21 07:57:53');
 
--- Une annulation peut théoriquement chevaucher (car exclue du WHERE),
--- mais on reste propre
-(4, 13, 1, 2, '2026-01-20', '13:00:00', '13:30:00', 'cancelled', '2026-01-15 10:12:00', 2),
-
--- Pro Adrienne (id=4) Studio Adrienne, le 2026-01-21 (cabines 3/4)
-(5, 14, 6, 3, '2026-01-21', '10:00:00', '11:00:00', 'confirmed', '2026-01-15 11:00:00', 4),
-(6, 12, 7, 4, '2026-01-21', '11:15:00', '11:45:00', 'pending',   '2026-01-15 11:05:00', 4),
-(7, 10, 6, 3, '2026-01-21', '12:00:00', '13:00:00', 'confirmed', '2026-01-15 11:10:00', 4),
-
--- Pro Dylan (id=3) Bosphore: appointments possibles même sans equipement_id
-(8, 11, 4, NULL, '2026-01-22', '12:00:00', '12:10:00', 'confirmed', '2026-01-15 12:00:00', 3),
-(9, 10, 5, NULL, '2026-01-22', '12:15:00', '12:27:00', 'pending',   '2026-01-15 12:01:00', 3);
-
--- ----------------------------
--- USER LOG (exemples)
--- ----------------------------
--- INSERT INTO public.user_log
--- (id, related_user_id, action, description, ip_adress, created_at)
--- VALUES
--- (1, 10, 'LOGIN', 'Connexion client', '127.0.0.1', '2026-01-15 09:00:00'),
--- (2, 2,  'CREATE_APPOINTMENT', 'Création RDV #1', '127.0.0.1', '2026-01-15 10:00:01');
-
--- ----------------------------
--- ACCOUNT SUSPENSION (exemple)
--- ----------------------------
--- INSERT INTO public.account_suspension
--- (id, suspended_user_id, admin_user_id, reason, created_at, lifted_at)
--- VALUES
--- (1, 13, 1, 'Tests modération: suspension temporaire', '2026-01-15 08:00:00', '2026-01-16 08:00:00');
-
-COMMIT;
+-- Table: public.appointment (3 rows)
+-- service + user existent, donc FK OK.
+INSERT INTO public.appointment
+(id, service_id, equipement_id, client_id, professional_id, date, start_time, end_time, status, created_at)
+VALUES
+(1, 4, NULL, 13, 12, '2026-01-26', '12:11:00', '12:16:00', 'pending', '2026-01-21 18:34:18'),
+(2, 4, NULL, 13, 12, '2026-01-26', '12:16:00', '12:21:00', 'cancelled', '2026-01-21 18:34:31'),
+(3, 4, NULL, 13, 12, '2026-01-26', '13:01:00', '13:06:00', 'cancelled', '2026-01-22 07:02:42');

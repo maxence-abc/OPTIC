@@ -31,11 +31,11 @@ class Establishment
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
 
-    /**
-     * @var Collection<int, User>
-     */
-    #[ORM\OneToMany(targetEntity: User::class, mappedBy: 'establishment')]
-    private Collection $users;
+    // /**
+    //  * @var Collection<int, User>
+    //  */
+    // #[ORM\OneToMany(targetEntity: User::class, mappedBy: 'establishment')]
+    // private Collection $users;
 
     /**
      * @var Collection<int, Service>
@@ -61,9 +61,9 @@ class Establishment
     #[ORM\OneToMany(targetEntity: Availability::class, mappedBy: 'establishment')]
     private Collection $availabilities;
 
-    #[ORM\ManyToOne(inversedBy: 'establishments')]
-    #[ORM\JoinColumn(nullable: false)]
-    private ?User $owner = null;
+    // #[ORM\ManyToOne(inversedBy: 'establishments')]
+    // #[ORM\JoinColumn(nullable: false)]
+    // private ?User $owner = null;
 
     /**
      * @var Collection<int, Loyalty>
@@ -77,14 +77,34 @@ class Establishment
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $professionalPhone = null;
 
+    /**
+     * @var Collection<int, User>
+     */
+    #[ORM\OneToMany(targetEntity: User::class, mappedBy: 'establishment')]
+    private Collection $users;
+
+    #[ORM\ManyToOne(inversedBy: 'establishments')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?User $owner = null;
+
+    /**
+     * @var Collection<int, EstablishmentImage>
+     */
+    #[ORM\OneToMany(targetEntity: EstablishmentImage::class, mappedBy: 'establishment', orphanRemoval: true)]
+    private Collection $establishmentImages;
+
+    #[ORM\Column(length: 40, nullable: true)]
+    private ?string $category = null;
+
     public function __construct()
     {
-        $this->users = new ArrayCollection();
+        // $this->users = new ArrayCollection();
         $this->services = new ArrayCollection();
         $this->equipments = new ArrayCollection();
         $this->openingHours = new ArrayCollection();
         $this->availabilities = new ArrayCollection();
         $this->loyalties = new ArrayCollection();
+        $this->establishmentImages = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -152,35 +172,35 @@ class Establishment
         return $this;
     }
 
-    /**
-     * @return Collection<int, User>
-     */
-    public function getUsers(): Collection
-    {
-        return $this->users;
-    }
+    // /**
+    //  * @return Collection<int, User>
+    //  */
+    // public function getUsers(): Collection
+    // {
+    //     return $this->users;
+    // }
 
-    public function addUser(User $user): static
-    {
-        if (!$this->users->contains($user)) {
-            $this->users->add($user);
-            $user->setEstablishment($this);
-        }
+    // public function addUser(User $user): static
+    // {
+    //     if (!$this->users->contains($user)) {
+    //         $this->users->add($user);
+    //         $user->setEstablishment($this);
+    //     }
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
-    public function removeUser(User $user): static
-    {
-        if ($this->users->removeElement($user)) {
-            // set the owning side to null (unless already changed)
-            if ($user->getEstablishment() === $this) {
-                $user->setEstablishment(null);
-            }
-        }
+    // public function removeUser(User $user): static
+    // {
+    //     if ($this->users->removeElement($user)) {
+    //         // set the owning side to null (unless already changed)
+    //         if ($user->getEstablishment() === $this) {
+    //             $user->setEstablishment(null);
+    //         }
+    //     }
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
     /**
      * @return Collection<int, Service>
@@ -302,17 +322,17 @@ class Establishment
         return $this;
     }
 
-    public function getOwner(): ?User
-    {
-        return $this->owner;
-    }
+    // public function getOwner(): ?User
+    // {
+    //     return $this->owner;
+    // }
 
-    public function setOwner(?User $owner): static
-    {
-        $this->owner = $owner;
+    // public function setOwner(?User $owner): static
+    // {
+    //     $this->owner = $owner;
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
     /**
      * @return Collection<int, Loyalty>
@@ -364,6 +384,90 @@ class Establishment
     public function setProfessionalPhone(?string $professionalPhone): static
     {
         $this->professionalPhone = $professionalPhone;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    public function getUsers(): Collection
+    {
+        return $this->users;
+    }
+
+    public function addUser(User $user): static
+    {
+        if (!$this->users->contains($user)) {
+            $this->users->add($user);
+            $user->setEstablishment($this);
+        }
+
+        return $this;
+    }
+
+    public function removeUser(User $user): static
+    {
+        if ($this->users->removeElement($user)) {
+            // set the owning side to null (unless already changed)
+            if ($user->getEstablishment() === $this) {
+                $user->setEstablishment(null);
+            }
+        }
+
+        return $this;
+    }
+
+    public function getOwner(): ?User
+    {
+        return $this->owner;
+    }
+
+    public function setOwner(?User $owner): static
+    {
+        $this->owner = $owner;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, EstablishmentImage>
+     */
+    public function getEstablishmentImages(): Collection
+    {
+        return $this->establishmentImages;
+    }
+
+    public function addEstablishmentImage(EstablishmentImage $establishmentImage): static
+    {
+        if (!$this->establishmentImages->contains($establishmentImage)) {
+            $this->establishmentImages->add($establishmentImage);
+            $establishmentImage->setEstablishment($this);
+        }
+
+        return $this;
+    }
+
+    public function removeEstablishmentImage(EstablishmentImage $establishmentImage): static
+    {
+        if ($this->establishmentImages->removeElement($establishmentImage)) {
+            // set the owning side to null (unless already changed)
+            if ($establishmentImage->getEstablishment() === $this) {
+                $establishmentImage->setEstablishment(null);
+            }
+        }
+
+        return $this;
+    }
+
+    public function getCategory(): ?string
+    {
+        return $this->category;
+    }
+
+    public function setCategory(?string $category): static
+    {
+        $this->category = $category;
 
         return $this;
     }
