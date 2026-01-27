@@ -1,11 +1,38 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}New Service{% endblock %}
+{% block title %}Nouveau service{% endblock %}
 
 {% block body %}
-    <h1>Create new Service</h1>
+<div class="container py-4">
 
-    {{ include('service/_form.html.twig') }}
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+        <div>
+            <h1 class="h3 mb-1">Nouveau service</h1>
+            {% if establishment %}
+                <div class="text-muted">Pour l’établissement : <strong>{{ establishment.name }}</strong></div>
+            {% else %}
+                <div class="text-muted">Sélectionne l’établissement concerné.</div>
+            {% endif %}
+        </div>
 
-    <a href="{{ path('app_service_index') }}">back to list</a>
+        {% if establishment %}
+            <a href="{{ path('app_establishment_show', { id: establishment.id }) }}" class="btn btn-outline-secondary">
+                Retour établissement
+            </a>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ form_widget(form) }}
+
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                    <button class="btn btn-primary" type="submit">Créer le service</button>
+                </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+
+</div>
 {% endblock %}

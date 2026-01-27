@@ -1,64 +1,98 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Establishment{% endblock %}
+{% block title %}{{ establishment.name }}{% endblock %}
 
 {% block body %}
-    <h1>Establishment</h1>
+<div class="container py-4">
 
-    <table class="table">
-        <tbody>
-            <tr>
-                <th>Id</th>
-                <td>{{ establishment.id }}</td>
-            </tr>
-            <tr>
-                <th>Name</th>
-                <td>{{ establishment.name }}</td>
-            </tr>
-            <tr>
-                <th>Address</th>
-                <td>{{ establishment.address }}</td>
-            </tr>
-            <tr>
-                <th>City</th>
-                <td>{{ establishment.city }}</td>
-            </tr>
-            <tr>
-                <th>PostalCode</th>
-                <td>{{ establishment.postalCode }}</td>
-            </tr>
-            <tr>
-                <th>Description</th>
-                <td>{{ establishment.description }}</td>
-            </tr>
-        </tbody>
-    </table>
+  <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+    <div>
+      <h1 class="h3 mb-1">{{ establishment.name }}</h1>
+      <div class="text-muted">
+        {{ establishment.address }}, {{ establishment.postalCode }} {{ establishment.city }}
+      </div>
 
-    <a href="{{ path('app_establishment_index') }}">back to list</a>
+      <div class="mt-2">
+        <a href="{{ path('app_establishment_index') }}">Retour</a>
+        <a href="{{ path('app_establishment_edit', {'id': establishment.id}) }}">Modifier</a>
+        {# Si tu as gardé la route “sans friction” pour les services #}
+        <a href="{{ path('app_service_new_for_establishment', { id: establishment.id }) }}">Ajouter un service</a>
+      </div>
+    </div>
+  </div>
 
-    <a href="{{ path('app_establishment_edit', {'id': establishment.id}) }}">edit</a>
+  <h2 class="h5 mt-4">À propos</h2>
+  {% if establishment.description %}
+    <p>{{ establishment.description }}</p>
+  {% else %}
+    <p class="text-muted">Aucune description.</p>
+  {% endif %}
 
-    {{ include('establishment/_delete_form.html.twig') }}
+  <hr class="my-4">
 
-    {# 🧩 AJOUT : Gestion des services de l’établissement #}
-    <hr>
-    <h3>Services proposés</h3>
+  <h2 class="h5">Services proposés</h2>
+  <div class="text-muted mb-2">{{ establishment.services|length }}</div>
 
-    <a href="{{ path('app_service_new', { id: establishment.id }) }}" class="btn btn-primary">
-        ➕ Ajouter un service
-    </a>
+  {% if establishment.services|length > 0 %}
+    <ul>
+      {% for service in establishment.services %}
+        <li style="margin-bottom: 8px;">
+          <strong>{{ service.name }}</strong>
+          {% if service.description %}- {{ service.description }}{% endif %}
+          — {{ service.duration }} min — {{ service.price }} €
+          {% if service.bufferTime %}(+{{ service.bufferTime }} min){% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-muted">Aucun service pour cet établissement.</p>
+  {% endif %}
 
-    {% if establishment.services|length > 0 %}
-        <ul>
-            {% for service in establishment.services %}
-                <li>
-                    {{ service.name }} – {{ service.price }} €
-                    (<a href="{{ path('app_service_show', {id: service.id}) }}">voir</a>)
-                    (<a href="{{ path('app_service_edit', {id: service.id}) }}">modifier</a>)
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>Aucun service pour cet établissement.</p>
-    {% endif %}
+  <hr class="my-4">
+
+  <h2 class="h5">Horaires d’ouverture</h2>
+
+  {% set dayOrder = {
+    'Monday': 1,
+    'Tuesday': 2,
+    'Wednesday': 3,
+    'Thursday': 4,
+    'Friday': 5,
+    'Saturday': 6,
+    'Sunday': 7
+  } %}
+
+  {% set dayLabel = {
+    'Monday': 'Lundi',
+    'Tuesday': 'Mardi',
+    'Wednesday': 'Mercredi',
+    'Thursday': 'Jeudi',
+    'Friday': 'Vendredi',
+    'Saturday': 'Samedi',
+    'Sunday': 'Dimanche'
+  } %}
+
+  {% if establishment.openingHours is defined and establishment.openingHours|length > 0 %}
+    {# Tri par jour (si possible) #}
+    {% set hours = establishment.openingHours|sort((a,b) => (dayOrder[a.dayOfWeek] ?? 99) <=> (dayOrder[b.dayOfWeek] ?? 99)) %}
+
+    <ul>
+      {% for oh in hours %}
+        <li style="margin-bottom: 6px;">
+          <strong>{{ dayLabel[oh.dayOfWeek] ?? oh.dayOfWeek }}</strong> :
+          {{ oh.openTime ? oh.openTime|date('H:i') : '' }}
+          -
+          {{ oh.closeTime ? oh.closeTime|date('H:i') : '' }}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-muted">Aucun horaire défini pour cet établissement.</p>
+  {% endif %}
+
+  <hr class="my-4">
+
+  {{ include('establishment/_delete_form.html.twig') }}
+
+</div>
 {% endblock %}

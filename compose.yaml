@@ -57,6 +57,15 @@ services:
       # - ./docker/db/data:/var/lib/postgresql/data:rw
 ###< doctrine/doctrine-bundle ###
 
+# container selenium
+  selenium:
+    container_name: optic_selenium
+    image: selenium/standalone-chromium
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    volumes:
+      - '/dev/shm:/dev/shm'
+
 volumes:
   caddy_data:
   caddy_config:
@@ -66,3 +75,4 @@ volumes:
 ###> doctrine/doctrine-bundle ###
   database_data:
 ###< doctrine/doctrine-bundle ###
+
