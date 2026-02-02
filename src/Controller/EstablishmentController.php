@@ -68,7 +68,6 @@ final class EstablishmentController extends AbstractController
      * Les actions de gestion restent dans edit/delete, protégées par ownership.
      */
     #[Route('/{id}', name: 'app_establishment_show', methods: ['GET'])]
-    #[IsGranted('ROLE_USER')]
     public function show(Establishment $establishment): Response
     {
         return $this->render('establishment/show.html.twig', [

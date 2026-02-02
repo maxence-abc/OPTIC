@@ -18,7 +18,7 @@
   {# =========================
      HERO / SEARCH BAR (GET)
      ========================= #}
-     
+
   <section class="est-hero">
     <div class="container container--wide">
       <p class="est-hero__kicker">
@@ -62,8 +62,7 @@
         <div class="est-search__actions">
           <button class="btn btn--primary btn--md btn--block" type="submit">
             Rechercher
-        </button>
-
+          </button>
         </div>
       </form>
     </div>
@@ -141,9 +140,15 @@
       {% else %}
         <div class="est-grid">
           {% for establishment in establishments %}
+            {# IMPORTANT : on va sur la page FRONT réservation #}
             <twig:EstablishmentCard
               establishment="{{ establishment }}"
-              detailsHref="{{ path('app_establishment_show', { id: establishment.id }) }}"
+              detailsHref="{{ path('front_establishment_show', {
+                id: establishment.id,
+                q: qv,
+                city: cv,
+                category: cat
+              }) }}"
             />
           {% endfor %}
         </div>
