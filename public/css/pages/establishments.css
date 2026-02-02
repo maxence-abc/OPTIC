@@ -95,6 +95,12 @@
   background: #fff;
   cursor: pointer;
   font-size: 12px;
+
+  /* important: ce sont des <a> */
+  text-decoration: none;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
 }
 
 .pill.is-active{
@@ -218,15 +224,7 @@
   flex: 1;
 }
 
-.pill{
-  text-decoration: none;
-  color: inherit;
-  display: inline-flex;
-  align-items: center;
-}
-
 /* Responsive */
 @media (max-width: 980px){
   .est-grid{ grid-template-columns: 1fr; }
 }
-

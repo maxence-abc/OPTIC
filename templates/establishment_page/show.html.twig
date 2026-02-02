@@ -1,0 +1,271 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ establishment.name }}{% endblock %}
+{% block body_class %}page-establishment-show{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="/css/pages/establishments.css">
+  <link rel="stylesheet" href="/css/pages/account.css">
+  <link rel="stylesheet" href="/css/pages/establishment-show.css">
+{% endblock %}
+
+{% block body %}
+  {# Back URL: si on vient de la recherche avec q/city/category, on reconstruit #}
+  {% set backUrl = app.request.headers.get('referer') ?: path('app_store_search') %}
+  {% set q = app.request.query.get('q') %}
+  {% set city = app.request.query.get('city') %}
+  {% set category = app.request.query.get('category') %}
+  {% if q or city or category %}
+    {% set backUrl = path('app_store_search', { q: q, city: city, category: category }) %}
+  {% endif %}
+
+  <div class="container container--wide est-show">
+
+    <a class="est-back" href="{{ backUrl }}">
+      {{ ux_icon('uil:arrow-left') }}
+      Retour aux résultats
+    </a>
+
+    <section class="est-card est-show__hero">
+      <div class="est-card__media">
+        <img class="est-card__img"
+             src="{{ heroSrc }}"
+             alt="Photo de {{ establishment.name }}"
+             loading="lazy">
+      </div>
+      <div class="est-card__body">
+        <h1 class="est-card__title">{{ establishment.name }}</h1>
+        <p class="est-card__meta">
+          <span class="est-card__pin">{{ ux_icon('uil:map-marker') }}</span>
+          {{ establishment.address }}, {{ establishment.postalCode }} {{ establishment.city }}
+        </p>
+      </div>
+    </section>
+
+    {# Bouton Réserver (scroll natif) #}
+    <div class="est-hero-actions">
+      <a class="btn btn--primary btn--md" href="#booking">
+        Réserver
+      </a>
+    </div>
+
+    <section class="account-card">
+      <div class="account-card__header">
+        <h2 class="account-card__title">À propos</h2>
+      </div>
+      <p class="est-text">
+        {{ establishment.description ?: 'Aucune description pour le moment.' }}
+      </p>
+    </section>
+
+    {# =========================
+       SERVICES (désélection possible)
+       ========================= #}
+    <section class="account-card">
+      <div class="account-card__header">
+        <h2 class="account-card__title">Services proposés</h2>
+      </div>
+
+      {% if establishment.services|length == 0 %}
+        <p class="est-muted">Aucun service pour le moment.</p>
+      {% else %}
+        <div class="est-services">
+          {% for s in establishment.services %}
+            {% set isActiveService = (selectedServiceId == s.id) %}
+
+            <a class="est-service {{ isActiveService ? 'is-active' : '' }}"
+               href="{{ path('front_establishment_show', isActiveService
+                 ? {
+                     id: establishment.id,
+                     week: weekStart|date('Y-m-d'),
+                     date: selectedDateStr ?: null,
+                     q: q, city: city, category: category,
+                     _fragment: 'booking'
+                   }
+                 : {
+                     id: establishment.id,
+                     service: s.id,
+                     week: weekStart|date('Y-m-d'),
+                     date: selectedDateStr ?: null,
+                     q: q, city: city, category: category,
+                     _fragment: 'booking'
+                   }
+               ) }}">
+              <div class="est-service__main">
+                <div class="est-service__name">{{ s.name }}</div>
+                <div class="est-service__sub">Durée : {{ s.duration }} min</div>
+              </div>
+              <div class="est-service__price">{{ s.price|number_format(2, ',', ' ') }} €</div>
+            </a>
+          {% endfor %}
+        </div>
+
+        <p class="est-hint">
+          Clique un service pour afficher les créneaux. Clique à nouveau pour désélectionner.
+        </p>
+      {% endif %}
+    </section>
+
+    {# =========================
+       HORAIRES
+       ========================= #}
+    <section class="account-card">
+      <div class="account-card__header">
+        <h2 class="account-card__title">Horaires d’ouverture</h2>
+      </div>
+
+      {% set days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] %}
+      {% set labels = {'Monday':'Lundi','Tuesday':'Mardi','Wednesday':'Mercredi','Thursday':'Jeudi','Friday':'Vendredi','Saturday':'Samedi','Sunday':'Dimanche'} %}
+
+      <div class="est-hours">
+        {% for d in days %}
+          {% set oh = (establishment.openingHours|filter(x => x.dayOfWeek == d))|first %}
+          <div class="est-hours__row">
+            <div class="est-hours__day">{{ labels[d] }}</div>
+            <div class="est-hours__time">
+              {% if oh %}
+                {{ oh.openTime|date('H:i') }} - {{ oh.closeTime|date('H:i') }}
+              {% else %}
+                Fermé
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    {# =========================
+       BOOKING
+       ========================= #}
+    <section class="account-card" id="booking">
+      <div class="account-card__header">
+        <h2 class="account-card__title">Réserver un créneau</h2>
+      </div>
+
+      {% if openWeekDays|length == 0 %}
+        <p class="est-muted">Aucune disponibilité cette semaine (établissement fermé).</p>
+      {% else %}
+
+        <div class="booking-block">
+          <div class="booking-label">Choisis un jour (jours ouverts uniquement)</div>
+
+          <div class="booking-week">
+            <a class="btn btn--outline btn--md booking-week__nav"
+               href="{{ path('front_establishment_show', {
+                 id: establishment.id,
+                 service: selectedServiceId,
+                 week: (weekStart|date_modify('-7 days'))|date('Y-m-d'),
+                 q: q, city: city, category: category,
+                 _fragment: 'booking'
+               }) }}">
+              Semaine précédente
+            </a>
+
+            <div class="booking-days">
+              {% for d in openWeekDays %}
+                {% set dStr = d|date('Y-m-d') %}
+                {% set isActiveDate = (selectedDateStr == dStr) %}
+
+                <a class="day-btn {{ isActiveDate ? 'is-active' : '' }}"
+                   href="{{ path('front_establishment_show', isActiveDate
+                     ? {
+                         id: establishment.id,
+                         service: selectedServiceId,
+                         week: weekStart|date('Y-m-d'),
+                         q: q, city: city, category: category,
+                         _fragment: 'booking'
+                       }
+                     : {
+                         id: establishment.id,
+                         service: selectedServiceId,
+                         week: weekStart|date('Y-m-d'),
+                         date: dStr,
+                         q: q, city: city, category: category,
+                         _fragment: 'booking'
+                       }
+                   ) }}">
+                  <div class="day-btn__top">{{ d|date('d/m') }}</div>
+                  <div class="day-btn__bot">{{ d|date('l')|replace({
+                    'Monday':'Lun','Tuesday':'Mar','Wednesday':'Mer','Thursday':'Jeu','Friday':'Ven','Saturday':'Sam','Sunday':'Dim'
+                  }) }}</div>
+                </a>
+              {% endfor %}
+            </div>
+
+            <a class="btn btn--outline btn--md booking-week__nav"
+               href="{{ path('front_establishment_show', {
+                 id: establishment.id,
+                 service: selectedServiceId,
+                 week: (weekStart|date_modify('+7 days'))|date('Y-m-d'),
+                 q: q, city: city, category: category,
+                 _fragment: 'booking'
+               }) }}">
+              Semaine suivante
+            </a>
+          </div>
+        </div>
+
+        <div class="booking-block">
+          <div class="booking-label">Choisis une heure</div>
+
+          {% if not selectedServiceId %}
+            <p class="est-muted">Sélectionne d’abord un service.</p>
+          {% elseif not selectedDateStr %}
+            <p class="est-muted">Sélectionne d’abord une date.</p>
+          {% elseif slots|length == 0 %}
+            <p class="est-muted">Aucun créneau disponible pour cette date.</p>
+          {% else %}
+            <div class="booking-slots">
+              {% for s in slots %}
+                {% set isActiveTime = (selectedTime == s.time) %}
+
+                <a class="slot-btn {{ isActiveTime ? 'is-active' : '' }}"
+                   href="{{ path('front_establishment_show', isActiveTime
+                     ? {
+                         id: establishment.id,
+                         service: selectedServiceId,
+                         week: weekStart|date('Y-m-d'),
+                         date: selectedDateStr,
+                         q: q, city: city, category: category,
+                         _fragment: 'booking'
+                       }
+                     : {
+                         id: establishment.id,
+                         service: selectedServiceId,
+                         week: weekStart|date('Y-m-d'),
+                         date: selectedDateStr,
+                         time: s.time,
+                         q: q, city: city, category: category,
+                         _fragment: 'booking'
+                       }
+                   ) }}">
+                  {{ s.label }}
+                </a>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        <form method="post" action="{{ path('front_establishment_book', {id: establishment.id}) }}" class="booking-form">
+          <input type="hidden" name="_token" value="{{ csrf_token('book_appointment') }}">
+          <input type="hidden" name="service" value="{{ selectedServiceId }}">
+          <input type="hidden" name="date" value="{{ selectedDateStr }}">
+          <input type="hidden" name="time" value="{{ selectedTime }}">
+
+          <button class="btn btn--primary btn--lg btn--block"
+                  type="submit"
+                  {% if not selectedServiceId or not selectedDateStr or not selectedTime %}disabled{% endif %}>
+            Confirmer la réservation
+          </button>
+
+          <p class="est-muted est-center">
+            La réservation est gratuite et peut être annulée jusqu’à 24h avant.
+          </p>
+        </form>
+
+      {% endif %}
+    </section>
+
+  </div>
+{% endblock %}

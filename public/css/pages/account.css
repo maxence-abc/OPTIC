@@ -93,6 +93,7 @@
   align-items: center;
   gap: 10px;
   border-bottom: 2px solid transparent;
+  text-decoration: none; /* <a> */
 }
 
 .account-tabs__tab.is-active {
@@ -305,6 +306,7 @@
 .reservation-list {
   display: grid;
   gap: 14px;
+  margin-bottom: 18px; /* même espacement que .account-card */
 }
 
 /* carte principale */
@@ -462,16 +464,11 @@
   gap: 14px;
 }
 
-/* Uniformise l'espacement entre sections (comme sur le Figma) */
-.reservation-list {
-  display: grid;
-  gap: 14px;
-  margin-bottom: 18px; /* même espacement que .account-card */
-}
-
-
-/* bouton danger simple (pour le form POST annuler) */
-.btn {
+/* ✅ IMPORTANT : on NE TOUCHE PLUS .btn globalement.
+   Sinon ça casse les boutons de la navbar. */
+.account .btn,
+.reservation-card .btn,
+.reservation-card__actions .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -484,19 +481,20 @@
   font-weight: 650;
   font-size: 13px;
   cursor: pointer;
+  text-decoration: none;
 }
 
-.btn--danger {
+.account .btn--danger,
+.reservation-card .btn--danger,
+.reservation-card__actions .btn--danger {
   border-color: rgba(209, 59, 59, 0.35);
   color: #d13b3b;
 }
 
-.btn--danger:hover {
+.account .btn--danger:hover,
+.reservation-card .btn--danger:hover,
+.reservation-card__actions .btn--danger:hover {
   background: rgba(209, 59, 59, 0.06);
-}
-
-.account-tabs__tab {
-  text-decoration: none; /* <a> */
 }
 
 /* Responsive */
