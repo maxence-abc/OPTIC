@@ -90,7 +90,7 @@ final class EstablishmentPageController extends AbstractController
     }
 
     #[Route('/{id}/book', name: 'front_establishment_book', methods: ['POST'])]
-    #[IsGranted('ROLE_USER')]
+    #[IsGranted('ROLE_CLIENT')]
     public function book(
         Establishment $establishment,
         Request $request,

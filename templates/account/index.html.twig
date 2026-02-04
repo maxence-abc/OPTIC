@@ -24,7 +24,6 @@
       Retour
     </a>
 
-
     <div class="account-hero__identity">
       <div class="account-hero__avatar" aria-hidden="true">
         <span class="account-hero__avatar-icon" aria-hidden="true">{{ ux_icon('uil:user') }}</span>
@@ -84,6 +83,7 @@
       {% if activeTab == 'reservations' %}
         <div class="account-panel is-active" role="tabpanel">
 
+          {# RÉSERVATIONS À VENIR (cards à l'intérieur de la même account-card) #}
           <div class="account-card">
             <div class="account-card__header">
               <h2 class="account-card__title">
@@ -91,22 +91,21 @@
               </h2>
             </div>
 
-            {% if upcomingAppointments is not defined or upcomingAppointments is empty %}
+            {% if upcomingAppointments is defined and upcomingAppointments is not empty %}
+              <div class="reservation-list">
+                {% for a in upcomingAppointments %}
+                  {% include 'account/_reservation_card.html.twig' with { appointment: a } %}
+                {% endfor %}
+              </div>
+            {% else %}
               <p class="account-muted">Aucune réservation à venir pour le moment.</p>
             {% endif %}
           </div>
 
-          {% if upcomingAppointments is defined and upcomingAppointments is not empty %}
-            <div class="reservation-list">
-              {% for a in upcomingAppointments %}
-                {% include 'account/_reservation_card.html.twig' with { appointment: a } %}
-              {% endfor %}
-            </div>
-          {% endif %}
-
+          {# HISTORIQUE #}
           <div class="account-card account-card--spaced">
             <div class="account-card__header">
-              <h2 class="account-card__title">Historique</h2>
+              <h2 class="account-card__title">Réservation passée </h2>
             </div>
 
             {% if pastAppointments is defined and pastAppointments is not empty %}

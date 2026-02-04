@@ -1,0 +1,155 @@
+{% extends 'base.html.twig' %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="/css/pages/manager.css">
+{% endblock %}
+
+{# ✅ On désactive la navbar du site en mode gestion #}
+{% block header %}{% endblock %}
+
+{% block body %}
+  <header class="mgr-hero">
+    <div class="container container--wide mgr-hero__container">
+      <a class="mgr-hero__back" href="{{ path('app_home') }}">
+        <span aria-hidden="true">{{ ux_icon('uil:arrow-left') }}</span>
+        Retour à l'accueil
+      </a>
+
+      <div class="mgr-hero__right">
+        <a class="mgr-hero__all" href="{{ path('app_manager_home') }}">
+          Voir tous mes établissements
+        </a>
+
+        {% if establishment is defined %}
+          <div class="mgr-switch" data-switch>
+            <button class="mgr-switch__btn" type="button" data-switch-btn aria-expanded="false">
+              <span class="mgr-switch__icon" aria-hidden="true">{{ ux_icon('uil:store') }}</span>
+              <span class="mgr-switch__meta">
+                <span class="mgr-switch__label">Établissement actif</span>
+                <span class="mgr-switch__name">{{ establishment.name }}</span>
+              </span>
+              <span class="mgr-switch__chev" aria-hidden="true">{{ ux_icon('uil:angle-down') }}</span>
+            </button>
+
+            <div class="mgr-switch__panel" data-switch-panel hidden>
+              <div class="mgr-switch__panel-head">
+                <div class="mgr-switch__panel-title">Changer d’établissement</div>
+                <div class="mgr-switch__panel-sub">
+                  {{ ownedEstablishments|length }} établissements au total
+                </div>
+              </div>
+
+              <div class="mgr-switch__list">
+                {% for e in ownedEstablishments %}
+                  <form method="post" action="{{ path('manager_switch_establishment', {id: e.id}) }}" class="mgr-switch__item">
+                    <button type="submit" class="mgr-switch__item-btn {% if establishment.id == e.id %}is-active{% endif %}">
+                      <span class="mgr-switch__thumb">
+                        <span class="mgr-switch__thumb-fallback">{{ e.name|slice(0,1)|upper }}</span>
+                      </span>
+
+                      <span class="mgr-switch__info">
+                        <span class="mgr-switch__title">
+                          {{ e.name }}
+                          {# ⚠️ si ton Establishment a category #}
+                          {% if e.category is defined and e.category %}
+                            <span class="mgr-badge">{{ e.category }}</span>
+                          {% endif %}
+                        </span>
+                        <span class="mgr-switch__addr">{{ e.address }}, {{ e.city }}</span>
+                      </span>
+
+                      {% if establishment.id == e.id %}
+                        <span class="mgr-switch__check" aria-hidden="true">{{ ux_icon('uil:check') }}</span>
+                      {% endif %}
+                    </button>
+                  </form>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {# ✅ petit bandeau bas du hero (comme le client : séparation nette) #}
+    <div class="mgr-hero__fade"></div>
+  </header>
+
+  {% if establishment is defined %}
+    <nav class="mgr-tabs">
+      <div class="container container--wide mgr-tabs__container">
+
+        <a class="mgr-tabs__link {% if app.request.attributes.get('_route') == 'manager_dashboard' %}is-active{% endif %}"
+           href="{{ path('manager_dashboard', {id: establishment.id}) }}">
+          <span aria-hidden="true">{{ ux_icon('uil:apps') }}</span>
+          Vue d'ensemble
+        </a>
+
+        <a class="mgr-tabs__link {% if app.request.attributes.get('_route') starts with 'manager_service' or app.request.attributes.get('_route') == 'manager_services' %}is-active{% endif %}"
+           href="{{ path('manager_services', {id: establishment.id}) }}">
+          <span aria-hidden="true">{{ ux_icon('uil:briefcase') }}</span>
+          Services
+        </a>
+
+        <a class="mgr-tabs__link {% if app.request.attributes.get('_route') starts with 'manager_employee' or app.request.attributes.get('_route') == 'manager_employees' %}is-active{% endif %}"
+           href="{{ path('manager_employees', {id: establishment.id}) }}">
+          <span aria-hidden="true">{{ ux_icon('uil:users-alt') }}</span>
+          Employés
+        </a>
+
+        <span class="mgr-tabs__link is-disabled">
+          <span aria-hidden="true">{{ ux_icon('uil:file-alt') }}</span>
+          Demandes
+        </span>
+
+        <a class="mgr-tabs__link {% if app.request.attributes.get('_route') starts with 'manager_opening_hour' or app.request.attributes.get('_route') == 'manager_opening_hours' %}is-active{% endif %}"
+           href="{{ path('manager_opening_hours', {id: establishment.id}) }}">
+          <span aria-hidden="true">{{ ux_icon('uil:clock') }}</span>
+          Horaires
+        </a>
+
+        <a class="mgr-tabs__link {% if app.request.attributes.get('_route') == 'manager_settings' %}is-active{% endif %}"
+           href="{{ path('manager_settings', {id: establishment.id}) }}">
+          <span aria-hidden="true">{{ ux_icon('uil:setting') }}</span>
+          Établissement
+        </a>
+      </div>
+    </nav>
+  {% endif %}
+
+  <main class="mgr-main">
+    <div class="container container--wide">
+      {% block manager_content %}{% endblock %}
+    </div>
+  </main>
+
+  <script>
+    (function() {
+      const root = document.querySelector('[data-switch]');
+      if (!root) return;
+
+      const btn = root.querySelector('[data-switch-btn]');
+      const panel = root.querySelector('[data-switch-panel]');
+
+      function close() {
+        btn.setAttribute('aria-expanded', 'false');
+        panel.hidden = true;
+      }
+
+      btn.addEventListener('click', () => {
+        const isOpen = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', String(!isOpen));
+        panel.hidden = isOpen;
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!root.contains(e.target)) close();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') close();
+      });
+    })();
+  </script>
+{% endblock %}

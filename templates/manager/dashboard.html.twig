@@ -1,0 +1,32 @@
+{% extends 'manager/base_manager.html.twig' %}
+
+{% block title %}Tableau de bord{% endblock %}
+
+{% block manager_content %}
+  <div class="mgr-pagehead">
+    <div>
+      <h1>Tableau de bord - {{ establishment.name }}</h1>
+      <p class="muted">Vue d'ensemble de votre établissement</p>
+    </div>
+  </div>
+
+
+  <div class="mgr-kpis">
+    <div class="mgr-kpi">
+      <div class="mgr-kpi__label">Services</div>
+      <div class="mgr-kpi__value">{{ servicesCount }}</div>
+    </div>
+
+    <div class="mgr-kpi">
+      <div class="mgr-kpi__label">Employés</div>
+      <div class="mgr-kpi__value">{{ employeesCount }}</div>
+      <div class="mgr-kpi__sub">Actifs</div>
+    </div>
+
+    <div class="mgr-kpi">
+      <div class="mgr-kpi__label">Contact pro</div>
+      <div class="mgr-kpi__value mgr-kpi__small">{{ establishment.professionalEmail ?? '—' }}</div>
+      <div class="mgr-kpi__sub">{{ establishment.professionalPhone ?? '—' }}</div>
+    </div>
+  </div>
+{% endblock %}

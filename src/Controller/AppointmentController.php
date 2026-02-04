@@ -17,11 +17,13 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/appointment')]
 final class AppointmentController extends AbstractController
 {
     #[Route(name: 'app_appointment_index', methods: ['GET'])]
+    #[IsGranted('ROLE_ADMIN')]
     public function index(AppointmentRepository $appointmentRepository): Response
     {
         return $this->render('appointment/index.html.twig', [
@@ -126,8 +128,14 @@ final class AppointmentController extends AbstractController
     }
 
     #[Route('/new', name: 'app_appointment_new', methods: ['GET', 'POST'])]
+    #[IsGranted('ROLE_CLIENT')]
     public function new(Request $request, EntityManagerInterface $entityManager, AppointmentRepository $appointmentRepository): Response
     {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->redirectToRoute('app_login');
+        }
+
         $appointment = new Appointment();
         $availableSlotsForForm = [];
 
@@ -138,6 +146,7 @@ final class AppointmentController extends AbstractController
         $selectedEquipementId = $posted['equipement'] ?? null;
 
         if ($selectedServiceId) {
+            /** @var Service|null $service */
             $service = $entityManager->getRepository(Service::class)->find($selectedServiceId);
             if ($service) {
                 $appointment->setService($service);
@@ -177,7 +186,7 @@ final class AppointmentController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $appointment->setClient($this->getUser());
+            $appointment->setClient($user);
 
             $service = $appointment->getService();
             $establishment = $service?->getEstablishment();
@@ -239,6 +248,7 @@ final class AppointmentController extends AbstractController
                     continue;
                 }
 
+                /** @var User|null $professional */
                 $professional = $entityManager->getRepository(User::class)->find($proId);
                 if (!$professional) {
                     continue;
@@ -256,7 +266,7 @@ final class AppointmentController extends AbstractController
                         $entityManager->clear();
 
                         $appointment = new Appointment();
-                        $appointment->setClient($this->getUser());
+                        $appointment->setClient($user);
                         $appointment->setService($service);
                         $appointment->setDate($selectedDateObj);
                         $appointment->setStartTime($startTime);
@@ -266,6 +276,7 @@ final class AppointmentController extends AbstractController
 
                         $equipId = !empty($selectedEquipementId) ? (int) $selectedEquipementId : 0;
                         if ($equipId > 0) {
+                            /** @var Equipement|null $equip */
                             $equip = $entityManager->getRepository(Equipement::class)->find($equipId);
                             if ($equip) {
                                 $appointment->setEquipement($equip);
@@ -288,7 +299,7 @@ final class AppointmentController extends AbstractController
             }
 
             $this->addFlash('success', 'Rendez-vous créé avec succès.');
-            return $this->redirectToRoute('app_appointment_index');
+            return $this->redirectToRoute('app_account', ['tab' => 'reservations']);
         }
 
         return $this->render('appointment/new.html.twig', [
@@ -298,6 +309,7 @@ final class AppointmentController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_appointment_show', methods: ['GET'])]
+    #[IsGranted('ROLE_ADMIN')]
     public function show(Appointment $appointment): Response
     {
         return $this->render('appointment/show.html.twig', [
@@ -306,6 +318,7 @@ final class AppointmentController extends AbstractController
     }
 
     #[Route('/{id}/edit', name: 'app_appointment_edit', methods: ['GET', 'POST'])]
+    #[IsGranted('ROLE_ADMIN')]
     public function edit(Request $request, Appointment $appointment, EntityManagerInterface $entityManager): Response
     {
         $form = $this->createForm(AppointmentType::class, $appointment, [
@@ -338,10 +351,9 @@ final class AppointmentController extends AbstractController
      * Annuler une réservation (client propriétaire, uniquement si à venir).
      */
     #[Route('/{id}/cancel', name: 'app_appointment_cancel', methods: ['POST'])]
+    #[IsGranted('ROLE_CLIENT')]
     public function cancel(Request $request, Appointment $appointment, EntityManagerInterface $entityManager): RedirectResponse
     {
-        $this->denyAccessUnlessGranted('ROLE_USER');
-
         $user = $this->getUser();
         if (!$user instanceof User) {
             throw $this->createAccessDeniedException();
@@ -356,7 +368,6 @@ final class AppointmentController extends AbstractController
             return $this->redirectToRoute('app_account', ['tab' => 'reservations']);
         }
 
-        // Vérifie que c'est à venir
         $now = new \DateTimeImmutable();
 
         $date = $appointment->getDate();
@@ -394,6 +405,7 @@ final class AppointmentController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_appointment_delete', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN')]
     public function delete(Request $request, Appointment $appointment, EntityManagerInterface $entityManager): Response
     {
         if ($this->isCsrfTokenValid('delete' . $appointment->getId(), (string) $request->request->get('_token'))) {

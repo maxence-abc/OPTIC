@@ -21,7 +21,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/partner/onboarding')]
-#[IsGranted('ROLE_PRO')]
+#[IsGranted('ROLE_CLIENT')]
 final class PartnerOnboardingController extends AbstractController
 {
     private const SESSION_DRAFT = 'partner_draft';
@@ -180,6 +180,11 @@ final class PartnerOnboardingController extends AbstractController
             // ⚠️ flush maintenant pour avoir un ID (utile pour le path images)
             $em->flush();
 
+            // ✅ Lier l'utilisateur à son établissement (remplit user.establishment_id)
+            if (method_exists($user, 'setEstablishment')) {
+                $user->setEstablishment($establishment);
+            }
+
             // Services
             foreach ($draft->getServices() as $service) {
                 // ignore ligne vide
@@ -212,15 +217,31 @@ final class PartnerOnboardingController extends AbstractController
 
             $this->saveImagesToEstablishment($uploadsStorage, $establishment, $files, $em);
 
-            // flush final (services + openingHours + images)
+            // flush final (services + openingHours + images + user.establishment)
             $em->flush();
+
+            // ✅ Promote owner en ROLE_ADMIN_PRO (sans casser les autres rôles)
+            if (method_exists($user, 'getRoles') && method_exists($user, 'setRoles')) {
+                $roles = $user->getRoles(); // tableau
+
+                if (!in_array('ROLE_ADMIN_PRO', $roles, true)) {
+                    $roles[] = 'ROLE_ADMIN_PRO';
+                }
+
+                // Optionnel : si tu veux retirer ROLE_PRO automatiquement, décommente :
+                // $roles = array_values(array_diff($roles, ['ROLE_PRO']));
+
+                $user->setRoles(array_values(array_unique($roles)));
+                $em->flush(); // important
+            }
 
             // nettoyage session
             $request->getSession()->remove(self::SESSION_DRAFT);
 
-            return $this->redirectToRoute('app_establishment_show', [
+            // ✅ Redirection vers le manager (dashboard)
+            return $this->redirectToRoute('manager_dashboard', [
                 'id' => $establishment->getId(),
-            ]);
+            ], Response::HTTP_SEE_OTHER);
         }
 
         return $this->render('partner_onboarding/wizard.html.twig', [

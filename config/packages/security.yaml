@@ -1,8 +1,10 @@
 security:
     # Hiérarchie des rôles
     role_hierarchy:
-        ROLE_ADMIN: [ROLE_USER]
+        ROLE_CLIENT: [ROLE_USER]
         ROLE_PRO: [ROLE_USER]
+        ROLE_ADMIN_PRO: [ROLE_PRO, ROLE_USER]
+        ROLE_ADMIN: [ROLE_ADMIN_PRO, ROLE_PRO, ROLE_USER]
 
     # Gestion du hachage des mots de passe
     password_hashers:
@@ -44,9 +46,16 @@ security:
     - { path: ^/registration, roles: PUBLIC_ACCESS }
     - { path: ^/$, roles: PUBLIC_ACCESS }
     - { path: ^/home, roles: PUBLIC_ACCESS }
+
+    # Devenir partenaire => accessible aux comptes connectés PRO
+    # et c'est le wizard qui fera l'upgrade en ROLE_ADMIN_PRO à la fin.
     - { path: ^/devenir-partenaire, roles: ROLE_PRO }
+    - { path: ^/partner/onboarding, roles: ROLE_PRO }
 
     - { path: ^/admin, roles: ROLE_ADMIN }
+    - { path: ^/manager, roles: ROLE_ADMIN_PRO }
+
+    # Le reste du site : connecté
     - { path: ^/, roles: ROLE_USER }
 
 
