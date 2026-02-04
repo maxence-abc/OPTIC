@@ -1,0 +1,169 @@
+{% extends 'manager/base_manager.html.twig' %}
+
+{% block title %}Services{% endblock %}
+
+{% block manager_content %}
+  <div class="mgr-pagehead">
+    <div>
+      <h1>Gestion des services</h1>
+      <p class="muted">Gérez les services proposés par votre établissement</p>
+    </div>
+
+    {# IMPORTANT : bouton qui toggle le formulaire (pas un lien) #}
+    <button class="btn btn--dark" type="button" data-svc-toggle>
+      <span aria-hidden="true">{{ ux_icon('uil:plus') }}</span>
+      Ajouter un service
+    </button>
+  </div>
+
+  {# ===== FORM (caché par défaut sauf en édition) ===== #}
+  <section
+    id="add"
+    class="mgr-card"
+    data-svc-panel
+    {% if not isEdit %}hidden{% endif %}
+    style="margin-bottom:16px;"
+  >
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
+      <div>
+        <h2 style="margin:0;">
+          {% if isEdit %}Modifier le service{% else %}Ajouter un service{% endif %}
+        </h2>
+        <p class="muted" style="margin:6px 0 0;">
+          {% if isEdit %}
+            Modifiez les informations de ce service.
+          {% else %}
+            Ajoutez un nouveau service à votre établissement.
+          {% endif %}
+        </p>
+      </div>
+
+      <button class="btn btn--outline" type="button" data-svc-close>
+        {{ ux_icon('uil:times') }} Fermer
+      </button>
+    </div>
+
+    {{ form_start(form) }}
+      {{ form_row(form.name) }}
+      {{ form_row(form.description) }}
+
+      <div class="mgr-grid-2">
+        {{ form_row(form.duration) }}
+        {{ form_row(form.price) }}
+      </div>
+
+      {{ form_row(form.bufferTime) }}
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+        <button class="btn btn--dark" type="submit">
+          {% if isEdit %}Enregistrer{% else %}Ajouter{% endif %}
+        </button>
+
+        <button class="btn btn--outline" type="button" data-svc-cancel>
+          Annuler
+        </button>
+      </div>
+    {{ form_end(form) }}
+  </section>
+
+  {% if services is empty %}
+    <p class="muted">Aucun service pour le moment.</p>
+  {% else %}
+    <section class="mgr-cards">
+      {% for s in services %}
+        <article class="mgr-svc">
+          <div class="mgr-svc__top">
+            <div>
+              <h3 class="mgr-svc__name">{{ s.name }}</h3>
+
+              <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+                <span class="mgr-badge">{{ s.duration }} min</span>
+                <span class="mgr-badge">{{ s.price }} €</span>
+                {% if s.bufferTime %}
+                  <span class="mgr-badge">tampon {{ s.bufferTime }} min</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="mgr-svc__actions">
+              <a class="btn btn--outline btn--icon"
+                 title="Modifier"
+                 href="{{ path('manager_service_edit', {id: s.id}) }}">
+                {{ ux_icon('uil:pen') }}
+              </a>
+
+              <form method="post"
+                    action="{{ path('manager_service_delete', {id: s.id}) }}"
+                    onsubmit="return confirm('Supprimer ce service ?');">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete_service_' ~ s.id) }}">
+                <button class="btn btn--danger btn--icon" title="Supprimer" type="submit">
+                  {{ ux_icon('uil:trash') }}
+                </button>
+              </form>
+            </div>
+          </div>
+
+          {% if s.description %}
+            <p class="mgr-svc__desc">{{ s.description }}</p>
+          {% endif %}
+
+          <div class="mgr-svc__meta">
+            <span style="display:inline-flex; gap:8px; align-items:center;">
+              {{ ux_icon('uil:clock') }}
+              {{ s.duration }} min
+            </span>
+
+            <span style="display:inline-flex; gap:8px; align-items:center;">
+              {{ ux_icon('uil:euro') }}
+              {{ s.price }} €
+            </span>
+
+            {% if s.bufferTime %}
+              <span style="display:inline-flex; gap:8px; align-items:center;">
+                {{ ux_icon('uil:pause-circle') }}
+                tampon {{ s.bufferTime }} min
+              </span>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </section>
+  {% endif %}
+
+  <script>
+    (function () {
+      const toggleBtn = document.querySelector('[data-svc-toggle]');
+      const panel = document.querySelector('[data-svc-panel]');
+      const closeBtn = document.querySelector('[data-svc-close]');
+      const cancelBtn = document.querySelector('[data-svc-cancel]');
+
+      if (!toggleBtn || !panel) return;
+
+      function openPanel() {
+        panel.hidden = false;
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // focus premier input si possible
+        const firstInput = panel.querySelector('input, textarea, select');
+        if (firstInput) firstInput.focus({ preventScroll: true });
+      }
+
+      function closePanel() {
+        panel.hidden = true;
+        toggleBtn.focus();
+      }
+
+      toggleBtn.addEventListener('click', () => {
+        if (panel.hidden) openPanel();
+        else closePanel();
+      });
+
+      if (closeBtn) closeBtn.addEventListener('click', closePanel);
+      if (cancelBtn) cancelBtn.addEventListener('click', closePanel);
+
+      // Si on est en mode édition (panel visible par défaut), on scroll dessus
+      if (!panel.hidden) {
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    })();
+  </script>
+{% endblock %}

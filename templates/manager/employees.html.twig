@@ -1,0 +1,134 @@
+{% extends 'manager/base_manager.html.twig' %}
+
+{% block title %}Employés{% endblock %}
+
+{% block manager_content %}
+  <div class="mgr-pagehead">
+    <div>
+      <h1>Gestion des employés</h1>
+      <p class="muted">
+        Ajoutez un utilisateur existant à votre établissement via son email, ou retirez-le.
+      </p>
+    </div>
+
+    <a class="btn btn--dark" href="{{ path('manager_employee_new', {id: establishment.id}) }}#add">
+      {{ ux_icon('uil:user-plus') }} Ajouter un employé
+    </a>
+  </div>
+
+  {# FORM (si le controller fournit "form") #}
+  {% if form %}
+    <section id="add" class="mgr-card" style="margin-bottom:16px;">
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
+        <div>
+          <h2 style="margin:0;">
+            {% if isEdit %}Modifier l’employé{% else %}Ajouter un employé{% endif %}
+          </h2>
+          <p class="muted" style="margin:6px 0 0;">
+            {% if isEdit %}
+              Mettez à jour les infos (ex: téléphone / statut).
+            {% else %}
+              Renseignez l’email de l’utilisateur existant pour l’ajouter à votre établissement.
+            {% endif %}
+          </p>
+        </div>
+
+        <a class="btn btn--outline" href="{{ path('manager_employees', {id: establishment.id}) }}">
+          {{ ux_icon('uil:times') }} Fermer
+        </a>
+      </div>
+
+      {{ form_start(form) }}
+
+        {# Si ton form affiche un "isActive" en checkbox brut, on le rend clean #}
+        <div class="mgr-grid-2">
+          {{ form_row(form.email) }}
+          {{ form_row(form.phone) }}
+        </div>
+
+        {% if form.specialization is defined %}
+          {{ form_row(form.specialization) }}
+        {% endif %}
+
+        {% if form.isActive is defined %}
+          <div class="mgr-check" style="margin-top:12px;">
+            {{ form_widget(form.isActive) }}
+            {{ form_label(form.isActive) }}
+          </div>
+          {% if form_help(form.isActive) %}
+            <small>{{ form_help(form.isActive) }}</small>
+          {% endif %}
+        {% endif %}
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+          <button class="btn btn--dark" type="submit">
+            {% if isEdit %}Enregistrer{% else %}Ajouter{% endif %}
+          </button>
+
+          <a class="btn btn--outline" href="{{ path('manager_employees', {id: establishment.id}) }}">
+            Annuler
+          </a>
+        </div>
+
+      {{ form_end(form) }}
+    </section>
+  {% endif %}
+
+  {# LISTE #}
+  <section class="mgr-list">
+    {% if employees is empty %}
+      <p class="muted">Aucun employé.</p>
+    {% else %}
+      {% for u in employees %}
+        {% set initials = ((u.firstName|default('')|slice(0,1)) ~ (u.lastName|default('')|slice(0,1)))|upper %}
+        <div class="mgr-item">
+          <div class="mgr-item__row">
+            <div class="mgr-avatar" aria-hidden="true">{{ initials ?: 'U' }}</div>
+
+            <div class="mgr-item__main">
+              <div class="mgr-item__title">
+                {{ u.firstName }} {{ u.lastName }}
+              </div>
+
+              <div class="mgr-item__meta">
+                <span style="display:inline-flex; gap:8px; align-items:center;">
+                  {{ ux_icon('uil:envelope') }}
+                  {{ u.email }}
+                </span>
+
+                {% if u.phone %}
+                  <span style="display:inline-flex; gap:8px; align-items:center;">
+                    {{ ux_icon('uil:phone') }}
+                    {{ u.phone }}
+                  </span>
+                {% endif %}
+
+                {% if u.specialization %}
+                  <span class="mgr-badge">{{ u.specialization }}</span>
+                {% endif %}
+
+                {% if u.isActive is defined %}
+                  <span class="mgr-badge {% if u.isActive %}mgr-badge--ok{% else %}mgr-badge--muted{% endif %}">
+                    {% if u.isActive %}Actif{% else %}Inactif{% endif %}
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="mgr-item__actions">
+            {# Tu dis que "modifier" ne sert à rien => on le retire du visuel #}
+            <form method="post"
+                  action="{{ path('manager_employee_delete', {id: u.id}) }}"
+                  onsubmit="return confirm('Retirer cet employé de l’établissement ?');">
+              <input type="hidden" name="_token" value="{{ csrf_token('delete_employee_' ~ u.id) }}">
+              <button class="btn btn--danger" type="submit">
+                {{ ux_icon('uil:trash') }} Retirer
+              </button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    {% endif %}
+  </section>
+{% endblock %}

@@ -62,7 +62,7 @@ final class EstablishmentController extends AbstractController
 
     /**
      * PAGE PUBLIQUE (côté client) : consultation + réservation.
-     * Accessible à tout ROLE_USER (client ou pro connecté).
+     * Accessible à tout ROLE_CLIENT (client ou pro connecté).
      *
      * IMPORTANT : on NE bloque PAS sur "owner" ici.
      * Les actions de gestion restent dans edit/delete, protégées par ownership.

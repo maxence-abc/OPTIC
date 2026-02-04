@@ -13,7 +13,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class AccountController extends AbstractController
 {
     #[Route('/account', name: 'app_account', methods: ['GET'])]
-    #[IsGranted('ROLE_USER')]
+    #[IsGranted('ROLE_CLIENT')]
     public function index(Request $request, AppointmentRepository $appointmentRepository): Response
     {
         $user = $this->getUser();

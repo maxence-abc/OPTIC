@@ -1,0 +1,48 @@
+{% extends 'manager/base_manager.html.twig' %}
+
+{% block title %}Établissement{% endblock %}
+
+{% block manager_content %}
+  <div class="mgr-pagehead">
+    <div>
+      <h1>Informations de l'établissement</h1>
+      <p class="muted">Consultez les informations de votre établissement</p>
+    </div>
+  </div>
+
+  <section class="mgr-card">
+    <div class="mgr-grid-2">
+      <div>
+        <label>Nom</label>
+        <div style="font-weight:900; color:var(--mgr-text)">{{ establishment.name }}</div>
+      </div>
+
+      <div>
+        <label>Catégorie</label>
+        <div>
+          <span class="mgr-badge">{{ establishment.category ?: '-' }}</span>
+        </div>
+      </div>
+
+      <div>
+        <label>Adresse</label>
+        <div style="color:#334155;">
+          {{ establishment.address }}, {{ establishment.postalCode }} {{ establishment.city }}
+        </div>
+      </div>
+
+      <div>
+        <label>Contact pro</label>
+        <div style="color:#334155;">
+          {{ establishment.professionalEmail ?: '-' }}<br>
+          {{ establishment.professionalPhone ?: '-' }}
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <label>Description</label>
+      <div style="color:#334155;">{{ establishment.description ?: '-' }}</div>
+    </div>
+  </section>
+{% endblock %}

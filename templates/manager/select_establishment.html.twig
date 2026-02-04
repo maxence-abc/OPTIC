@@ -1,0 +1,75 @@
+{% extends 'base.html.twig' %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="/css/pages/manager.css">
+{% endblock %}
+
+{% block title %}Sélection établissement{% endblock %}
+
+{% block body %}
+  <section class="mgr-select">
+    <div class="mgr-select__top">
+      <h1>Sélectionnez votre établissement</h1>
+      <p>Vous gérez {{ establishments|length }} établissements</p>
+    </div>
+
+    <div class="mgr-select__grid">
+      {% for e in establishments %}
+        <article class="mgr-card">
+          <div class="mgr-card__media">
+            <div class="mgr-card__media-fallback" aria-hidden="true">
+              {{ ux_icon('uil:store') }}
+            </div>
+
+            {% if e.category %}
+              <span class="mgr-badge mgr-card__badge">{{ e.category }}</span>
+            {% endif %}
+          </div>
+
+          <div class="mgr-card__body">
+            <h3 class="mgr-card__title">{{ e.name }}</h3>
+
+            <div class="mgr-card__addr">
+              <span aria-hidden="true">{{ ux_icon('uil:map-marker') }}</span>
+              {{ e.address }}
+            </div>
+
+            <div class="mgr-card__stats">
+              <div class="mgr-card__stat">
+                <div class="mgr-card__stat-top">
+                  <span aria-hidden="true">{{ ux_icon('uil:star') }}</span>
+                  —
+                </div>
+                <div class="mgr-card__stat-sub">Avis (NTH)</div>
+              </div>
+
+              <div class="mgr-card__stat">
+                <div class="mgr-card__stat-top">
+                  <span aria-hidden="true">{{ ux_icon('uil:briefcase') }}</span>
+                  {{ e.services|length }}
+                </div>
+                <div class="mgr-card__stat-sub">Services</div>
+              </div>
+
+              <div class="mgr-card__stat">
+                <div class="mgr-card__stat-top">
+                  <span aria-hidden="true">{{ ux_icon('uil:users-alt') }}</span>
+                  {{ e.users|length }}
+                </div>
+                <div class="mgr-card__stat-sub">Employés</div>
+              </div>
+            </div>
+
+            <form method="post" action="{{ path('manager_switch_establishment', {id: e.id}) }}">
+              <button class="mgr-card__cta" type="submit">
+                Gérer cet établissement
+                <span aria-hidden="true">{{ ux_icon('uil:arrow-right') }}</span>
+              </button>
+            </form>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock %}

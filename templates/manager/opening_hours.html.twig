@@ -1,0 +1,92 @@
+{% extends 'manager/base_manager.html.twig' %}
+
+{% block title %}Horaires{% endblock %}
+
+{% block manager_content %}
+  <div class="mgr-pagehead">
+    <div>
+      <h1>Horaires d'ouverture</h1>
+      <p class="muted">Définissez les horaires de votre établissement</p>
+    </div>
+
+    <a class="btn btn--dark" href="{{ path('manager_opening_hour_new', {id: establishment.id}) }}#add">
+      {{ ux_icon('uil:plus') }} Ajouter
+    </a>
+  </div>
+
+  {% if form %}
+    <section id="add" class="mgr-card" style="margin-bottom:16px;">
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
+        <div>
+          <h2 style="margin:0;">
+            {% if isEdit %}Modifier un horaire{% else %}Ajouter un horaire{% endif %}
+          </h2>
+          <p class="muted" style="margin:6px 0 0;">
+            {% if isEdit %}
+              Modifiez cet horaire.
+            {% else %}
+              Ajoutez un nouvel horaire d’ouverture.
+            {% endif %}
+          </p>
+        </div>
+
+        <a class="btn btn--outline" href="{{ path('manager_opening_hours', {id: establishment.id}) }}">
+          {{ ux_icon('uil:times') }} Fermer
+        </a>
+      </div>
+
+      {{ form_start(form) }}
+        {{ form_row(form.dayOfWeek) }}
+
+        <div class="mgr-grid-2">
+          {{ form_row(form.openTime) }}
+          {{ form_row(form.closeTime) }}
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+          <button class="btn btn--dark" type="submit">
+            {% if isEdit %}Enregistrer{% else %}Ajouter{% endif %}
+          </button>
+          <a class="btn btn--outline" href="{{ path('manager_opening_hours', {id: establishment.id}) }}">Annuler</a>
+        </div>
+      {{ form_end(form) }}
+    </section>
+  {% endif %}
+
+  <section class="mgr-list">
+    {% if hours is empty %}
+      <p class="muted">Aucun horaire enregistré.</p>
+    {% else %}
+      {% for h in hours %}
+        <div class="mgr-item">
+          <div class="mgr-item__main">
+            <div class="mgr-item__title">{{ h.dayOfWeek }}</div>
+            <div class="mgr-item__meta">
+              <span style="display:inline-flex; gap:8px; align-items:center;">
+                {{ ux_icon('uil:clock') }}
+                {{ h.openTime|date('H:i') }} → {{ h.closeTime|date('H:i') }}
+              </span>
+            </div>
+          </div>
+
+          <div class="mgr-item__actions">
+            <a class="btn btn--outline btn--icon"
+               title="Modifier"
+               href="{{ path('manager_opening_hour_edit', {id: h.id}) }}">
+              {{ ux_icon('uil:pen') }}
+            </a>
+
+            <form method="post"
+                  action="{{ path('manager_opening_hour_delete', {id: h.id}) }}"
+                  onsubmit="return confirm('Supprimer cet horaire ?');">
+              <input type="hidden" name="_token" value="{{ csrf_token('delete_opening_' ~ h.id) }}">
+              <button class="btn btn--danger btn--icon" title="Supprimer" type="submit">
+                {{ ux_icon('uil:trash') }}
+              </button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    {% endif %}
+  </section>
+{% endblock %}

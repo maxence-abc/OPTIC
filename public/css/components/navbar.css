@@ -106,6 +106,12 @@
   padding: 8px;
 }
 
+.navbar__link{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* Mobile */
 @media (max-width: 860px){
   .navbar__container{

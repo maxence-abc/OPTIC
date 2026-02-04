@@ -123,7 +123,7 @@ final class ServiceController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_service_show', methods: ['GET'])]
-    #[IsGranted('ROLE_USER')]
+    #[IsGranted('ROLE_CLIENT')]
     public function show(Service $service): Response
     {
         if ($this->isGranted('ROLE_ADMIN')) {
