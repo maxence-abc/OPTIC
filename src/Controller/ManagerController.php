@@ -16,6 +16,7 @@ use App\Repository\UserRepository;
 use App\Security\Voter\EstablishmentVoter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Finder\Finder;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -54,7 +55,7 @@ final class ManagerController extends AbstractController
         }
 
         return $this->render('manager/select_establishment.html.twig', [
-            'establishments' => $owned,
+            'establishments' => $this->buildEstablishmentCards($owned),
         ]);
     }
 
@@ -65,10 +66,34 @@ final class ManagerController extends AbstractController
 
         $session->set(self::SESSION_ACTIVE_ESTABLISHMENT, $establishment->getId());
 
-        $referer = $request->headers->get('referer');
-        return $referer
-            ? $this->redirect($referer)
-            : $this->redirectToRoute('manager_dashboard', ['id' => $establishment->getId()]);
+        $currentRoute = (string) $request->request->get('_current_route', 'manager_dashboard');
+
+        return match ($currentRoute) {
+            'manager_services',
+            'manager_service_edit' => $this->redirectToRoute('manager_services', [
+                'id' => $establishment->getId(),
+            ]),
+
+            'manager_employees',
+            'manager_employee_new',
+            'manager_employee_edit' => $this->redirectToRoute('manager_employees', [
+                'id' => $establishment->getId(),
+            ]),
+
+            'manager_opening_hours',
+            'manager_opening_hour_new',
+            'manager_opening_hour_edit' => $this->redirectToRoute('manager_opening_hours', [
+                'id' => $establishment->getId(),
+            ]),
+
+            'manager_settings' => $this->redirectToRoute('manager_settings', [
+                'id' => $establishment->getId(),
+            ]),
+
+            default => $this->redirectToRoute('manager_dashboard', [
+                'id' => $establishment->getId(),
+            ]),
+        };
     }
 
     #[Route('/establishment/{id}/dashboard', name: 'manager_dashboard', methods: ['GET'])]
@@ -95,9 +120,6 @@ final class ManagerController extends AbstractController
         ]);
     }
 
-    // ==========================
-    // SERVICES
-    // ==========================
     #[Route('/establishment/{id}/services', name: 'manager_services', methods: ['GET', 'POST'])]
     public function services(
         Establishment $establishment,
@@ -187,9 +209,6 @@ final class ManagerController extends AbstractController
         return $this->redirectToRoute('manager_services', ['id' => $establishment->getId()]);
     }
 
-    // ==========================
-    // EMPLOYES
-    // ==========================
     #[Route('/establishment/{id}/employees', name: 'manager_employees', methods: ['GET'])]
     public function employees(
         Establishment $establishment,
@@ -280,10 +299,6 @@ final class ManagerController extends AbstractController
         ]);
     }
 
-    /**
-     * Tu ne veux pas de modification : on désactive l’edit et on renvoie vers la liste.
-     * (ça supprime aussi ton erreur getIsActive())
-     */
     #[Route('/employees/{id}/edit', name: 'manager_employee_edit', methods: ['GET', 'POST'])]
     public function employeeEdit(User $employee): Response
     {
@@ -297,9 +312,6 @@ final class ManagerController extends AbstractController
         return $this->redirectToRoute('manager_employees', ['id' => $establishment->getId()]);
     }
 
-    /**
-     * RETIRER (detach) : on ne supprime pas le compte, on le détache de l’établissement.
-     */
     #[Route('/employees/{id}/delete', name: 'manager_employee_delete', methods: ['POST'])]
     public function employeeDelete(User $employee, EntityManagerInterface $em, Request $request): Response
     {
@@ -316,10 +328,7 @@ final class ManagerController extends AbstractController
 
         if ($this->isCsrfTokenValid('delete_employee_'.$employee->getId(), (string) $request->request->get('_token'))) {
             $employee->setEstablishment(null);
-
-            // rôle par défaut : adapte si besoin
             $employee->setRoles(['ROLE_CLIENT']);
-
             $employee->setUpdateAt(new \DateTime());
             $em->flush();
         }
@@ -327,9 +336,6 @@ final class ManagerController extends AbstractController
         return $this->redirectToRoute('manager_employees', ['id' => $establishment->getId()]);
     }
 
-    // ==========================
-    // HORAIRES
-    // ==========================
     #[Route('/establishment/{id}/opening-hours', name: 'manager_opening_hours', methods: ['GET'])]
     public function openingHours(
         Establishment $establishment,
@@ -440,9 +446,6 @@ final class ManagerController extends AbstractController
         return $this->redirectToRoute('manager_opening_hours', ['id' => $establishment->getId()]);
     }
 
-    // ==========================
-    // SETTINGS
-    // ==========================
     #[Route('/establishment/{id}/settings', name: 'manager_settings', methods: ['GET'])]
     public function settings(
         Establishment $establishment,
@@ -458,5 +461,66 @@ final class ManagerController extends AbstractController
             'establishment' => $establishment,
             'ownedEstablishments' => $owned,
         ]);
+    }
+
+    #[Route('/establishments', name: 'manager_select_establishment', methods: ['GET'])]
+    public function selectEstablishments(
+        EstablishmentRepository $establishmentRepository,
+        SessionInterface $session
+    ): Response {
+        $this->denyAccessUnlessGranted('ROLE_ADMIN_PRO');
+
+        $user = $this->getUser();
+        $owned = $establishmentRepository->findBy(['owner' => $user], ['id' => 'DESC']);
+
+        if (!$owned) {
+            throw $this->createNotFoundException("Aucun établissement assigné à ce compte gérant.");
+        }
+
+        $session->remove(self::SESSION_ACTIVE_ESTABLISHMENT);
+
+        return $this->render('manager/select_establishment.html.twig', [
+            'establishments' => $this->buildEstablishmentCards($owned),
+        ]);
+    }
+
+    /**
+     * @param Establishment[] $establishments
+     */
+    private function buildEstablishmentCards(array $establishments): array
+    {
+        $cards = [];
+
+        foreach ($establishments as $establishment) {
+            $cards[] = [
+                'entity' => $establishment,
+                'heroSrc' => $this->findHeroImageForEstablishment((int) $establishment->getId()),
+            ];
+        }
+
+        return $cards;
+    }
+
+    private function findHeroImageForEstablishment(int $establishmentId): string
+    {
+        $fallback = '/images/placeholder-establishment.jpg';
+
+        $dir = $this->getParameter('kernel.project_dir') . '/public/uploads/establishments/' . $establishmentId;
+        if (!is_dir($dir)) {
+            return $fallback;
+        }
+
+        $finder = new Finder();
+        $finder->files()
+            ->in($dir)
+            ->depth('== 0')
+            ->name('/\.(jpe?g|png|webp)$/i')
+            ->sortByName();
+
+        foreach ($finder as $file) {
+            return '/uploads/establishments/' . $establishmentId . '/' . $file->getFilename();
+        }
+
+        return $fallback;
     }
 }

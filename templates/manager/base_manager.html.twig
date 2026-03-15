@@ -5,7 +5,6 @@
   <link rel="stylesheet" href="/css/pages/manager.css">
 {% endblock %}
 
-{# ✅ On désactive la navbar du site en mode gestion #}
 {% block header %}{% endblock %}
 
 {% block body %}
@@ -17,7 +16,7 @@
       </a>
 
       <div class="mgr-hero__right">
-        <a class="mgr-hero__all" href="{{ path('app_manager_home') }}">
+        <a class="mgr-hero__all" href="{{ path('manager_select_establishment') }}">
           Voir tous mes établissements
         </a>
 
@@ -43,6 +42,8 @@
               <div class="mgr-switch__list">
                 {% for e in ownedEstablishments %}
                   <form method="post" action="{{ path('manager_switch_establishment', {id: e.id}) }}" class="mgr-switch__item">
+                    <input type="hidden" name="_current_route" value="{{ app.request.attributes.get('_route') }}">
+
                     <button type="submit" class="mgr-switch__item-btn {% if establishment.id == e.id %}is-active{% endif %}">
                       <span class="mgr-switch__thumb">
                         <span class="mgr-switch__thumb-fallback">{{ e.name|slice(0,1)|upper }}</span>
@@ -51,7 +52,6 @@
                       <span class="mgr-switch__info">
                         <span class="mgr-switch__title">
                           {{ e.name }}
-                          {# ⚠️ si ton Establishment a category #}
                           {% if e.category is defined and e.category %}
                             <span class="mgr-badge">{{ e.category }}</span>
                           {% endif %}
@@ -72,7 +72,6 @@
       </div>
     </div>
 
-    {# ✅ petit bandeau bas du hero (comme le client : séparation nette) #}
     <div class="mgr-hero__fade"></div>
   </header>
 

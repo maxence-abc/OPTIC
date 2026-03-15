@@ -1,75 +1,123 @@
 {% extends 'base.html.twig' %}
 
+{% block title %}Sélection établissement{% endblock %}
+{% block body_class %}page-manager-select{% endblock %}
+
 {% block stylesheets %}
   {{ parent() }}
   <link rel="stylesheet" href="/css/pages/manager.css">
 {% endblock %}
 
-{% block title %}Sélection établissement{% endblock %}
-
 {% block body %}
   <section class="mgr-select">
-    <div class="mgr-select__top">
-      <h1>Sélectionnez votre établissement</h1>
-      <p>Vous gérez {{ establishments|length }} établissements</p>
-    </div>
+    <div class="container container--wide">
+      <div class="mgr-select__top">
+        <h1>Sélectionnez votre établissement</h1>
+        <p>Vous gérez {{ establishments|length }} établissements</p>
+      </div>
 
-    <div class="mgr-select__grid">
-      {% for e in establishments %}
-        <article class="mgr-card">
-          <div class="mgr-card__media">
-            <div class="mgr-card__media-fallback" aria-hidden="true">
-              {{ ux_icon('uil:store') }}
+      <div class="mgr-select__grid">
+        {% for item in establishments %}
+          {% set e = item.entity %}
+          {% set cover = item.heroSrc %}
+          {% set category = e.category|default(e.type.name|default('Établissement')) %}
+
+          <article
+            class="mgr-est-card"
+            data-href="{{ path('manager_dashboard', {id: e.id}) }}"
+            tabindex="0"
+            role="link"
+            aria-label="Gérer {{ e.name }}"
+          >
+            <div class="mgr-est-card__media">
+              {% if cover %}
+                <img src="{{ cover }}" alt="{{ e.name }}">
+              {% else %}
+                <div class="mgr-est-card__media-fallback" aria-hidden="true">
+                  {{ ux_icon('uil:store') }}
+                </div>
+              {% endif %}
+
+              <span class="mgr-est-card__badge">{{ category }}</span>
             </div>
 
-            {% if e.category %}
-              <span class="mgr-badge mgr-card__badge">{{ e.category }}</span>
-            {% endif %}
+            <div class="mgr-est-card__body">
+              <h2 class="mgr-est-card__title">{{ e.name }}</h2>
+
+              <div class="mgr-est-card__address">
+                <span aria-hidden="true">{{ ux_icon('uil:map-marker') }}</span>
+                <span>{{ e.address|default('Adresse non renseignée') }}</span>
+              </div>
+
+              <div class="mgr-est-card__stats">
+                <div class="mgr-est-card__stat">
+                  <div class="mgr-est-card__stat-value mgr-est-card__stat-value--accent">
+                    <span aria-hidden="true">{{ ux_icon('uil:star') }}</span>
+                    4.8
+                  </div>
+                  <div class="mgr-est-card__stat-label">Avis</div>
+                </div>
+
+                <div class="mgr-est-card__stat">
+                  <div class="mgr-est-card__stat-value">
+                    <span aria-hidden="true">{{ ux_icon('uil:calendar-alt') }}</span>
+                    {{ e.services|length }}
+                  </div>
+                  <div class="mgr-est-card__stat-label">Services</div>
+                </div>
+
+                <div class="mgr-est-card__stat">
+                  <div class="mgr-est-card__stat-value">
+                    <span aria-hidden="true">{{ ux_icon('uil:users-alt') }}</span>
+                    {{ e.users|length }}
+                  </div>
+                  <div class="mgr-est-card__stat-label">Employés</div>
+                </div>
+              </div>
+
+              <div class="mgr-est-card__footer">
+                <a class="mgr-est-card__cta" href="{{ path('manager_dashboard', {id: e.id}) }}">
+                  Gérer cet établissement
+                  <span aria-hidden="true">{{ ux_icon('uil:arrow-right') }}</span>
+                </a>
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+
+        <a class="mgr-est-card mgr-est-card--add" href="/partner/onboarding/step-1">
+          <div class="mgr-est-card--add__inner">
+            <div class="mgr-est-card--add__icon">
+              {{ ux_icon('uil:plus') }}
+            </div>
+            <h2>Ajouter un établissement</h2>
+            <p>Créez un nouvel établissement à gérer</p>
           </div>
-
-          <div class="mgr-card__body">
-            <h3 class="mgr-card__title">{{ e.name }}</h3>
-
-            <div class="mgr-card__addr">
-              <span aria-hidden="true">{{ ux_icon('uil:map-marker') }}</span>
-              {{ e.address }}
-            </div>
-
-            <div class="mgr-card__stats">
-              <div class="mgr-card__stat">
-                <div class="mgr-card__stat-top">
-                  <span aria-hidden="true">{{ ux_icon('uil:star') }}</span>
-                  —
-                </div>
-                <div class="mgr-card__stat-sub">Avis (NTH)</div>
-              </div>
-
-              <div class="mgr-card__stat">
-                <div class="mgr-card__stat-top">
-                  <span aria-hidden="true">{{ ux_icon('uil:briefcase') }}</span>
-                  {{ e.services|length }}
-                </div>
-                <div class="mgr-card__stat-sub">Services</div>
-              </div>
-
-              <div class="mgr-card__stat">
-                <div class="mgr-card__stat-top">
-                  <span aria-hidden="true">{{ ux_icon('uil:users-alt') }}</span>
-                  {{ e.users|length }}
-                </div>
-                <div class="mgr-card__stat-sub">Employés</div>
-              </div>
-            </div>
-
-            <form method="post" action="{{ path('manager_switch_establishment', {id: e.id}) }}">
-              <button class="mgr-card__cta" type="submit">
-                Gérer cet établissement
-                <span aria-hidden="true">{{ ux_icon('uil:arrow-right') }}</span>
-              </button>
-            </form>
-          </div>
-        </article>
-      {% endfor %}
+        </a>
+      </div>
     </div>
   </section>
+
+  <script>
+    (function () {
+      const cards = document.querySelectorAll('.mgr-est-card[data-href]');
+
+      cards.forEach((card) => {
+        const href = card.getAttribute('data-href');
+        if (!href) return;
+
+        card.addEventListener('click', (event) => {
+          if (event.target.closest('a, button, form')) return;
+          window.location.href = href;
+        });
+
+        card.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            window.location.href = href;
+          }
+        });
+      });
+    })();
+  </script>
 {% endblock %}

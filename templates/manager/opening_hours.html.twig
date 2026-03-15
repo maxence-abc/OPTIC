@@ -9,8 +9,9 @@
       <p class="muted">Définissez les horaires de votre établissement</p>
     </div>
 
-    <a class="btn btn--dark" href="{{ path('manager_opening_hour_new', {id: establishment.id}) }}#add">
-      {{ ux_icon('uil:plus') }} Ajouter
+    <a class="btn btn--dark mgr-cta-service" href="{{ path('manager_opening_hour_new', {id: establishment.id}) }}#add">
+      <span aria-hidden="true">{{ ux_icon('uil:plus') }}</span>
+      Ajouter
     </a>
   </div>
 
@@ -44,7 +45,7 @@
         </div>
 
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
-          <button class="btn btn--dark" type="submit">
+          <button class="btn btn--dark mgr-cta-service" type="submit">
             {% if isEdit %}Enregistrer{% else %}Ajouter{% endif %}
           </button>
           <a class="btn btn--outline" href="{{ path('manager_opening_hours', {id: establishment.id}) }}">Annuler</a>

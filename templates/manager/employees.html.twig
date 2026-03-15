@@ -11,12 +11,12 @@
       </p>
     </div>
 
-    <a class="btn btn--dark" href="{{ path('manager_employee_new', {id: establishment.id}) }}#add">
-      {{ ux_icon('uil:user-plus') }} Ajouter un employé
+    <a class="btn btn--dark mgr-cta-service" href="{{ path('manager_employee_new', {id: establishment.id}) }}#add">
+      <span aria-hidden="true">{{ ux_icon('uil:user-plus') }}</span>
+      Ajouter un employé
     </a>
   </div>
 
-  {# FORM (si le controller fournit "form") #}
   {% if form %}
     <section id="add" class="mgr-card" style="margin-bottom:16px;">
       <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
@@ -40,7 +40,6 @@
 
       {{ form_start(form) }}
 
-        {# Si ton form affiche un "isActive" en checkbox brut, on le rend clean #}
         <div class="mgr-grid-2">
           {{ form_row(form.email) }}
           {{ form_row(form.phone) }}
@@ -61,7 +60,7 @@
         {% endif %}
 
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
-          <button class="btn btn--dark" type="submit">
+          <button class="btn btn--dark mgr-cta-service" type="submit">
             {% if isEdit %}Enregistrer{% else %}Ajouter{% endif %}
           </button>
 
@@ -74,7 +73,6 @@
     </section>
   {% endif %}
 
-  {# LISTE #}
   <section class="mgr-list">
     {% if employees is empty %}
       <p class="muted">Aucun employé.</p>
@@ -117,7 +115,6 @@
           </div>
 
           <div class="mgr-item__actions">
-            {# Tu dis que "modifier" ne sert à rien => on le retire du visuel #}
             <form method="post"
                   action="{{ path('manager_employee_delete', {id: u.id}) }}"
                   onsubmit="return confirm('Retirer cet employé de l’établissement ?');">
