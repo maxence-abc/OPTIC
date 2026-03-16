@@ -47,6 +47,12 @@ class Appointment
     #[ORM\ManyToOne(inversedBy: 'appointments')]
     private ?User $professional = null;
 
+    #[ORM\ManyToOne]
+    private ?User $transferredBy = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $transferredAt = null;
+
     // #[ORM\ManyToOne(inversedBy: 'appointments')]
     // #[ORM\JoinColumn(nullable: false)]
     // private ?User $professional = null;
@@ -176,6 +182,30 @@ class Appointment
     public function setProfessional(?User $professional): static
     {
         $this->professional = $professional;
+
+        return $this;
+    }
+
+    public function getTransferredBy(): ?User
+    {
+        return $this->transferredBy;
+    }
+
+    public function setTransferredBy(?User $transferredBy): static
+    {
+        $this->transferredBy = $transferredBy;
+
+        return $this;
+    }
+
+    public function getTransferredAt(): ?\DateTimeImmutable
+    {
+        return $this->transferredAt;
+    }
+
+    public function setTransferredAt(?\DateTimeImmutable $transferredAt): static
+    {
+        $this->transferredAt = $transferredAt;
 
         return $this;
     }

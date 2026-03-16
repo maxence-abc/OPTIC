@@ -29,4 +29,90 @@
       <div class="mgr-kpi__sub">{{ establishment.professionalPhone ?? '—' }}</div>
     </div>
   </div>
+
+  <div style="height: 16px;"></div>
+
+  <section class="mgr-card">
+    <div class="mgr-sectionhead">
+      <div>
+        <h2>Tous les rendez-vous d'aujourd'hui ({{ todayAppointments|length }})</h2>
+        <p class="muted">Vue établissement de la journée en cours.</p>
+      </div>
+
+      {% if app.user and is_granted('ROLE_PRO') %}
+        <a class="btn btn--outline" href="{{ path('app_pro_reservations', { establishment: establishment.id }) }}">Gérer côté pro</a>
+      {% endif %}
+    </div>
+
+    {% if todayAppointments is not empty %}
+      <div class="mgr-list" style="margin-top: 18px;">
+        {% for appointment in todayAppointments %}
+          {% set status = appointment.status ?? 'pending' %}
+          {% set statusLabel = status %}
+          {% set statusClass = 'mgr-badge--muted' %}
+
+          {% if status == 'pending' %}
+            {% set statusLabel = 'En attente' %}
+          {% elseif status == 'confirmed' %}
+            {% set statusLabel = 'Accepté' %}
+            {% set statusClass = 'mgr-badge--ok' %}
+          {% elseif status == 'cancelled' %}
+            {% set statusLabel = 'Annulé' %}
+            {% set statusClass = 'mgr-badge--danger' %}
+          {% endif %}
+
+          <article class="mgr-item">
+            <div class="mgr-item__main">
+              <div class="mgr-item__title">
+                {% if appointment.client %}
+                  {{ appointment.client.firstName ?? '' }} {{ appointment.client.lastName ?? '' }}
+                {% else %}
+                  Réservation #{{ appointment.id }}
+                {% endif %}
+              </div>
+
+              <div class="mgr-item__meta">
+                {% if appointment.startTime %}
+                  <span>{{ appointment.startTime|date('H:i') }}</span>
+                {% endif %}
+
+                {% if appointment.endTime %}
+                  <span>Fin {{ appointment.endTime|date('H:i') }}</span>
+                {% endif %}
+
+                {% if appointment.service %}
+                  <span>{{ appointment.service.name }}</span>
+                {% endif %}
+
+                {% if appointment.professional %}
+                  <span>
+                    Pro:
+                    {{ appointment.professional.firstName ?? '' }} {{ appointment.professional.lastName ?? '' }}
+                  </span>
+                {% endif %}
+
+                {% if appointment.transferredBy and appointment.professional %}
+                  <span>
+                    {{ appointment.transferredBy.firstName ?? '' }} {{ appointment.transferredBy.lastName ?? '' }}
+                    a transféré à
+                    {{ appointment.professional.firstName ?? '' }} {{ appointment.professional.lastName ?? '' }}
+                  </span>
+                {% endif %}
+
+                {% if appointment.client and appointment.client.phone %}
+                  <span>{{ appointment.client.phone }}</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="mgr-item__actions">
+              <span class="mgr-badge {{ statusClass }}">{{ statusLabel }}</span>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted" style="margin-top: 12px;">Aucun rendez-vous aujourd’hui pour cet établissement.</p>
+    {% endif %}
+  </section>
 {% endblock %}

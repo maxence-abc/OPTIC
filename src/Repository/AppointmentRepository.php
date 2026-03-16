@@ -3,8 +3,10 @@
 namespace App\Repository;
 
 use App\Entity\Appointment;
+use App\Entity\Establishment;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -88,16 +90,32 @@ class AppointmentRepository extends ServiceEntityRepository
             SELECT id
             FROM "user"
             WHERE establishment_id = :eid
-            AND EXISTS (
-                SELECT 1
-                FROM jsonb_array_elements_text(roles::jsonb) AS r(val)
-                WHERE r.val = :role
+            AND COALESCE(is_active, TRUE) = TRUE
+            AND (
+                EXISTS (
+                    SELECT 1
+                    FROM jsonb_array_elements_text(roles::jsonb) AS r(val)
+                    WHERE r.val = :rolePro
+                )
+                OR EXISTS (
+                    SELECT 1
+                    FROM jsonb_array_elements_text(roles::jsonb) AS r(val)
+                    WHERE r.val = :roleAdminPro
+                )
+                OR EXISTS (
+                    SELECT 1
+                    FROM jsonb_array_elements_text(roles::jsonb) AS r(val)
+                    WHERE r.val = :roleAdmin
+                )
             )
+            ORDER BY id ASC
         ';
 
         $rows = $conn->fetchAllAssociative($sql, [
             'eid' => $establishmentId,
-            'role' => 'ROLE_PRO',
+            'rolePro' => 'ROLE_PRO',
+            'roleAdminPro' => 'ROLE_ADMIN_PRO',
+            'roleAdmin' => 'ROLE_ADMIN',
         ]);
 
         return array_map(static fn(array $row) => (int) $row['id'], $rows);
@@ -149,5 +167,209 @@ class AppointmentRepository extends ServiceEntityRepository
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * @return Appointment[]
+     */
+    public function findByEstablishmentForToday(Establishment $establishment, ?User $professional = null, int $limit = 20): array
+    {
+        $now = new \DateTimeImmutable();
+        $today = new \DateTimeImmutable($now->format('Y-m-d'));
+        $nowTime = new \DateTimeImmutable($now->format('H:i:s'));
+
+        return $this->createEstablishmentQueryBuilder($establishment, $professional)
+            ->andWhere('a.date = :today')
+            ->andWhere('a.status != :cancelled')
+            ->andWhere('a.endTime > :nowTime')
+            ->setParameter('today', $today)
+            ->setParameter('cancelled', 'cancelled')
+            ->setParameter('nowTime', $nowTime)
+            ->addOrderBy('a.startTime', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return Appointment[]
+     */
+    public function findUpcomingByEstablishment(Establishment $establishment, ?User $professional = null, int $limit = 50): array
+    {
+        return $this->createUpcomingByEstablishmentQueryBuilder($establishment, $professional)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return Appointment[]
+     */
+    public function findManageableByEstablishment(Establishment $establishment, ?User $professional = null, int $limit = 50): array
+    {
+        $now = new \DateTimeImmutable();
+        $today = new \DateTimeImmutable($now->format('Y-m-d'));
+        $nowTime = new \DateTimeImmutable($now->format('H:i:s'));
+
+        return $this->createEstablishmentQueryBuilder($establishment, $professional)
+            ->andWhere('a.status != :cancelled')
+            ->andWhere('(a.date > :today) OR (a.date = :today AND a.endTime > :nowTime)')
+            ->setParameter('cancelled', 'cancelled')
+            ->setParameter('today', $today)
+            ->setParameter('nowTime', $nowTime)
+            ->addOrderBy('a.date', 'ASC')
+            ->addOrderBy('a.startTime', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function countByEstablishment(Establishment $establishment): int
+    {
+        return (int) $this->createQueryBuilder('a')
+            ->select('COUNT(a.id)')
+            ->innerJoin('a.service', 's')
+            ->andWhere('s.establishment = :establishment')
+            ->andWhere('a.status != :cancelled')
+            ->setParameter('establishment', $establishment)
+            ->setParameter('cancelled', 'cancelled')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    public function countByEstablishmentForCurrentMonth(Establishment $establishment): int
+    {
+        $monthStart = new \DateTimeImmutable('first day of this month midnight');
+        $nextMonthStart = $monthStart->modify('first day of next month midnight');
+
+        return (int) $this->createQueryBuilder('a')
+            ->select('COUNT(a.id)')
+            ->innerJoin('a.service', 's')
+            ->andWhere('s.establishment = :establishment')
+            ->andWhere('a.status != :cancelled')
+            ->andWhere('a.date >= :monthStart')
+            ->andWhere('a.date < :nextMonthStart')
+            ->setParameter('establishment', $establishment)
+            ->setParameter('cancelled', 'cancelled')
+            ->setParameter('monthStart', $monthStart)
+            ->setParameter('nextMonthStart', $nextMonthStart)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * @return Appointment[]
+     */
+    public function findPastByEstablishment(
+        Establishment $establishment,
+        ?string $clientSearch = null,
+        ?\DateTimeInterface $date = null,
+        int $limit = 200
+    ): array {
+        $qb = $this->createPastByEstablishmentQueryBuilder($establishment);
+
+        if ($date instanceof \DateTimeInterface) {
+            $searchDate = \DateTimeImmutable::createFromInterface($date)->setTime(0, 0, 0);
+            $qb
+                ->andWhere('a.date = :searchDate')
+                ->setParameter('searchDate', $searchDate);
+        }
+
+        $appointments = $qb->getQuery()->getResult();
+
+        if ($clientSearch !== null && $clientSearch !== '') {
+            $needle = mb_strtolower(trim($clientSearch));
+
+            $appointments = array_values(array_filter($appointments, static function (Appointment $appointment) use ($needle): bool {
+                $client = $appointment->getClient();
+                if (!$client instanceof User) {
+                    return false;
+                }
+
+                $fullName = mb_strtolower(trim(sprintf('%s %s', $client->getFirstName() ?? '', $client->getLastName() ?? '')));
+                $reverseName = mb_strtolower(trim(sprintf('%s %s', $client->getLastName() ?? '', $client->getFirstName() ?? '')));
+
+                return str_contains($fullName, $needle) || str_contains($reverseName, $needle);
+            }));
+        }
+
+        return array_slice($appointments, 0, $limit);
+    }
+
+    /**
+     * @return Appointment[]
+     */
+    public function findByEstablishmentBetweenDates(
+        Establishment $establishment,
+        \DateTimeInterface $startDate,
+        \DateTimeInterface $endDate
+    ): array {
+        $from = \DateTimeImmutable::createFromInterface($startDate)->setTime(0, 0, 0);
+        $to = \DateTimeImmutable::createFromInterface($endDate)->setTime(0, 0, 0);
+
+        return $this->createEstablishmentQueryBuilder($establishment)
+            ->andWhere('a.date >= :from')
+            ->andWhere('a.date < :to')
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->addOrderBy('a.date', 'ASC')
+            ->addOrderBy('a.startTime', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    private function createUpcomingByEstablishmentQueryBuilder(Establishment $establishment, ?User $professional = null): QueryBuilder
+    {
+        $now = new \DateTimeImmutable();
+        $today = new \DateTimeImmutable($now->format('Y-m-d'));
+        $nowTime = new \DateTimeImmutable($now->format('H:i:s'));
+
+        return $this->createEstablishmentQueryBuilder($establishment, $professional)
+            ->andWhere('a.status != :cancelled')
+            ->andWhere('(a.date > :today) OR (a.date = :today AND a.startTime >= :nowTime)')
+            ->setParameter('cancelled', 'cancelled')
+            ->setParameter('today', $today)
+            ->setParameter('nowTime', $nowTime)
+            ->addOrderBy('a.date', 'ASC')
+            ->addOrderBy('a.startTime', 'ASC');
+    }
+
+    private function createPastByEstablishmentQueryBuilder(Establishment $establishment): QueryBuilder
+    {
+        $now = new \DateTimeImmutable();
+        $today = new \DateTimeImmutable($now->format('Y-m-d'));
+        $nowTime = new \DateTimeImmutable($now->format('H:i:s'));
+
+        return $this->createEstablishmentQueryBuilder($establishment)
+            ->andWhere('a.status != :cancelled')
+            ->andWhere('(a.date < :today) OR (a.date = :today AND a.endTime <= :nowTime)')
+            ->setParameter('cancelled', 'cancelled')
+            ->setParameter('today', $today)
+            ->setParameter('nowTime', $nowTime)
+            ->addOrderBy('a.date', 'DESC')
+            ->addOrderBy('a.startTime', 'DESC');
+    }
+
+    private function createEstablishmentQueryBuilder(Establishment $establishment, ?User $professional = null): QueryBuilder
+    {
+        $qb = $this->createQueryBuilder('a')
+            ->innerJoin('a.service', 's')
+            ->addSelect('s')
+            ->leftJoin('a.client', 'client')
+            ->addSelect('client')
+            ->leftJoin('a.professional', 'professional')
+            ->addSelect('professional')
+            ->leftJoin('a.transferredBy', 'transferredByUser')
+            ->addSelect('transferredByUser')
+            ->andWhere('s.establishment = :establishment')
+            ->setParameter('establishment', $establishment);
+
+        if ($professional instanceof User) {
+            $qb
+                ->andWhere('a.professional = :professional')
+                ->setParameter('professional', $professional);
+        }
+
+        return $qb;
     }
 }

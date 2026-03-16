@@ -16,6 +16,13 @@
   {% set q = app.request.query.get('q') %}
   {% set city = app.request.query.get('city') %}
   {% set category = app.request.query.get('category') %}
+  {% set bookingBaseParams = {
+    id: establishment.id,
+    q: q,
+    city: city,
+    category: category,
+    _fragment: 'booking'
+  } %}
   {% if q or city or category %}
     {% set backUrl = path('app_store_search', { q: q, city: city, category: category }) %}
   {% endif %}
@@ -76,21 +83,17 @@
 
             <a class="est-service {{ isActiveService ? 'is-active' : '' }}"
                href="{{ path('front_establishment_show', isActiveService
-                 ? {
-                     id: establishment.id,
+                 ? bookingBaseParams|merge({
                      week: weekStart|date('Y-m-d'),
                      date: selectedDateStr ?: null,
-                     q: q, city: city, category: category,
-                     _fragment: 'booking'
-                   }
-                 : {
-                     id: establishment.id,
+                     professional: selectedProfessionalId ?: null
+                   })
+                 : bookingBaseParams|merge({
                      service: s.id,
                      week: weekStart|date('Y-m-d'),
                      date: selectedDateStr ?: null,
-                     q: q, city: city, category: category,
-                     _fragment: 'booking'
-                   }
+                     professional: selectedProfessionalId ?: null
+                   })
                ) }}">
               <div class="est-service__main">
                 <div class="est-service__name">{{ s.name }}</div>
@@ -152,13 +155,11 @@
 
           <div class="booking-week">
             <a class="btn btn--outline btn--md booking-week__nav"
-               href="{{ path('front_establishment_show', {
-                 id: establishment.id,
+               href="{{ path('front_establishment_show', bookingBaseParams|merge({
                  service: selectedServiceId,
                  week: (weekStart|date_modify('-7 days'))|date('Y-m-d'),
-                 q: q, city: city, category: category,
-                 _fragment: 'booking'
-               }) }}">
+                 professional: selectedProfessionalId ?: null
+               })) }}">
               Semaine précédente
             </a>
 
@@ -169,21 +170,17 @@
 
                 <a class="day-btn {{ isActiveDate ? 'is-active' : '' }}"
                    href="{{ path('front_establishment_show', isActiveDate
-                     ? {
-                         id: establishment.id,
+                     ? bookingBaseParams|merge({
                          service: selectedServiceId,
                          week: weekStart|date('Y-m-d'),
-                         q: q, city: city, category: category,
-                         _fragment: 'booking'
-                       }
-                     : {
-                         id: establishment.id,
+                         professional: selectedProfessionalId ?: null
+                       })
+                     : bookingBaseParams|merge({
                          service: selectedServiceId,
                          week: weekStart|date('Y-m-d'),
                          date: dStr,
-                         q: q, city: city, category: category,
-                         _fragment: 'booking'
-                       }
+                         professional: selectedProfessionalId ?: null
+                       })
                    ) }}">
                   <div class="day-btn__top">{{ d|date('d/m') }}</div>
                   <div class="day-btn__bot">{{ d|date('l')|replace({
@@ -194,16 +191,51 @@
             </div>
 
             <a class="btn btn--outline btn--md booking-week__nav"
-               href="{{ path('front_establishment_show', {
-                 id: establishment.id,
+               href="{{ path('front_establishment_show', bookingBaseParams|merge({
                  service: selectedServiceId,
                  week: (weekStart|date_modify('+7 days'))|date('Y-m-d'),
-                 q: q, city: city, category: category,
-                 _fragment: 'booking'
-               }) }}">
+                 professional: selectedProfessionalId ?: null
+               })) }}">
               Semaine suivante
             </a>
           </div>
+        </div>
+
+        <div class="booking-block">
+          <div class="booking-label">Choisis un professionnel</div>
+
+          {% if professionalCandidates|length == 0 %}
+            <p class="est-muted">Aucun professionnel disponible pour cet établissement.</p>
+          {% else %}
+            <div class="booking-slots">
+              <a class="slot-btn {{ not selectedProfessionalId ? 'is-active' : '' }}"
+                 href="{{ path('front_establishment_show', bookingBaseParams|merge({
+                   service: selectedServiceId,
+                   week: weekStart|date('Y-m-d'),
+                   date: selectedDateStr ?: null,
+                   time: selectedTime ?: null
+                 })) }}">
+                Indifférent
+              </a>
+
+              {% for professional in professionalCandidates %}
+                <a class="slot-btn {{ selectedProfessionalId == professional.id ? 'is-active' : '' }}"
+                   href="{{ path('front_establishment_show', bookingBaseParams|merge({
+                     service: selectedServiceId,
+                     week: weekStart|date('Y-m-d'),
+                     date: selectedDateStr ?: null,
+                     time: selectedTime ?: null,
+                     professional: professional.id
+                   })) }}">
+                  {{ professional.firstName }} {{ professional.lastName }}
+                </a>
+              {% endfor %}
+            </div>
+
+            <p class="est-hint">
+              En choisissant “Indifférent”, le système attribue d’abord un professionnel disponible, puis un admin pro ou le gérant si besoin.
+            </p>
+          {% endif %}
         </div>
 
         <div class="booking-block">
@@ -214,7 +246,13 @@
           {% elseif not selectedDateStr %}
             <p class="est-muted">Sélectionne d’abord une date.</p>
           {% elseif slots|length == 0 %}
-            <p class="est-muted">Aucun créneau disponible pour cette date.</p>
+            <p class="est-muted">
+              {% if selectedProfessional %}
+                Aucun créneau disponible pour ce professionnel à cette date.
+              {% else %}
+                Aucun créneau disponible pour cette date.
+              {% endif %}
+            </p>
           {% else %}
             <div class="booking-slots">
               {% for s in slots %}
@@ -222,23 +260,19 @@
 
                 <a class="slot-btn {{ isActiveTime ? 'is-active' : '' }}"
                    href="{{ path('front_establishment_show', isActiveTime
-                     ? {
-                         id: establishment.id,
+                     ? bookingBaseParams|merge({
                          service: selectedServiceId,
                          week: weekStart|date('Y-m-d'),
                          date: selectedDateStr,
-                         q: q, city: city, category: category,
-                         _fragment: 'booking'
-                       }
-                     : {
-                         id: establishment.id,
+                         professional: selectedProfessionalId ?: null
+                       })
+                     : bookingBaseParams|merge({
                          service: selectedServiceId,
                          week: weekStart|date('Y-m-d'),
                          date: selectedDateStr,
                          time: s.time,
-                         q: q, city: city, category: category,
-                         _fragment: 'booking'
-                       }
+                         professional: selectedProfessionalId ?: null
+                       })
                    ) }}">
                   {{ s.label }}
                 </a>
@@ -252,6 +286,7 @@
           <input type="hidden" name="service" value="{{ selectedServiceId }}">
           <input type="hidden" name="date" value="{{ selectedDateStr }}">
           <input type="hidden" name="time" value="{{ selectedTime }}">
+          <input type="hidden" name="professional" value="{{ selectedProfessionalId }}">
 
           <button class="btn btn--primary btn--lg btn--block"
                   type="submit"

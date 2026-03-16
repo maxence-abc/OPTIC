@@ -6,6 +6,7 @@ use App\Entity\Appointment;
 use App\Entity\Establishment;
 use App\Entity\Service;
 use App\Entity\User;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Finder\Finder;
@@ -21,15 +22,19 @@ final class EstablishmentPageController extends AbstractController
     public function show(
         Establishment $establishment,
         Request $request,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
+        UserRepository $userRepository
     ): Response {
         $serviceId = $request->query->getInt('service');
         $dateStr   = (string) $request->query->get('date'); // YYYY-MM-DD
         $timeStr   = (string) $request->query->get('time'); // HH:mm
         $weekStr   = (string) $request->query->get('week'); // YYYY-MM-DD
+        $professionalId = $request->query->getInt('professional');
 
         // ✅ Image hero depuis /public/uploads/establishments/{id}/...
         $heroSrc = $this->findHeroImageForEstablishment((int) $establishment->getId());
+        $professionalCandidates = $userRepository->findBookableCandidatesByEstablishment($establishment);
+        $selectedProfessional = $this->resolveSelectedProfessional($professionalId, $professionalCandidates);
 
         // Service sélectionné (doit appartenir à l'établissement)
         $selectedService = null;
@@ -47,7 +52,7 @@ final class EstablishmentPageController extends AbstractController
         $openWeekDays = [];
         for ($i = 0; $i < 7; $i++) {
             $d = (clone $weekStart)->modify("+{$i} days");
-            if ($this->isOpenOnDate($establishment, $d)) {
+            if ($this->isOpenOnDate($establishment, $d) && !$this->isPastDay($d)) {
                 $openWeekDays[] = $d;
             }
         }
@@ -64,14 +69,21 @@ final class EstablishmentPageController extends AbstractController
         }
 
         // Si date absente/fermée => premier jour ouvert
-        if (!$selectedDate || !$this->isOpenOnDate($establishment, $selectedDate)) {
+        if (!$selectedDate || $this->isPastDay($selectedDate) || !$this->isOpenOnDate($establishment, $selectedDate)) {
             $selectedDate = !empty($openWeekDays) ? (clone $openWeekDays[0])->setTime(0, 0, 0) : null;
         }
 
         // Créneaux
         $slots = [];
         if ($selectedService && $selectedDate) {
-            $slots = $this->generateAvailableSlots($em, $establishment, $selectedService, $selectedDate);
+            $slots = $this->generateAvailableSlots(
+                $em,
+                $establishment,
+                $selectedService,
+                $selectedDate,
+                $professionalCandidates,
+                $selectedProfessional
+            );
         }
 
         return $this->render('establishment_page/show.html.twig', [
@@ -82,6 +94,9 @@ final class EstablishmentPageController extends AbstractController
             'selectedServiceId' => $selectedService?->getId(),
             'weekStart'         => $weekStart,
             'openWeekDays'      => $openWeekDays,
+            'professionalCandidates' => $professionalCandidates,
+            'selectedProfessional' => $selectedProfessional,
+            'selectedProfessionalId' => $selectedProfessional?->getId(),
             'selectedDate'      => $selectedDate,
             'selectedDateStr'   => $selectedDate ? $selectedDate->format('Y-m-d') : null,
             'selectedTime'      => $timeStr ?: null,
@@ -94,7 +109,8 @@ final class EstablishmentPageController extends AbstractController
     public function book(
         Establishment $establishment,
         Request $request,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
+        UserRepository $userRepository
     ): Response {
         if (!$this->isCsrfTokenValid('book_appointment', (string) $request->request->get('_token'))) {
             $this->addFlash('error', 'Token invalide.');
@@ -104,6 +120,9 @@ final class EstablishmentPageController extends AbstractController
         $serviceId = (int) $request->request->get('service');
         $dateStr   = (string) $request->request->get('date');
         $timeStr   = (string) $request->request->get('time');
+        $professionalId = $request->request->getInt('professional');
+        $professionalCandidates = $userRepository->findBookableCandidatesByEstablishment($establishment);
+        $selectedProfessional = $this->resolveSelectedProfessional($professionalId, $professionalCandidates);
 
         $service = $em->getRepository(Service::class)->find($serviceId);
         if (!$service || $service->getEstablishment()?->getId() !== $establishment->getId()) {
@@ -119,42 +138,59 @@ final class EstablishmentPageController extends AbstractController
             return $this->redirectToRoute('front_establishment_show', ['id' => $establishment->getId()]);
         }
 
-        if (!$this->isOpenOnDate($establishment, $date)) {
-            $this->addFlash('error', 'Établissement fermé ce jour-là.');
+        if ($this->isPastDay($date) || !$this->isOpenOnDate($establishment, $date)) {
+            $this->addFlash('error', 'Cette date n’est plus réservable.');
             return $this->redirectToRoute('front_establishment_show', [
                 'id' => $establishment->getId(),
                 'service' => $service->getId(),
             ]);
         }
 
-        $professional = $establishment->getOwner();
-        if (!$professional instanceof User) {
+        if ($professionalId > 0 && !$selectedProfessional instanceof User) {
+            $this->addFlash('error', 'Le professionnel choisi est invalide.');
+            return $this->redirectToRoute('front_establishment_show', $this->buildBookingRedirectParams(
+                $establishment,
+                $service,
+                $date
+            ));
+        }
+
+        if (!$professionalCandidates) {
             $this->addFlash('error', 'Aucun professionnel associé.');
             return $this->redirectToRoute('front_establishment_show', ['id' => $establishment->getId()]);
         }
 
         if (!str_contains($timeStr, ':')) {
             $this->addFlash('error', 'Heure invalide.');
-            return $this->redirectToRoute('front_establishment_show', [
-                'id' => $establishment->getId(),
-                'service' => $service->getId(),
-                'date' => $date->format('Y-m-d'),
-            ]);
+            return $this->redirectToRoute('front_establishment_show', $this->buildBookingRedirectParams(
+                $establishment,
+                $service,
+                $date,
+                $selectedProfessional
+            ));
         }
 
         // Re-check slots
-        $slots = $this->generateAvailableSlots($em, $establishment, $service, $date);
+        $slots = $this->generateAvailableSlots(
+            $em,
+            $establishment,
+            $service,
+            $date,
+            $professionalCandidates,
+            $selectedProfessional
+        );
         $slotOk = false;
         foreach ($slots as $s) {
             if ($s['time'] === $timeStr) { $slotOk = true; break; }
         }
         if (!$slotOk) {
             $this->addFlash('error', 'Ce créneau n’est plus disponible.');
-            return $this->redirectToRoute('front_establishment_show', [
-                'id' => $establishment->getId(),
-                'service' => $service->getId(),
-                'date' => $date->format('Y-m-d'),
-            ]);
+            return $this->redirectToRoute('front_establishment_show', $this->buildBookingRedirectParams(
+                $establishment,
+                $service,
+                $date,
+                $selectedProfessional
+            ));
         }
 
         [$h, $m] = array_map('intval', explode(':', $timeStr));
@@ -168,9 +204,46 @@ final class EstablishmentPageController extends AbstractController
             $end = (clone $end)->modify("+{$buffer} minutes");
         }
 
+        if ($this->isPastSlot($start)) {
+            $this->addFlash('error', 'Impossible de réserver un créneau déjà passé.');
+
+            return $this->redirectToRoute('front_establishment_show', $this->buildBookingRedirectParams(
+                $establishment,
+                $service,
+                $date,
+                $selectedProfessional
+            ));
+        }
+
+        $assignableProfessionals = $selectedProfessional instanceof User ? [$selectedProfessional] : $professionalCandidates;
+        $assignedProfessional = null;
+
+        foreach ($assignableProfessionals as $candidateProfessional) {
+            if (!$this->hasOverlap($em, $candidateProfessional, $date, $start, $end)) {
+                $assignedProfessional = $candidateProfessional;
+                break;
+            }
+        }
+
+        if (!$assignedProfessional instanceof User) {
+            $this->addFlash(
+                'error',
+                $selectedProfessional instanceof User
+                    ? 'Le professionnel choisi n’est plus disponible sur ce créneau.'
+                    : 'Aucun professionnel n’est disponible sur ce créneau.'
+            );
+
+            return $this->redirectToRoute('front_establishment_show', $this->buildBookingRedirectParams(
+                $establishment,
+                $service,
+                $date,
+                $selectedProfessional
+            ));
+        }
+
         $appointment = new Appointment();
         $appointment->setClient($this->getUser());
-        $appointment->setProfessional($professional);
+        $appointment->setProfessional($assignedProfessional);
         $appointment->setService($service);
         $appointment->setDate($date);
         $appointment->setStartTime($start);
@@ -187,6 +260,7 @@ final class EstablishmentPageController extends AbstractController
             'id' => $establishment->getId(),
             'service' => $service->getId(),
             'date' => $date->format('Y-m-d'),
+            'professional' => $selectedProfessional?->getId(),
         ]);
     }
 
@@ -255,8 +329,14 @@ final class EstablishmentPageController extends AbstractController
         EntityManagerInterface $em,
         Establishment $establishment,
         Service $service,
-        \DateTime $date
+        \DateTime $date,
+        array $professionalCandidates,
+        ?User $selectedProfessional = null
     ): array {
+        if ($this->isPastDay($date)) {
+            return [];
+        }
+
         $dayKey = $this->dowToKey((int) $date->format('N'));
         if (!$dayKey) return [];
 
@@ -279,8 +359,8 @@ final class EstablishmentPageController extends AbstractController
         $buffer = (int) ($service->getBufferTime() ?? 0);
         $stepMinutes = $duration;
 
-        $professional = $establishment->getOwner();
-        if (!$professional instanceof User) return [];
+        $professionals = $selectedProfessional instanceof User ? [$selectedProfessional] : $professionalCandidates;
+        if (!$professionals) return [];
 
         $slots = [];
         $cursor = clone $open;
@@ -295,7 +375,20 @@ final class EstablishmentPageController extends AbstractController
 
             if ($end > $close) break;
 
-            if (!$this->hasOverlap($em, $professional, $date, $start, $end)) {
+            if ($this->isPastSlot($start)) {
+                $cursor->modify("+{$stepMinutes} minutes");
+                continue;
+            }
+
+            $hasAvailableProfessional = false;
+            foreach ($professionals as $professional) {
+                if (!$this->hasOverlap($em, $professional, $date, $start, $end)) {
+                    $hasAvailableProfessional = true;
+                    break;
+                }
+            }
+
+            if ($hasAvailableProfessional) {
                 $t = $start->format('H:i');
                 $slots[] = ['time' => $t, 'label' => $t];
             }
@@ -304,6 +397,60 @@ final class EstablishmentPageController extends AbstractController
         }
 
         return $slots;
+    }
+
+    /**
+     * @param User[] $professionalCandidates
+     */
+    private function resolveSelectedProfessional(int $professionalId, array $professionalCandidates): ?User
+    {
+        if ($professionalId <= 0) {
+            return null;
+        }
+
+        foreach ($professionalCandidates as $professionalCandidate) {
+            if ($professionalCandidate->getId() === $professionalId) {
+                return $professionalCandidate;
+            }
+        }
+
+        return null;
+    }
+
+    private function buildBookingRedirectParams(
+        Establishment $establishment,
+        ?Service $service = null,
+        ?\DateTime $date = null,
+        ?User $professional = null
+    ): array {
+        $params = [
+            'id' => $establishment->getId(),
+        ];
+
+        if ($service instanceof Service && $service->getId()) {
+            $params['service'] = $service->getId();
+        }
+
+        if ($date instanceof \DateTime) {
+            $params['date'] = $date->format('Y-m-d');
+            $params['week'] = $this->weekStart($date->format('Y-m-d'))->format('Y-m-d');
+        }
+
+        if ($professional?->getId()) {
+            $params['professional'] = $professional->getId();
+        }
+
+        return $params;
+    }
+
+    private function isPastDay(\DateTimeInterface $date): bool
+    {
+        return \DateTimeImmutable::createFromInterface($date)->setTime(0, 0, 0) < new \DateTimeImmutable('today');
+    }
+
+    private function isPastSlot(\DateTimeInterface $start): bool
+    {
+        return \DateTimeImmutable::createFromInterface($start) <= new \DateTimeImmutable();
     }
 
     private function hasOverlap(

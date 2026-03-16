@@ -1,0 +1,113 @@
+{% extends 'manager/base_manager.html.twig' %}
+
+{% block title %}Statistiques{% endblock %}
+
+{% block manager_content %}
+  <section class="mgr-pagehead">
+    <div>
+      <h1>Statistiques</h1>
+      <p class="muted">Vue consolidée de l’activité de {{ establishment.name }} avec des données réelles sur l’année en cours.</p>
+    </div>
+  </section>
+
+  <section class="mgr-stats-grid">
+    <article class="mgr-kpi">
+      <div class="mgr-kpi__label">Ce mois</div>
+      <div class="mgr-kpi__value">{{ stats.month.total }}</div>
+      <div class="mgr-kpi__sub">réservations enregistrées</div>
+    </article>
+
+    <article class="mgr-kpi">
+      <div class="mgr-kpi__label">Passés ce mois</div>
+      <div class="mgr-kpi__value">{{ stats.month.past }}</div>
+      <div class="mgr-kpi__sub">rendez-vous réalisés</div>
+    </article>
+
+    <article class="mgr-kpi">
+      <div class="mgr-kpi__label">À venir ce mois</div>
+      <div class="mgr-kpi__value">{{ stats.month.upcoming }}</div>
+      <div class="mgr-kpi__sub">encore planifiés</div>
+    </article>
+
+    <article class="mgr-kpi">
+      <div class="mgr-kpi__label">Annulés ce mois</div>
+      <div class="mgr-kpi__value">{{ stats.month.cancelled }}</div>
+      <div class="mgr-kpi__sub">réservations perdues</div>
+    </article>
+  </section>
+
+  <div style="height: 16px;"></div>
+
+  <section class="mgr-stats-grid">
+    <article class="mgr-kpi">
+      <div class="mgr-kpi__label">Cette année</div>
+      <div class="mgr-kpi__value">{{ stats.year.total }}</div>
+      <div class="mgr-kpi__sub">réservations enregistrées</div>
+    </article>
+
+    <article class="mgr-kpi">
+      <div class="mgr-kpi__label">Passés cette année</div>
+      <div class="mgr-kpi__value">{{ stats.year.past }}</div>
+      <div class="mgr-kpi__sub">rendez-vous terminés</div>
+    </article>
+
+    <article class="mgr-kpi">
+      <div class="mgr-kpi__label">À venir cette année</div>
+      <div class="mgr-kpi__value">{{ stats.year.upcoming }}</div>
+      <div class="mgr-kpi__sub">encore à traiter</div>
+    </article>
+
+    <article class="mgr-kpi">
+      <div class="mgr-kpi__label">Confirmés cette année</div>
+      <div class="mgr-kpi__value">{{ stats.year.confirmed }}</div>
+      <div class="mgr-kpi__sub">déjà validés</div>
+    </article>
+  </section>
+
+  <div style="height: 16px;"></div>
+
+  <section class="mgr-analytics-grid">
+    <article class="mgr-card mgr-chart-card">
+      <div class="mgr-sectionhead">
+        <div>
+          <h2>Activité mensuelle</h2>
+          <p class="muted">Volumes passés, à venir et annulés sur l’année.</p>
+        </div>
+      </div>
+      <div class="mgr-chart-shell">
+        {{ render_chart(monthlyVolumeChart, {'class': 'mgr-chart-canvas', 'style': 'height: 320px;'}) }}
+      </div>
+    </article>
+
+    <article class="mgr-card mgr-chart-card">
+      <div class="mgr-sectionhead">
+        <div>
+          <h2>Répartition du mois</h2>
+          <p class="muted">Part des rendez-vous passés, à venir et annulés ce mois-ci.</p>
+        </div>
+      </div>
+      <div class="mgr-chart-shell">
+        {{ render_chart(monthlyStatusChart, {'class': 'mgr-chart-canvas', 'style': 'height: 320px;'}) }}
+      </div>
+    </article>
+  </section>
+
+  <div style="height: 16px;"></div>
+
+  <section class="mgr-card mgr-chart-card">
+    <div class="mgr-sectionhead">
+      <div>
+        <h2>Charge par professionnel</h2>
+        <p class="muted">Distribution des rendez-vous non annulés sur l’année en cours.</p>
+      </div>
+    </div>
+
+    {% if stats.professional_labels is not empty %}
+      <div class="mgr-chart-shell mgr-chart-shell--wide">
+        {{ render_chart(professionalLoadChart, {'class': 'mgr-chart-canvas', 'style': 'height: 360px;'}) }}
+      </div>
+    {% else %}
+      <p class="muted" style="margin-top: 12px;">Pas assez de données pour afficher la charge par professionnel.</p>
+    {% endif %}
+  </section>
+{% endblock %}

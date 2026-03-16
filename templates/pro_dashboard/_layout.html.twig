@@ -1,0 +1,69 @@
+{% extends 'base.html.twig' %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="/css/pages/manager.css">
+{% endblock %}
+
+{% block header %}{% endblock %}
+
+{% block body %}
+  <header class="mgr-hero">
+    <div class="container container--wide mgr-hero__container">
+      <a class="mgr-hero__back" href="{{ path('app_home') }}">
+        <span aria-hidden="true">{{ ux_icon('uil:arrow-left') }}</span>
+        Retour
+      </a>
+
+      <div class="mgr-hero__right">
+        <div class="mgr-switch">
+          <div class="mgr-switch__btn" style="cursor: default;">
+            <span class="mgr-switch__icon" aria-hidden="true">{{ ux_icon('uil:store') }}</span>
+            <span class="mgr-switch__meta">
+              <span class="mgr-switch__label">Espace professionnel</span>
+              <span class="mgr-switch__name">{{ establishment.name }}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="mgr-tabs">
+    <div class="container container--wide mgr-tabs__container">
+      <a class="mgr-tabs__link {% if app.request.attributes.get('_route') == 'app_pro_dashboard' %}is-active{% endif %}"
+         href="{{ path('app_pro_dashboard') }}">
+        <span aria-hidden="true">{{ ux_icon('uil:apps') }}</span>
+        Tableau de bord
+      </a>
+
+      <a class="mgr-tabs__link {% if app.request.attributes.get('_route') == 'app_pro_reservations' %}is-active{% endif %}"
+         href="{{ path('app_pro_reservations') }}">
+        <span aria-hidden="true">{{ ux_icon('uil:calendar-alt') }}</span>
+        Réservations
+      </a>
+
+      <span class="mgr-tabs__link is-disabled">
+        <span aria-hidden="true">{{ ux_icon('uil:star') }}</span>
+        Avis clients
+      </span>
+
+      <span class="mgr-tabs__link is-disabled">
+        <span aria-hidden="true">{{ ux_icon('uil:calender') }}</span>
+        Calendrier
+      </span>
+
+      <a class="mgr-tabs__link {% if app.request.attributes.get('_route') == 'app_pro_profile' %}is-active{% endif %}"
+         href="{{ path('app_pro_profile') }}">
+        <span aria-hidden="true">{{ ux_icon('uil:user-circle') }}</span>
+        Profil
+      </a>
+    </div>
+  </nav>
+
+  <main class="mgr-main">
+    <div class="container container--wide">
+      {% block pro_content %}{% endblock %}
+    </div>
+  </main>
+{% endblock %}

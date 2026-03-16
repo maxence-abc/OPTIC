@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\Establishment;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -33,28 +34,83 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $this->getEntityManager()->flush();
     }
 
-    //    /**
-    //     * @return User[] Returns an array of User objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('u')
-    //            ->andWhere('u.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('u.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    /**
+     * @return User[]
+     */
+    public function findProfessionalsByEstablishment(Establishment $establishment): array
+    {
+        $professionals = $this->findBookableCandidatesByEstablishment($establishment);
 
-    //    public function findOneBySomeField($value): ?User
-    //    {
-    //        return $this->createQueryBuilder('u')
-    //            ->andWhere('u.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+        usort(
+            $professionals,
+            static fn (User $left, User $right): int => [$left->getFirstName() ?? '', $left->getLastName() ?? '']
+                <=> [$right->getFirstName() ?? '', $right->getLastName() ?? '']
+        );
+
+        return $professionals;
+    }
+
+    /**
+     * @return User[]
+     */
+    public function findBookableCandidatesByEstablishment(Establishment $establishment): array
+    {
+        $users = $this->createQueryBuilder('u')
+            ->andWhere('u.establishment = :establishment OR u = :owner')
+            ->setParameter('establishment', $establishment)
+            ->setParameter('owner', $establishment->getOwner())
+            ->getQuery()
+            ->getResult();
+
+        $candidates = array_values(array_filter(
+            $users,
+            static fn (User $user): bool => self::isTransferableProfessional($user)
+        ));
+
+        usort($candidates, function (User $left, User $right) use ($establishment): int {
+            $priorityComparison = self::getBookingPriority($left, $establishment) <=> self::getBookingPriority($right, $establishment);
+
+            if ($priorityComparison !== 0) {
+                return $priorityComparison;
+            }
+
+            return [$left->getFirstName() ?? '', $left->getLastName() ?? '', $left->getId() ?? 0]
+                <=> [$right->getFirstName() ?? '', $right->getLastName() ?? '', $right->getId() ?? 0];
+        });
+
+        return $candidates;
+    }
+
+    private static function isTransferableProfessional(User $user): bool
+    {
+        if ($user->isActive() === false) {
+            return false;
+        }
+
+        $roles = $user->getRoles();
+
+        return in_array('ROLE_PRO', $roles, true)
+            || in_array('ROLE_ADMIN_PRO', $roles, true)
+            || in_array('ROLE_ADMIN', $roles, true);
+    }
+
+    private static function getBookingPriority(User $user, Establishment $establishment): int
+    {
+        $roles = $user->getRoles();
+        $isOwner = $establishment->getOwner()?->getId() === $user->getId();
+
+        if (in_array('ROLE_PRO', $roles, true) && !in_array('ROLE_ADMIN_PRO', $roles, true) && !in_array('ROLE_ADMIN', $roles, true)) {
+            return 0;
+        }
+
+        if ((in_array('ROLE_ADMIN_PRO', $roles, true) || in_array('ROLE_ADMIN', $roles, true)) && !$isOwner) {
+            return 1;
+        }
+
+        if ($isOwner) {
+            return 2;
+        }
+
+        return 3;
+    }
 }
