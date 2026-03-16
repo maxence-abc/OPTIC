@@ -65,9 +65,11 @@
     <p class="section-subtitle">Des milliers de professionnels à votre service dans tous les domaines</p>
 
     <div class="category-grid">
-      <a class="category-card" href="#">
+      <a class="category-card" href="{{ path('app_store_search', { category: 'restaurant' }) }}">
         <div class="category-card__media category-card__media--restaurants">
-          <span class="category-card__icon" aria-hidden="true">{{ ux_icon('uil:restaurant') }}</span>
+          <span class="category-card__icon" aria-hidden="true">
+            <img src="{{ asset('images/icons/icons8-restaurant-96.png') }}" alt="">
+          </span>
         </div>
         <div class="category-card__body">
           <div class="category-card__title">Restaurants</div>
@@ -75,9 +77,11 @@
         </div>
       </a>
 
-      <a class="category-card" href="#">
+      <a class="category-card" href="{{ path('app_store_search', { category: 'coiffure' }) }}">
         <div class="category-card__media category-card__media--beauty">
-          <span class="category-card__icon" aria-hidden="true">{{ ux_icon('uil:star') }}</span>
+          <span class="category-card__icon" aria-hidden="true">
+            <img src="{{ asset('images/icons/icons8-ciseaux-24.png') }}" alt="">
+          </span>
         </div>
         <div class="category-card__body">
           <div class="category-card__title">Coiffure & Beauté</div>
@@ -85,9 +89,11 @@
         </div>
       </a>
 
-      <a class="category-card" href="#">
+      <a class="category-card" href="{{ path('app_store_search', { category: 'sante' }) }}">
         <div class="category-card__media category-card__media--health">
-          <span class="category-card__icon" aria-hidden="true">{{ ux_icon('uil:medical-drip') }}</span>
+          <span class="category-card__icon" aria-hidden="true">
+            <img src="{{ asset('images/icons/icons8-caduceus-64.png') }}" alt="">
+          </span>
         </div>
         <div class="category-card__body">
           <div class="category-card__title">Santé</div>
@@ -95,9 +101,11 @@
         </div>
       </a>
 
-      <a class="category-card" href="#">
+      <a class="category-card" href="{{ path('app_store_search', { category: 'sport' }) }}">
         <div class="category-card__media category-card__media--sport">
-          <span class="category-card__icon" aria-hidden="true">{{ ux_icon('uil:dumbbell') }}</span>
+          <span class="category-card__icon" aria-hidden="true">
+            <img src="{{ asset('images/icons/icons8-barbell-100.png') }}" alt="">
+          </span>
         </div>
         <div class="category-card__body">
           <div class="category-card__title">Sport & Fitness</div>
@@ -105,9 +113,11 @@
         </div>
       </a>
 
-      <a class="category-card" href="#">
+      <a class="category-card" href="{{ path('app_store_search', { category: 'automobile' }) }}">
         <div class="category-card__media category-card__media--auto">
-          <span class="category-card__icon" aria-hidden="true">{{ ux_icon('uil:car') }}</span>
+          <span class="category-card__icon" aria-hidden="true">
+            <img src="{{ asset('images/icons/icons8-voiture-48.png') }}" alt="">
+          </span>
         </div>
         <div class="category-card__body">
           <div class="category-card__title">Automobile</div>
@@ -115,9 +125,11 @@
         </div>
       </a>
 
-      <a class="category-card" href="#">
+      <a class="category-card" href="{{ path('app_store_search', { category: 'bien-etre' }) }}">
         <div class="category-card__media category-card__media--wellness">
-          <span class="category-card__icon" aria-hidden="true">{{ ux_icon('uil:heart') }}</span>
+          <span class="category-card__icon" aria-hidden="true">
+            <img src="{{ asset('images/icons/icons8-spa-48.png') }}" alt="">
+          </span>
         </div>
         <div class="category-card__body">
           <div class="category-card__title">Bien-être</div>
