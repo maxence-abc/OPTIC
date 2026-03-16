@@ -16,6 +16,12 @@
       </a>
 
       <div class="mgr-hero__right">
+        {% if app.user and is_granted('ROLE_PRO') %}
+          <a class="mgr-hero__all" href="{{ path('app_pro_reservations', establishment is defined ? { establishment: establishment.id } : {}) }}">
+            Ouvrir l'espace pro
+          </a>
+        {% endif %}
+
         <a class="mgr-hero__all" href="{{ path('manager_select_establishment') }}">
           Voir tous mes établissements
         </a>
@@ -95,6 +101,18 @@
            href="{{ path('manager_employees', {id: establishment.id}) }}">
           <span aria-hidden="true">{{ ux_icon('uil:users-alt') }}</span>
           Employés
+        </a>
+
+        <a class="mgr-tabs__link {% if app.request.attributes.get('_route') == 'manager_history' %}is-active{% endif %}"
+           href="{{ path('manager_history', {id: establishment.id}) }}">
+          <span aria-hidden="true">{{ ux_icon('uil:history') }}</span>
+          Historique
+        </a>
+
+        <a class="mgr-tabs__link {% if app.request.attributes.get('_route') == 'manager_stats' %}is-active{% endif %}"
+           href="{{ path('manager_stats', {id: establishment.id}) }}">
+          <span aria-hidden="true">{{ ux_icon('uil:chart-line') }}</span>
+          Statistiques
         </a>
 
         <span class="mgr-tabs__link is-disabled">

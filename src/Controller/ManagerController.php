@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Form\ManagerEmployeeType;
 use App\Form\OpeningHourType;
 use App\Form\ServiceType;
+use App\Repository\AppointmentRepository;
 use App\Repository\EstablishmentRepository;
 use App\Repository\OpeningHourRepository;
 use App\Repository\ServiceRepository;
@@ -22,6 +23,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\UX\Chartjs\Builder\ChartBuilderInterface;
+use Symfony\UX\Chartjs\Model\Chart;
 
 #[Route('/manager')]
 final class ManagerController extends AbstractController
@@ -90,6 +93,14 @@ final class ManagerController extends AbstractController
                 'id' => $establishment->getId(),
             ]),
 
+            'manager_history' => $this->redirectToRoute('manager_history', [
+                'id' => $establishment->getId(),
+            ]),
+
+            'manager_stats' => $this->redirectToRoute('manager_stats', [
+                'id' => $establishment->getId(),
+            ]),
+
             default => $this->redirectToRoute('manager_dashboard', [
                 'id' => $establishment->getId(),
             ]),
@@ -103,6 +114,7 @@ final class ManagerController extends AbstractController
         SessionInterface $session,
         ServiceRepository $serviceRepository,
         UserRepository $userRepository,
+        AppointmentRepository $appointmentRepository,
     ): Response {
         $this->denyAccessUnlessGranted(EstablishmentVoter::MANAGE, $establishment);
         $session->set(self::SESSION_ACTIVE_ESTABLISHMENT, $establishment->getId());
@@ -117,6 +129,7 @@ final class ManagerController extends AbstractController
             'ownedEstablishments' => $owned,
             'servicesCount' => $servicesCount,
             'employeesCount' => $employeesCount,
+            'todayAppointments' => $appointmentRepository->findByEstablishmentForToday($establishment, null, 50),
         ]);
     }
 
@@ -463,6 +476,72 @@ final class ManagerController extends AbstractController
         ]);
     }
 
+    #[Route('/establishment/{id}/history', name: 'manager_history', methods: ['GET'])]
+    public function history(
+        Establishment $establishment,
+        EstablishmentRepository $establishmentRepository,
+        SessionInterface $session,
+        AppointmentRepository $appointmentRepository,
+        Request $request
+    ): Response {
+        $this->denyAccessUnlessGranted(EstablishmentVoter::MANAGE, $establishment);
+        $session->set(self::SESSION_ACTIVE_ESTABLISHMENT, $establishment->getId());
+
+        $owned = $establishmentRepository->findBy(['owner' => $this->getUser()], ['id' => 'DESC']);
+        $clientQuery = trim((string) $request->query->get('client', ''));
+        $dateValue = trim((string) $request->query->get('date', ''));
+        $dateFilter = null;
+
+        if ($dateValue !== '') {
+            try {
+                $dateFilter = new \DateTimeImmutable($dateValue);
+            } catch (\Throwable) {
+                $dateFilter = null;
+            }
+        }
+
+        $pastAppointments = $appointmentRepository->findPastByEstablishment(
+            $establishment,
+            $clientQuery !== '' ? $clientQuery : null,
+            $dateFilter,
+            200
+        );
+
+        return $this->render('manager/history.html.twig', [
+            'establishment' => $establishment,
+            'ownedEstablishments' => $owned,
+            'pastAppointments' => $pastAppointments,
+            'filters' => [
+                'client' => $clientQuery,
+                'date' => $dateValue,
+            ],
+        ]);
+    }
+
+    #[Route('/establishment/{id}/stats', name: 'manager_stats', methods: ['GET'])]
+    public function stats(
+        Establishment $establishment,
+        EstablishmentRepository $establishmentRepository,
+        SessionInterface $session,
+        AppointmentRepository $appointmentRepository,
+        ChartBuilderInterface $chartBuilder
+    ): Response {
+        $this->denyAccessUnlessGranted(EstablishmentVoter::MANAGE, $establishment);
+        $session->set(self::SESSION_ACTIVE_ESTABLISHMENT, $establishment->getId());
+
+        $owned = $establishmentRepository->findBy(['owner' => $this->getUser()], ['id' => 'DESC']);
+        $stats = $this->buildEstablishmentStats($establishment, $appointmentRepository);
+
+        return $this->render('manager/stats.html.twig', [
+            'establishment' => $establishment,
+            'ownedEstablishments' => $owned,
+            'stats' => $stats,
+            'monthlyVolumeChart' => $this->buildMonthlyVolumeChart($chartBuilder, $stats),
+            'monthlyStatusChart' => $this->buildMonthlyStatusChart($chartBuilder, $stats),
+            'professionalLoadChart' => $this->buildProfessionalLoadChart($chartBuilder, $stats),
+        ]);
+    }
+
     #[Route('/establishments', name: 'manager_select_establishment', methods: ['GET'])]
     public function selectEstablishments(
         EstablishmentRepository $establishmentRepository,
@@ -522,5 +601,258 @@ final class ManagerController extends AbstractController
         }
 
         return $fallback;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildEstablishmentStats(Establishment $establishment, AppointmentRepository $appointmentRepository): array
+    {
+        $now = new \DateTimeImmutable();
+        $monthStart = new \DateTimeImmutable('first day of this month midnight');
+        $nextMonthStart = $monthStart->modify('first day of next month midnight');
+        $yearStart = new \DateTimeImmutable('first day of january this year midnight');
+        $nextYearStart = $yearStart->modify('first day of january next year midnight');
+
+        $monthAppointments = $appointmentRepository->findByEstablishmentBetweenDates($establishment, $monthStart, $nextMonthStart);
+        $yearAppointments = $appointmentRepository->findByEstablishmentBetweenDates($establishment, $yearStart, $nextYearStart);
+
+        $monthSummary = [
+            'total' => count($monthAppointments),
+            'past' => 0,
+            'upcoming' => 0,
+            'cancelled' => 0,
+            'confirmed' => 0,
+            'pending' => 0,
+        ];
+
+        foreach ($monthAppointments as $appointment) {
+            if ($appointment->getStatus() === 'cancelled') {
+                ++$monthSummary['cancelled'];
+                continue;
+            }
+
+            if ($appointment->getStatus() === 'confirmed') {
+                ++$monthSummary['confirmed'];
+            }
+
+            if ($appointment->getStatus() === 'pending') {
+                ++$monthSummary['pending'];
+            }
+
+            if ($this->isEndedAppointment($appointment, $now)) {
+                ++$monthSummary['past'];
+            } else {
+                ++$monthSummary['upcoming'];
+            }
+        }
+
+        $yearSummary = [
+            'total' => count($yearAppointments),
+            'past' => 0,
+            'upcoming' => 0,
+            'cancelled' => 0,
+            'confirmed' => 0,
+            'pending' => 0,
+        ];
+
+        $monthlyLabels = ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aou', 'Sep', 'Oct', 'Nov', 'Dec'];
+        $monthlyTotals = array_fill(0, 12, 0);
+        $monthlyPast = array_fill(0, 12, 0);
+        $monthlyUpcoming = array_fill(0, 12, 0);
+        $monthlyCancelled = array_fill(0, 12, 0);
+        $professionalLoads = [];
+
+        foreach ($yearAppointments as $appointment) {
+            $date = $appointment->getDate();
+            if (!$date instanceof \DateTimeInterface) {
+                continue;
+            }
+
+            $monthIndex = max(0, min(11, (int) $date->format('n') - 1));
+            ++$monthlyTotals[$monthIndex];
+
+            if ($appointment->getStatus() === 'cancelled') {
+                ++$yearSummary['cancelled'];
+                ++$monthlyCancelled[$monthIndex];
+                continue;
+            }
+
+            if ($appointment->getStatus() === 'confirmed') {
+                ++$yearSummary['confirmed'];
+            }
+
+            if ($appointment->getStatus() === 'pending') {
+                ++$yearSummary['pending'];
+            }
+
+            if ($this->isEndedAppointment($appointment, $now)) {
+                ++$yearSummary['past'];
+                ++$monthlyPast[$monthIndex];
+            } else {
+                ++$yearSummary['upcoming'];
+                ++$monthlyUpcoming[$monthIndex];
+            }
+
+            $professional = $appointment->getProfessional();
+            $professionalLabel = $professional instanceof User
+                ? trim(sprintf('%s %s', $professional->getFirstName() ?? '', $professional->getLastName() ?? ''))
+                : 'Non assigne';
+
+            if ($professionalLabel === '') {
+                $professionalLabel = 'Non assigne';
+            }
+
+            $professionalLoads[$professionalLabel] = ($professionalLoads[$professionalLabel] ?? 0) + 1;
+        }
+
+        arsort($professionalLoads);
+
+        return [
+            'month' => $monthSummary,
+            'year' => $yearSummary,
+            'monthly_labels' => $monthlyLabels,
+            'monthly_totals' => $monthlyTotals,
+            'monthly_past' => $monthlyPast,
+            'monthly_upcoming' => $monthlyUpcoming,
+            'monthly_cancelled' => $monthlyCancelled,
+            'professional_labels' => array_slice(array_keys($professionalLoads), 0, 8),
+            'professional_values' => array_slice(array_values($professionalLoads), 0, 8),
+        ];
+    }
+
+    private function buildMonthlyVolumeChart(ChartBuilderInterface $chartBuilder, array $stats): Chart
+    {
+        $chart = $chartBuilder->createChart(Chart::TYPE_BAR);
+        $chart->setData([
+            'labels' => $stats['monthly_labels'],
+            'datasets' => [
+                [
+                    'label' => 'Realises',
+                    'data' => $stats['monthly_past'],
+                    'backgroundColor' => '#0f766e',
+                    'borderRadius' => 8,
+                ],
+                [
+                    'label' => 'A venir',
+                    'data' => $stats['monthly_upcoming'],
+                    'backgroundColor' => '#1d4ed8',
+                    'borderRadius' => 8,
+                ],
+                [
+                    'label' => 'Annules',
+                    'data' => $stats['monthly_cancelled'],
+                    'backgroundColor' => '#ef4444',
+                    'borderRadius' => 8,
+                ],
+            ],
+        ]);
+        $chart->setOptions($this->buildResponsiveChartOptions('Volumes mensuels'));
+
+        return $chart;
+    }
+
+    private function buildMonthlyStatusChart(ChartBuilderInterface $chartBuilder, array $stats): Chart
+    {
+        $chart = $chartBuilder->createChart(Chart::TYPE_DOUGHNUT);
+        $chart->setData([
+            'labels' => ['Passes', 'A venir', 'Annules'],
+            'datasets' => [[
+                'data' => [
+                    $stats['month']['past'],
+                    $stats['month']['upcoming'],
+                    $stats['month']['cancelled'],
+                ],
+                'backgroundColor' => ['#0f766e', '#1d4ed8', '#ef4444'],
+                'borderWidth' => 0,
+            ]],
+        ]);
+        $chart->setOptions([
+            'responsive' => true,
+            'maintainAspectRatio' => false,
+            'plugins' => [
+                'legend' => [
+                    'position' => 'bottom',
+                ],
+            ],
+        ]);
+
+        return $chart;
+    }
+
+    private function buildProfessionalLoadChart(ChartBuilderInterface $chartBuilder, array $stats): Chart
+    {
+        $chart = $chartBuilder->createChart(Chart::TYPE_BAR);
+        $chart->setData([
+            'labels' => $stats['professional_labels'],
+            'datasets' => [[
+                'label' => 'Rendez-vous',
+                'data' => $stats['professional_values'],
+                'backgroundColor' => '#111827',
+                'borderRadius' => 8,
+            ]],
+        ]);
+        $chart->setOptions($this->buildResponsiveChartOptions('Charge par professionnel', true));
+
+        return $chart;
+    }
+
+    private function buildResponsiveChartOptions(string $title, bool $horizontal = false): array
+    {
+        $scales = $horizontal
+            ? [
+                'x' => [
+                    'beginAtZero' => true,
+                    'ticks' => [
+                        'precision' => 0,
+                    ],
+                ],
+            ]
+            : [
+                'y' => [
+                    'beginAtZero' => true,
+                    'ticks' => [
+                        'precision' => 0,
+                    ],
+                ],
+            ];
+
+        return [
+            'responsive' => true,
+            'maintainAspectRatio' => false,
+            'indexAxis' => $horizontal ? 'y' : 'x',
+            'plugins' => [
+                'legend' => [
+                    'position' => 'bottom',
+                ],
+                'title' => [
+                    'display' => false,
+                    'text' => $title,
+                ],
+            ],
+            'scales' => $scales,
+        ];
+    }
+
+    private function isEndedAppointment(\App\Entity\Appointment $appointment, \DateTimeImmutable $now): bool
+    {
+        $endAt = $this->getAppointmentEndAt($appointment);
+
+        return $endAt instanceof \DateTimeImmutable && $endAt <= $now;
+    }
+
+    private function getAppointmentEndAt(\App\Entity\Appointment $appointment): ?\DateTimeImmutable
+    {
+        $date = $appointment->getDate();
+        $endTime = $appointment->getEndTime();
+
+        if (!$date instanceof \DateTimeInterface || !$endTime instanceof \DateTimeInterface) {
+            return null;
+        }
+
+        return \DateTimeImmutable::createFromFormat(
+            'Y-m-d H:i:s',
+            sprintf('%s %s', $date->format('Y-m-d'), $endTime->format('H:i:s'))
+        ) ?: null;
     }
 }

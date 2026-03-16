@@ -1,0 +1,117 @@
+{% extends 'manager/base_manager.html.twig' %}
+
+{% block title %}Historique des rendez-vous{% endblock %}
+
+{% block manager_content %}
+  <section class="mgr-pagehead">
+    <div>
+      <h1>Historique des rendez-vous</h1>
+      <p class="muted">Retrouvez les rendez-vous passés et filtrez-les par client ou par date.</p>
+    </div>
+  </section>
+
+  <section class="mgr-card">
+    <form method="get" class="mgr-filterbar">
+      <div class="mgr-field">
+        <label class="mgr-field__label" for="history-client">Nom du client</label>
+        <input
+          id="history-client"
+          class="mgr-input"
+          type="search"
+          name="client"
+          value="{{ filters.client }}"
+          placeholder="Ex. Jules Azer"
+        >
+      </div>
+
+      <div class="mgr-field">
+        <label class="mgr-field__label" for="history-date">Date</label>
+        <input
+          id="history-date"
+          class="mgr-input"
+          type="date"
+          name="date"
+          value="{{ filters.date }}"
+        >
+      </div>
+
+      <div class="mgr-filterbar__actions">
+        <button class="btn btn--dark" type="submit">Rechercher</button>
+        <a class="btn btn--outline" href="{{ path('manager_history', { id: establishment.id }) }}">Réinitialiser</a>
+      </div>
+    </form>
+  </section>
+
+  <div style="height: 16px;"></div>
+
+  <section class="mgr-card">
+    <div class="mgr-sectionhead">
+      <div>
+        <h2>Rendez-vous passés ({{ pastAppointments|length }})</h2>
+        <p class="muted">Les rendez-vous terminés disparaissent automatiquement des vues opérationnelles et restent ici.</p>
+      </div>
+    </div>
+
+    {% if pastAppointments is not empty %}
+      <div class="mgr-list" style="margin-top: 18px;">
+        {% for appointment in pastAppointments %}
+          <article class="mgr-item mgr-item--stack">
+            <div class="mgr-item__main">
+              <div class="mgr-item__title">
+                {% if appointment.client %}
+                  {{ appointment.client.firstName ?? '' }} {{ appointment.client.lastName ?? '' }}
+                {% else %}
+                  Réservation #{{ appointment.id }}
+                {% endif %}
+              </div>
+
+              <div class="mgr-item__meta">
+                {% if appointment.date %}
+                  <span>{{ appointment.date|date('d/m/Y') }}</span>
+                {% endif %}
+
+                {% if appointment.startTime %}
+                  <span>{{ appointment.startTime|date('H:i') }}</span>
+                {% endif %}
+
+                {% if appointment.endTime %}
+                  <span>Fin {{ appointment.endTime|date('H:i') }}</span>
+                {% endif %}
+
+                {% if appointment.service %}
+                  <span>{{ appointment.service.name }}</span>
+                {% endif %}
+
+                {% if appointment.professional %}
+                  <span>
+                    Pro:
+                    {{ appointment.professional.firstName ?? '' }} {{ appointment.professional.lastName ?? '' }}
+                  </span>
+                {% endif %}
+
+                {% if appointment.client and appointment.client.phone %}
+                  <span>{{ appointment.client.phone }}</span>
+                {% endif %}
+
+                {% if appointment.client and appointment.client.email %}
+                  <span>{{ appointment.client.email }}</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="mgr-item__aside">
+              {% set status = appointment.status ?? 'pending' %}
+              {% set statusLabel = status == 'confirmed' ? 'Accepté' : (status == 'cancelled' ? 'Annulé' : 'En attente') %}
+              {% set statusClass = status == 'confirmed' ? 'mgr-badge--ok' : (status == 'cancelled' ? 'mgr-badge--danger' : 'mgr-badge--muted') %}
+              <div class="mgr-item__actions">
+                <span class="mgr-badge {{ statusClass }}">{{ statusLabel }}</span>
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted" style="margin-top: 12px;">Aucun rendez-vous passé ne correspond à ce filtre.</p>
+    {% endif %}
+  </section>
+{% endblock %}

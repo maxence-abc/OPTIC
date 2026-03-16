@@ -18,9 +18,15 @@
 
         <div class="row">
             <div class="col-md-6 mb-3">
-                {{ form_row(form.startTime) }}
+                {{ form_row(form.professional) }}
             </div>
 
+            <div class="col-md-6 mb-3">
+                {{ form_row(form.startTime) }}
+            </div>
+        </div>
+
+        <div class="row">
             {# Équipement caché tant qu'on n'a pas de créneaux, et seulement si des choix existent #}
             <div class="col-md-6 mb-3" id="equipement-row" style="display:none;">
                 {{ form_row(form.equipement) }}
@@ -46,6 +52,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   const serviceField = document.querySelector('#appointment_service');
   const dateField = document.querySelector('#appointment_date');
+  const professionalField = document.querySelector('#appointment_professional');
   const equipField = document.querySelector('#appointment_equipement');
   const equipRow   = document.querySelector('#equipement-row');
   const slotField  = document.querySelector('#appointment_startTime');
@@ -100,6 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function refreshSlots() {
     const service = serviceField?.value;
     const date = dateField?.value;
+    const professional = professionalField?.value;
     const equip = equipField?.value;
 
     if (!service || !date) {
@@ -113,6 +121,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams();
     params.set('service', service);
     params.set('date', date);
+
+    if (professional) {
+      params.set('professional', professional);
+    }
 
     // On ne filtre par équipement que si le bloc est visible (donc slots OK)
     if (equipRow && equipRow.style.display !== 'none' && equip) {
@@ -137,6 +149,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   dateField?.addEventListener('change', refreshSlots);
+
+  professionalField?.addEventListener('change', refreshSlots);
 
   equipField?.addEventListener('change', () => {
     // Ne pas recalculer si l'équipement n’est pas visible (sinon on se re-filtre à vide)

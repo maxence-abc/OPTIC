@@ -27,6 +27,10 @@
       {% if app.user and is_granted('ROLE_ADMIN_PRO') %}
         <a href="{{ path('app_manager_home') }}" class="navbar__link">Gestion</a>
       {% endif %}
+
+      {% if app.user and is_granted('ROLE_PRO') %}
+        <a href="{{ path('app_pro_dashboard') }}" class="navbar__link">Mon entreprise</a>
+      {% endif %}
     </nav>
 
     {# User #}

@@ -6,8 +6,10 @@ use App\Entity\Appointment;
 use App\Entity\Equipement;
 use App\Entity\Establishment;
 use App\Entity\Service;
+use App\Entity\User;
 use App\Repository\EquipementRepository;
 use App\Repository\ServiceRepository;
+use App\Repository\UserRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -19,6 +21,11 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class AppointmentType extends AbstractType
 {
+    public function __construct(
+        private readonly UserRepository $userRepository
+    ) {
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         // Champs de base (on met service "placeholder", on le reconfigure dynamiquement ensuite)
@@ -35,6 +42,9 @@ class AppointmentType extends AbstractType
                 'widget' => 'single_text',
                 'label' => 'Date du rendez-vous',
                 'required' => true,
+                'attr' => [
+                    'min' => (new \DateTimeImmutable('today'))->format('Y-m-d'),
+                ],
             ])
             ->add('startTime', ChoiceType::class, [
                 'label' => 'Créneau horaire disponible',
@@ -42,6 +52,14 @@ class AppointmentType extends AbstractType
                 'placeholder' => 'Choisissez un créneau',
                 'required' => true,
                 'mapped' => false,
+            ])
+            ->add('professional', EntityType::class, [
+                'class' => User::class,
+                'choices' => [],
+                'choice_label' => static fn (User $user): string => trim(sprintf('%s %s', $user->getFirstName() ?? '', $user->getLastName() ?? '')),
+                'label' => 'Professionnel souhaité',
+                'placeholder' => 'Indifférent',
+                'required' => false,
             ])
             ->add('equipement', EntityType::class, [
                 'class' => Equipement::class,
@@ -95,6 +113,15 @@ class AppointmentType extends AbstractType
                 'choice_label' => 'name',
                 'label' => 'Équipement (facultatif)',
                 'placeholder' => 'Aucun équipement',
+                'required' => false,
+            ]);
+
+            $form->add('professional', EntityType::class, [
+                'class' => User::class,
+                'choices' => $this->userRepository->findBookableCandidatesByEstablishment($est),
+                'choice_label' => static fn (User $user): string => trim(sprintf('%s %s', $user->getFirstName() ?? '', $user->getLastName() ?? '')),
+                'label' => 'Professionnel souhaité',
+                'placeholder' => 'Indifférent',
                 'required' => false,
             ]);
         });

@@ -1,0 +1,66 @@
+{% extends 'pro_dashboard/_layout.html.twig' %}
+
+{% block title %}Réservations{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="/css/pages/account.css">
+{% endblock %}
+
+{% block pro_content %}
+  <section class="mgr-pagehead pro-pagehead">
+    <div>
+      <h1>Réservations</h1>
+      <p>Gérez vos rendez-vous encore en cours ou à venir, du plus proche au plus lointain.</p>
+    </div>
+
+    <div class="mgr-item__actions">
+      <span class="mgr-badge">{{ manageableAppointments|length }} à traiter</span>
+      <span class="mgr-badge">{{ todayAppointments|length }} aujourd’hui</span>
+    </div>
+  </section>
+
+  <section class="account pro-account">
+    <div class="account__container pro-account__container">
+      <div class="account-card">
+        <div class="account-card__header">
+          <h2 class="account-card__title">Tous les rendez-vous d'aujourd'hui ({{ todayAppointments|length }})</h2>
+        </div>
+
+        {% if todayAppointments is not empty %}
+          <div class="reservation-list">
+            {% for appointment in todayAppointments %}
+              {% include 'pro_dashboard/_reservation_card.html.twig' with {
+                appointment: appointment,
+                transferProfessionals: transferProfessionals,
+                showActions: false
+              } only %}
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="account-muted">Aucun rendez-vous aujourd’hui pour cet établissement.</p>
+        {% endif %}
+      </div>
+
+      <div class="account-card">
+        <div class="account-card__header">
+          <h2 class="account-card__title">Réservations à traiter ({{ manageableAppointments|length }})</h2>
+        </div>
+
+        {% if manageableAppointments is not empty %}
+          <div class="reservation-list">
+            {% for appointment in manageableAppointments %}
+              {% include 'pro_dashboard/_reservation_card.html.twig' with {
+                appointment: appointment,
+                transferProfessionals: transferProfessionals,
+                showActions: true
+              } only %}
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="account-muted">Aucune réservation du jour ou à venir pour le moment.</p>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+{% endblock %}

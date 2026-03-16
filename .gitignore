@@ -29,3 +29,8 @@ Thumbs.db
 /docker-compose.override.yml
 /.dockerignore
 ###< Docker ###
+
+###> symfony/asset-mapper ###
+/public/assets/
+/assets/vendor/
+###< symfony/asset-mapper ###

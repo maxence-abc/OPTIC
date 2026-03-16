@@ -4,11 +4,13 @@ namespace App\Controller;
 
 use App\Entity\Appointment;
 use App\Entity\Equipement;
+use App\Entity\Establishment;
 use App\Entity\OpeningHour;
 use App\Entity\Service;
 use App\Entity\User;
 use App\Form\AppointmentType;
 use App\Repository\AppointmentRepository;
+use App\Repository\UserRepository;
 use Doctrine\DBAL\Exception\DriverException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -73,7 +75,12 @@ final class AppointmentController extends AbstractController
      * GET /appointment/slots?service=1&date=2026-01-05&equipement=2&professional=10
      */
     #[Route('/slots', name: 'app_appointment_slots', methods: ['GET'])]
-    public function slots(Request $request, EntityManagerInterface $em, AppointmentRepository $repo): JsonResponse
+    public function slots(
+        Request $request,
+        EntityManagerInterface $em,
+        AppointmentRepository $repo,
+        UserRepository $userRepository
+    ): JsonResponse
     {
         $serviceId = $request->query->getInt('service');
         $dateStr = $request->query->get('date');
@@ -108,11 +115,7 @@ final class AppointmentController extends AbstractController
 
         $professional = null;
         if ($professionalId > 0) {
-            /** @var User|null $professional */
-            $professional = $em->getRepository(User::class)->find($professionalId);
-            if ($professional && $professional->getEstablishment()?->getId() !== $establishment->getId()) {
-                $professional = null;
-            }
+            $professional = $this->resolveSelectedProfessional($professionalId, $establishment, $userRepository);
         }
 
         $slots = $this->generateAvailableSlotsAjax(
@@ -120,6 +123,7 @@ final class AppointmentController extends AbstractController
             $date,
             $repo,
             $em,
+            $userRepository,
             $equipement?->getId(),
             $professional?->getId()
         );
@@ -129,7 +133,12 @@ final class AppointmentController extends AbstractController
 
     #[Route('/new', name: 'app_appointment_new', methods: ['GET', 'POST'])]
     #[IsGranted('ROLE_CLIENT')]
-    public function new(Request $request, EntityManagerInterface $entityManager, AppointmentRepository $appointmentRepository): Response
+    public function new(
+        Request $request,
+        EntityManagerInterface $entityManager,
+        AppointmentRepository $appointmentRepository,
+        UserRepository $userRepository
+    ): Response
     {
         $user = $this->getUser();
         if (!$user instanceof User) {
@@ -143,6 +152,7 @@ final class AppointmentController extends AbstractController
 
         $selectedServiceId = $posted['service'] ?? $request->query->get('service') ?? null;
         $selectedDate = $posted['date'] ?? $request->query->get('date') ?? null;
+        $selectedProfessionalId = $posted['professional'] ?? $request->query->get('professional') ?? null;
         $selectedEquipementId = $posted['equipement'] ?? null;
 
         if ($selectedServiceId) {
@@ -160,6 +170,18 @@ final class AppointmentController extends AbstractController
             }
         }
 
+        if ($selectedProfessionalId && $appointment->getService()?->getEstablishment()) {
+            $preferredProfessional = $this->resolveSelectedProfessional(
+                (int) $selectedProfessionalId,
+                $appointment->getService()->getEstablishment(),
+                $userRepository
+            );
+
+            if ($preferredProfessional instanceof User) {
+                $appointment->setProfessional($preferredProfessional);
+            }
+        }
+
         if ($appointment->getService() && $appointment->getDate()) {
             $equipementId = null;
             if (!empty($selectedEquipementId)) {
@@ -171,8 +193,9 @@ final class AppointmentController extends AbstractController
                 $appointment->getDate(),
                 $appointmentRepository,
                 $entityManager,
+                $userRepository,
                 $equipementId ?: null,
-                null
+                $appointment->getProfessional()?->getId()
             );
 
             if (!empty($slots)) {
@@ -204,16 +227,18 @@ final class AppointmentController extends AbstractController
                 return $this->redirectToRoute('app_appointment_new', [
                     'service' => $service->getId(),
                     'date' => $selectedDateObj?->format('Y-m-d'),
+                    'professional' => $appointment->getProfessional()?->getId(),
                 ]);
             }
 
             $validTimes = array_values($availableSlotsForForm);
             if (!in_array($selectedTime, $validTimes, true)) {
                 $this->addFlash('error', 'Ce créneau n’est plus disponible. Merci de choisir un autre horaire.');
-                return $this->redirectToRoute('app_appointment_new', [
-                    'service' => $service->getId(),
-                    'date' => $selectedDateObj->format('Y-m-d'),
-                ]);
+                return $this->redirectToRoute('app_appointment_new', $this->buildBookingRedirectParams(
+                    $service,
+                    $selectedDateObj,
+                    $appointment->getProfessional()
+                ));
             }
 
             [$hour, $minute] = explode(':', $selectedTime);
@@ -223,65 +248,80 @@ final class AppointmentController extends AbstractController
             $buffer = (int) ($service->getBufferTime() ?? 0);
             $endTime = (clone $startTime)->modify("+{$duration} minutes")->modify("+{$buffer} minutes");
 
-            $appointment->setStartTime($startTime);
-            $appointment->setEndTime($endTime);
-            $appointment->setStatus('pending');
-            $appointment->setCreatedAt(new \DateTimeImmutable());
+            if ($this->isPastSlot($startTime)) {
+                $this->addFlash('error', 'Impossible de réserver un créneau déjà passé.');
 
-            $proIds = $appointmentRepository->findProfessionalIdsForEstablishment($establishment->getId());
-            if (!$proIds && $establishment->getOwner()) {
-                $proIds = [$establishment->getOwner()->getId()];
+                return $this->redirectToRoute('app_appointment_new', $this->buildBookingRedirectParams(
+                    $service,
+                    $selectedDateObj,
+                    $appointment->getProfessional()
+                ));
             }
 
-            if (!$proIds) {
+            $preferredProfessional = $appointment->getProfessional();
+            if ($preferredProfessional instanceof User) {
+                $preferredProfessional = $this->resolveSelectedProfessional(
+                    $preferredProfessional->getId(),
+                    $establishment,
+                    $userRepository
+                );
+
+                if (!$preferredProfessional instanceof User) {
+                    $this->addFlash('error', 'Le professionnel sélectionné n’est pas disponible pour cet établissement.');
+
+                    return $this->redirectToRoute('app_appointment_new', $this->buildBookingRedirectParams(
+                        $service,
+                        $selectedDateObj
+                    ));
+                }
+            }
+
+            $candidateIds = array_values(array_filter(array_map(
+                static fn (User $candidate): ?int => $candidate->getId(),
+                $preferredProfessional instanceof User
+                    ? [$preferredProfessional]
+                    : $userRepository->findBookableCandidatesByEstablishment($establishment)
+            )));
+
+            if (!$candidateIds) {
                 $this->addFlash('error', 'Aucun professionnel n’est disponible pour cet établissement.');
-                return $this->redirectToRoute('app_appointment_new', [
-                    'service' => $service->getId(),
-                    'date' => $selectedDateObj->format('Y-m-d'),
-                ]);
+
+                return $this->redirectToRoute('app_appointment_new', $this->buildBookingRedirectParams(
+                    $service,
+                    $selectedDateObj,
+                    $preferredProfessional
+                ));
             }
 
             $saved = false;
+            $clientId = $user->getId();
+            $serviceId = $service->getId();
+            $equipementId = $appointment->getEquipement()?->getId();
 
-            foreach ($proIds as $proId) {
-                if ($appointmentRepository->hasOverlapForProfessional($proId, $selectedDateObj, $startTime, $endTime)) {
+            foreach ($candidateIds as $candidateId) {
+                if ($appointmentRepository->hasOverlapForProfessional($candidateId, $selectedDateObj, $startTime, $endTime)) {
                     continue;
                 }
-
-                /** @var User|null $professional */
-                $professional = $entityManager->getRepository(User::class)->find($proId);
-                if (!$professional) {
-                    continue;
-                }
-
-                $appointment->setProfessional($professional);
 
                 try {
-                    $entityManager->persist($appointment);
+                    $candidateAppointment = $this->createAppointmentDraft(
+                        $entityManager,
+                        $clientId,
+                        $serviceId,
+                        $candidateId,
+                        $selectedDateObj,
+                        $startTime,
+                        $endTime,
+                        $equipementId
+                    );
+
+                    $entityManager->persist($candidateAppointment);
                     $entityManager->flush();
                     $saved = true;
                     break;
                 } catch (DriverException $e) {
                     if ($e->getSQLState() === '23P01') {
                         $entityManager->clear();
-
-                        $appointment = new Appointment();
-                        $appointment->setClient($user);
-                        $appointment->setService($service);
-                        $appointment->setDate($selectedDateObj);
-                        $appointment->setStartTime($startTime);
-                        $appointment->setEndTime($endTime);
-                        $appointment->setStatus('pending');
-                        $appointment->setCreatedAt(new \DateTimeImmutable());
-
-                        $equipId = !empty($selectedEquipementId) ? (int) $selectedEquipementId : 0;
-                        if ($equipId > 0) {
-                            /** @var Equipement|null $equip */
-                            $equip = $entityManager->getRepository(Equipement::class)->find($equipId);
-                            if ($equip) {
-                                $appointment->setEquipement($equip);
-                            }
-                        }
 
                         continue;
                     }
@@ -291,11 +331,18 @@ final class AppointmentController extends AbstractController
             }
 
             if (!$saved) {
-                $this->addFlash('error', 'Ce créneau n’est plus disponible. Merci de choisir un autre horaire.');
-                return $this->redirectToRoute('app_appointment_new', [
-                    'service' => $service->getId(),
-                    'date' => $selectedDateObj->format('Y-m-d'),
-                ]);
+                $this->addFlash(
+                    'error',
+                    $preferredProfessional instanceof User
+                        ? 'Le professionnel choisi n’est plus disponible sur ce créneau. Essayez un autre horaire ou laissez le choix sur Indifférent.'
+                        : 'Ce créneau n’est plus disponible. Merci de choisir un autre horaire.'
+                );
+
+                return $this->redirectToRoute('app_appointment_new', $this->buildBookingRedirectParams(
+                    $service,
+                    $selectedDateObj,
+                    $preferredProfessional
+                ));
             }
 
             $this->addFlash('success', 'Rendez-vous créé avec succès.');
@@ -425,6 +472,7 @@ final class AppointmentController extends AbstractController
         \DateTime $date,
         AppointmentRepository $repo,
         EntityManagerInterface $em,
+        UserRepository $userRepository,
         ?int $equipementId = null,
         ?int $professionalId = null
     ): array {
@@ -461,10 +509,10 @@ final class AppointmentController extends AbstractController
         if ($professionalId) {
             $proIds = [$professionalId];
         } else {
-            $proIds = $repo->findProfessionalIdsForEstablishment($establishment->getId());
-            if (!$proIds && $establishment->getOwner()) {
-                $proIds = [$establishment->getOwner()->getId()];
-            }
+            $proIds = array_values(array_filter(array_map(
+                static fn (User $candidate): ?int => $candidate->getId(),
+                $userRepository->findBookableCandidatesByEstablishment($establishment)
+            )));
         }
 
         if (!$proIds) {
@@ -480,6 +528,11 @@ final class AppointmentController extends AbstractController
 
             if ($slotEndBlocking > $close) {
                 break;
+            }
+
+            if ($this->isPastSlot($slotStart)) {
+                $current->modify("+{$stepMinutes} minutes");
+                continue;
             }
 
             if ($equipementId) {
@@ -505,5 +558,72 @@ final class AppointmentController extends AbstractController
         }
 
         return $slots;
+    }
+
+    private function isPastSlot(\DateTimeInterface $startTime): bool
+    {
+        return \DateTimeImmutable::createFromInterface($startTime) <= new \DateTimeImmutable();
+    }
+
+    private function resolveSelectedProfessional(
+        int $professionalId,
+        Establishment $establishment,
+        UserRepository $userRepository
+    ): ?User {
+        if ($professionalId <= 0) {
+            return null;
+        }
+
+        foreach ($userRepository->findBookableCandidatesByEstablishment($establishment) as $candidate) {
+            if ($candidate->getId() === $professionalId) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{service:int, date:string, professional?:int}
+     */
+    private function buildBookingRedirectParams(Service $service, \DateTime $selectedDate, ?User $professional = null): array
+    {
+        $params = [
+            'service' => $service->getId(),
+            'date' => $selectedDate->format('Y-m-d'),
+        ];
+
+        if ($professional?->getId()) {
+            $params['professional'] = $professional->getId();
+        }
+
+        return $params;
+    }
+
+    private function createAppointmentDraft(
+        EntityManagerInterface $entityManager,
+        int $clientId,
+        int $serviceId,
+        int $professionalId,
+        \DateTime $selectedDate,
+        \DateTime $startTime,
+        \DateTime $endTime,
+        ?int $equipementId = null
+    ): Appointment {
+        $appointment = new Appointment();
+        $appointment->setClient($entityManager->getReference(User::class, $clientId));
+        $appointment->setService($entityManager->getReference(Service::class, $serviceId));
+        $appointment->setProfessional($entityManager->getReference(User::class, $professionalId));
+        $appointment->setDate(clone $selectedDate);
+        $appointment->setStartTime(clone $startTime);
+        $appointment->setEndTime(clone $endTime);
+        $appointment->setStatus('pending');
+        $appointment->setCreatedAt(new \DateTimeImmutable());
+
+        if ($equipementId) {
+            $appointment->setEquipement($entityManager->getReference(Equipement::class, $equipementId));
+        }
+
+        return $appointment;
     }
 }

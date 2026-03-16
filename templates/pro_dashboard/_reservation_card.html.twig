@@ -1,0 +1,183 @@
+{% set service = appointment.service %}
+{% set establishment = service ? service.establishment : null %}
+{% set redirectRoute = app.request.attributes.get('_route') ?: 'app_pro_reservations' %}
+
+{% set cover = null %}
+{% if establishment and establishment.establishmentImages is defined and establishment.establishmentImages|length > 0 %}
+  {% set cover = establishment.establishmentImages|first %}
+{% endif %}
+
+{% set imgUrl = cover ? asset('uploads/' ~ cover.path) : asset('uploads/establishments/default.jpg') %}
+
+{% set status = appointment.status ?? 'pending' %}
+{% set statusLabel = {
+  'pending': 'En attente',
+  'confirmed': 'Accepté',
+  'cancelled': 'Annulé',
+  'completed': 'Terminé'
+}[status] ?? status %}
+
+{% set statusClass = {
+  'pending': 'reservation-status--pending',
+  'confirmed': 'reservation-status--confirmed',
+  'cancelled': 'reservation-status--cancelled',
+  'completed': 'reservation-status--completed'
+}[status] ?? 'reservation-status--pending' %}
+
+{% set showActions = showActions is defined ? showActions : true %}
+{% set canTransfer = transferProfessionals|length > 1 or (appointment.professional is null and transferProfessionals|length > 0) %}
+
+<article class="reservation-card pro-reservation-card">
+  <div class="reservation-card__media">
+    <img
+      class="reservation-card__img"
+      src="{{ imgUrl }}"
+      alt="Photo {{ establishment ? establishment.name : 'Établissement' }}"
+      loading="lazy"
+      onerror="this.onerror=null;this.src='{{ asset('uploads/establishments/default.jpg') }}';"
+    />
+  </div>
+
+  <div class="reservation-card__body">
+    <div class="reservation-card__top">
+      <div>
+        <h3 class="reservation-card__title">
+          {% if appointment.client %}
+            {{ appointment.client.firstName ?? '' }} {{ appointment.client.lastName ?? '' }}
+          {% else %}
+            Réservation #{{ appointment.id }}
+          {% endif %}
+        </h3>
+
+        <div class="reservation-card__meta">
+          <span class="reservation-pill">{{ service ? service.name : 'Rendez-vous' }}</span>
+        </div>
+      </div>
+
+      <span class="reservation-status {{ statusClass }}">{{ statusLabel }}</span>
+    </div>
+
+    <div class="reservation-card__infos">
+      <div class="reservation-info">
+        <span class="reservation-info__icon" aria-hidden="true">{{ ux_icon('uil:calendar-alt') }}</span>
+        <span class="reservation-info__text">
+          {{ appointment.date ? appointment.date|date('l j F Y') : '—' }}
+        </span>
+      </div>
+
+      <div class="reservation-info">
+        <span class="reservation-info__icon" aria-hidden="true">{{ ux_icon('uil:clock') }}</span>
+        <span class="reservation-info__text">
+          {% if appointment.startTime %}{{ appointment.startTime|date('H:i') }}{% else %}—{% endif %}
+          {% if appointment.endTime %} — {{ appointment.endTime|date('H:i') }}{% endif %}
+        </span>
+      </div>
+
+      {% if establishment %}
+        <div class="reservation-info">
+          <span class="reservation-info__icon" aria-hidden="true">{{ ux_icon('uil:map-marker') }}</span>
+          <span class="reservation-info__text">
+            {{ establishment.address }}, {{ establishment.postalCode }} {{ establishment.city }}
+          </span>
+        </div>
+      {% endif %}
+
+      {% if appointment.client and appointment.client.phone %}
+        <div class="reservation-info">
+          <span class="reservation-info__icon" aria-hidden="true">{{ ux_icon('uil:phone') }}</span>
+          <span class="reservation-info__text">{{ appointment.client.phone }}</span>
+        </div>
+      {% endif %}
+
+      {% if appointment.professional %}
+        <div class="reservation-info">
+          <span class="reservation-info__icon" aria-hidden="true">{{ ux_icon('uil:user') }}</span>
+          <span class="reservation-info__text">
+            Professionnel : {{ appointment.professional.firstName }} {{ appointment.professional.lastName }}
+          </span>
+        </div>
+      {% endif %}
+
+      {% if appointment.transferredBy and appointment.professional %}
+        <div class="reservation-info">
+          <span class="reservation-info__icon" aria-hidden="true">{{ ux_icon('uil:exchange') }}</span>
+          <span class="reservation-info__text">
+            {{ appointment.transferredBy.firstName }} {{ appointment.transferredBy.lastName }}
+            a transféré à
+            {{ appointment.professional.firstName }} {{ appointment.professional.lastName }}
+            {% if appointment.transferredAt %}
+              <span class="reservation-info__muted">• {{ appointment.transferredAt|date('d/m/Y H:i') }}</span>
+            {% endif %}
+          </span>
+        </div>
+      {% endif %}
+
+      {% if service %}
+        <div class="reservation-info reservation-info--service">
+          <span class="reservation-info__label">Service :</span>
+          <span class="reservation-info__text">
+            {{ service.name }}
+            {% if service.price is defined and service.price is not null %}
+              <span class="reservation-info__muted">• {{ service.price }} €</span>
+            {% endif %}
+            {% if service.duration is defined and service.duration %}
+              <span class="reservation-info__muted">• {{ service.duration }} min</span>
+            {% endif %}
+          </span>
+        </div>
+      {% endif %}
+    </div>
+
+    {% if showActions %}
+      <div class="reservation-card__actions">
+        {% if status == 'pending' %}
+          <form method="post" action="{{ path('app_pro_appointment_accept', { id: appointment.id }) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('pro_accept_' ~ appointment.id) }}">
+            <input type="hidden" name="_redirect_route" value="{{ redirectRoute }}">
+            <twig:Button label="Accepter" variant="outline" size="sm" type="submit" iconLeft="uil:check" />
+          </form>
+        {% endif %}
+
+        {% if status != 'cancelled' %}
+          <form method="post" action="{{ path('app_pro_appointment_cancel', { id: appointment.id }) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('pro_cancel_' ~ appointment.id) }}">
+            <input type="hidden" name="_redirect_route" value="{{ redirectRoute }}">
+            <button class="btn btn--danger" type="submit">Annuler</button>
+          </form>
+        {% endif %}
+
+        {% if status != 'cancelled' %}
+          <form class="pro-reservation-transfer" method="post" action="{{ path('app_pro_appointment_transfer', { id: appointment.id }) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('pro_transfer_' ~ appointment.id) }}">
+            <input type="hidden" name="_redirect_route" value="{{ redirectRoute }}">
+
+            <select
+              class="pro-reservation-transfer__select"
+              name="professional_id"
+              aria-label="Choisir un professionnel pour transférer le rendez-vous {{ appointment.id }}"
+              {% if not canTransfer %}disabled{% endif %}
+            >
+              <option value="">Transférer à…</option>
+              {% for professional in transferProfessionals %}
+                {% if appointment.professional is null or professional.id != appointment.professional.id %}
+                  <option value="{{ professional.id }}">
+                    {{ professional.firstName ?? '' }} {{ professional.lastName ?? '' }}
+                  </option>
+                {% endif %}
+              {% endfor %}
+            </select>
+
+            <twig:Button
+              label="Transférer"
+              variant="outline"
+              size="sm"
+              type="submit"
+              iconLeft="uil:exchange"
+              :disabled="not canTransfer"
+            />
+          </form>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</article>

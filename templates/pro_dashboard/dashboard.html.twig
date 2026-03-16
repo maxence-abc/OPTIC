@@ -1,0 +1,220 @@
+{% extends 'pro_dashboard/_layout.html.twig' %}
+
+{% block title %}Espace professionnel{% endblock %}
+
+{% block pro_content %}
+  <section class="mgr-pagehead">
+    <div>
+      <h1>{{ establishment.name }}</h1>
+      <p>
+        {% if establishment.address is defined and establishment.address %}
+          {{ establishment.address }}
+          {% if establishment.city is defined and establishment.city %}
+            , {{ establishment.city }}
+          {% endif %}
+        {% endif %}
+      </p>
+    </div>
+
+    <div class="mgr-item__actions">
+      {% if establishment.category is defined and establishment.category %}
+        <span class="mgr-badge">{{ establishment.category }}</span>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="mgr-kpis">
+    <article class="mgr-kpi">
+      <div class="mgr-kpi__label">Réservations totales</div>
+      <div class="mgr-kpi__value">{{ totalAppointments }}</div>
+    </article>
+
+    <article class="mgr-kpi">
+      <div class="mgr-kpi__label">Ce mois</div>
+      <div class="mgr-kpi__value">{{ monthAppointments }}</div>
+    </article>
+
+    <article class="mgr-kpi">
+      <div class="mgr-kpi__label">Services</div>
+      <div class="mgr-kpi__value">{{ services|length }}</div>
+    </article>
+
+    <article class="mgr-kpi">
+      <div class="mgr-kpi__label">Employés liés</div>
+      <div class="mgr-kpi__value">{{ employees|length }}</div>
+    </article>
+
+    <article class="mgr-kpi">
+      <div class="mgr-kpi__label">Horaires configurés</div>
+      <div class="mgr-kpi__value">{{ openingHours|length }}</div>
+    </article>
+  </section>
+
+  <div style="height: 16px;"></div>
+
+  <section class="mgr-card">
+    <h2>Tous les rendez-vous d'aujourd'hui ({{ todayAppointments|length }})</h2>
+
+    {% if todayAppointments is not empty %}
+      <div class="mgr-list" style="margin-top: 18px;">
+        {% for appointment in todayAppointments %}
+          {% set status = appointment.status ?? 'pending' %}
+          {% set statusLabel = status %}
+          {% set statusClass = 'mgr-badge--muted' %}
+
+          {% if status == 'pending' %}
+            {% set statusLabel = 'En attente' %}
+          {% elseif status == 'confirmed' %}
+            {% set statusLabel = 'Accepté' %}
+            {% set statusClass = 'mgr-badge--ok' %}
+          {% elseif status == 'cancelled' %}
+            {% set statusLabel = 'Annulé' %}
+            {% set statusClass = 'mgr-badge--danger' %}
+          {% endif %}
+
+          <article class="mgr-item">
+            <div class="mgr-item__main">
+              <div class="mgr-item__title">
+                {% if appointment.client is defined and appointment.client %}
+                  {{ appointment.client.firstName ?? '' }} {{ appointment.client.lastName ?? '' }}
+                {% else %}
+                  Réservation
+                {% endif %}
+              </div>
+
+              <div class="mgr-item__meta">
+                {% if appointment.startTime is defined and appointment.startTime %}
+                  <span>{{ appointment.startTime|date('H:i') }}</span>
+                {% endif %}
+
+                {% if appointment.service is defined and appointment.service %}
+                  <span>{{ appointment.service.name ?? 'Service' }}</span>
+                {% endif %}
+
+                {% if appointment.professional is defined and appointment.professional %}
+                  <span>
+                    Pro:
+                    {{ appointment.professional.firstName ?? '' }} {{ appointment.professional.lastName ?? '' }}
+                  </span>
+                {% endif %}
+
+                {% if appointment.transferredBy and appointment.professional %}
+                  <span>
+                    {{ appointment.transferredBy.firstName ?? '' }} {{ appointment.transferredBy.lastName ?? '' }}
+                    a transféré à
+                    {{ appointment.professional.firstName ?? '' }} {{ appointment.professional.lastName ?? '' }}
+                  </span>
+                {% endif %}
+
+                {% if appointment.client is defined and appointment.client and appointment.client.phone is defined %}
+                  <span>{{ appointment.client.phone }}</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="mgr-item__actions">
+              <span class="mgr-badge {{ statusClass }}">{{ statusLabel }}</span>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted" style="margin-top: 12px;">Aucun rendez-vous aujourd’hui pour cet établissement.</p>
+    {% endif %}
+  </section>
+
+  <div style="height: 16px;"></div>
+
+  <section class="mgr-card">
+    <div class="mgr-sectionhead">
+      <div>
+        <h2>Réservations à traiter ({{ manageableAppointments|length }})</h2>
+        <p class="muted">Retrouvez toutes les actions de gestion dans l’onglet Réservations.</p>
+      </div>
+
+      <a class="btn btn--outline" href="{{ path('app_pro_reservations') }}">Voir tout</a>
+    </div>
+
+    {% if manageableAppointments is not empty %}
+      <div class="mgr-list" style="margin-top: 18px;">
+        {% for appointment in manageableAppointments|slice(0, 3) %}
+          {% set status = appointment.status ?? 'pending' %}
+          {% set statusLabel = status %}
+          {% set statusClass = 'mgr-badge--muted' %}
+
+          {% if status == 'pending' %}
+            {% set statusLabel = 'En attente' %}
+          {% elseif status == 'confirmed' %}
+            {% set statusLabel = 'Accepté' %}
+            {% set statusClass = 'mgr-badge--ok' %}
+          {% elseif status == 'cancelled' %}
+            {% set statusLabel = 'Annulé' %}
+            {% set statusClass = 'mgr-badge--danger' %}
+          {% endif %}
+
+          <article class="mgr-item mgr-item--stack">
+            <div class="mgr-item__main">
+              <div class="mgr-item__title">
+                {% if appointment.client %}
+                  {{ appointment.client.firstName ?? '' }} {{ appointment.client.lastName ?? '' }}
+                {% else %}
+                  Réservation #{{ appointment.id }}
+                {% endif %}
+              </div>
+
+              <div class="mgr-item__meta">
+                {% if appointment.date %}
+                  <span>{{ appointment.date|date('d/m/Y') }}</span>
+                {% endif %}
+
+                {% if appointment.startTime %}
+                  <span>{{ appointment.startTime|date('H:i') }}</span>
+                {% endif %}
+
+                {% if appointment.endTime %}
+                  <span>Fin {{ appointment.endTime|date('H:i') }}</span>
+                {% endif %}
+
+                {% if appointment.service %}
+                  <span>{{ appointment.service.name }}</span>
+                {% endif %}
+
+                {% if appointment.client and appointment.client.phone %}
+                  <span>{{ appointment.client.phone }}</span>
+                {% endif %}
+
+                {% if appointment.client and appointment.client.email %}
+                  <span>{{ appointment.client.email }}</span>
+                {% endif %}
+
+                {% if appointment.professional %}
+                  <span>
+                    Assigné à
+                    {{ appointment.professional.firstName ?? '' }} {{ appointment.professional.lastName ?? '' }}
+                  </span>
+                {% endif %}
+
+                {% if appointment.transferredBy and appointment.professional %}
+                  <span>
+                    {{ appointment.transferredBy.firstName ?? '' }} {{ appointment.transferredBy.lastName ?? '' }}
+                    a transféré à
+                    {{ appointment.professional.firstName ?? '' }} {{ appointment.professional.lastName ?? '' }}
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="mgr-item__aside">
+              <div class="mgr-item__actions">
+                <span class="mgr-badge {{ statusClass }}">{{ statusLabel }}</span>
+                <a class="btn btn--outline" href="{{ path('app_pro_reservations') }}">Gérer</a>
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted" style="margin-top: 12px;">Aucune réservation du jour ou à venir pour cet établissement.</p>
+    {% endif %}
+  </section>
+{% endblock %}

@@ -53,6 +53,7 @@ security:
     - { path: ^/partner/onboarding, roles: ROLE_PRO }
 
     - { path: ^/admin, roles: ROLE_ADMIN }
+    - { path: ^/pro, roles: ROLE_PRO }
     - { path: ^/manager, roles: ROLE_ADMIN_PRO }
 
     # Le reste du site : connecté

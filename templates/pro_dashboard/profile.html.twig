@@ -1,0 +1,112 @@
+{% extends 'pro_dashboard/_layout.html.twig' %}
+
+{% block title %}Profil professionnel{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="/css/pages/account.css">
+{% endblock %}
+
+{% block pro_content %}
+  {% set roleLabel = professionalUser.specialization ?: 'Professionnel' %}
+  {% set createdAtLabel = professionalUser.createdAt ? professionalUser.createdAt|date('d F Y') : '—' %}
+
+  <section class="mgr-pagehead pro-pagehead">
+    <div>
+      <h1>Mon profil</h1>
+      <p>Consultez vos informations professionnelles et vos préférences de compte.</p>
+    </div>
+  </section>
+
+  <section class="account pro-account">
+    <div class="account__container pro-account__container">
+      <div class="account-card">
+        <div class="account-card__header account-card__header--withAction">
+          <h2 class="account-card__title">Informations personnelles</h2>
+
+          <twig:Button label="Modifier" variant="outline" size="sm" :disabled="true" />
+        </div>
+
+        <div class="pro-profile-grid">
+          <div class="pro-profile-field">
+            <div class="pro-profile-label">Nom complet</div>
+            <div class="pro-profile-value">{{ professionalUser.firstName }} {{ professionalUser.lastName }}</div>
+          </div>
+
+          <div class="pro-profile-field">
+            <div class="pro-profile-label">Poste</div>
+            <div class="pro-profile-value">{{ roleLabel }}</div>
+          </div>
+
+          <div class="pro-profile-field">
+            <div class="pro-profile-label">Établissement</div>
+            <div class="pro-profile-value">{{ establishment.name }}</div>
+          </div>
+
+          <div class="pro-profile-field">
+            <div class="pro-profile-label">Téléphone</div>
+            <div class="pro-profile-value">{{ professionalUser.phone ?: '—' }}</div>
+          </div>
+
+          <div class="pro-profile-field">
+            <div class="pro-profile-label">Email</div>
+            <div class="pro-profile-value">{{ professionalUser.email }}</div>
+          </div>
+
+          <div class="pro-profile-field">
+            <div class="pro-profile-label">Compte créé le</div>
+            <div class="pro-profile-value">{{ createdAtLabel }}</div>
+          </div>
+
+          <div class="pro-profile-field">
+            <div class="pro-profile-label">Statut</div>
+            <div class="pro-profile-value">
+              <span class="reservation-status {{ professionalUser.isActive is same as(false) ? 'reservation-status--cancelled' : 'reservation-status--confirmed' }}">
+                {{ professionalUser.isActive is same as(false) ? 'Inactif' : 'Actif' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="account-card">
+        <div class="account-card__header">
+          <h2 class="account-card__title">Sécurité</h2>
+        </div>
+
+        <div class="pro-profile-stack">
+          <div class="pro-profile-field">
+            <div class="pro-profile-label">Mot de passe</div>
+            <div class="pro-profile-value">Vous pouvez lancer une réinitialisation sécurisée si nécessaire.</div>
+          </div>
+
+          <twig:Button
+            label="Changer le mot de passe"
+            href="{{ path('app_forgot_password_request') }}"
+            variant="outline"
+            size="md"
+            iconLeft="uil:lock"
+          />
+        </div>
+      </div>
+
+      <div class="account-card">
+        <div class="account-card__header">
+          <h2 class="account-card__title">Notifications</h2>
+        </div>
+
+        <div class="account-checks">
+          <label class="account-check">
+            <input type="checkbox" checked disabled>
+            <span>Recevoir les nouvelles réservations par email</span>
+          </label>
+
+          <label class="account-check">
+            <input type="checkbox" checked disabled>
+            <span>Recevoir les changements de planning</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </section>
+{% endblock %}
