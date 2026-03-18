@@ -81,7 +81,7 @@
 
       {# ===================== RÉSERVATIONS ===================== #}
       {% if activeTab == 'reservations' %}
-        <div class="account-panel is-active" role="tabpanel">
+        <div class="account-panel is-active" role="tabpanel" id="account-profile">
 
           {# RÉSERVATIONS À VENIR (cards à l'intérieur de la même account-card) #}
           <div class="account-card">
@@ -174,7 +174,7 @@
             </div>
           </div>
 
-          <div class="account-card">
+          <div class="account-card" id="account-settings">
             <div class="account-card__header">
               <h2 class="account-card__title">Sécurité</h2>
             </div>

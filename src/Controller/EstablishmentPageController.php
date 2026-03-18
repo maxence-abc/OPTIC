@@ -31,7 +31,7 @@ final class EstablishmentPageController extends AbstractController
         $weekStr   = (string) $request->query->get('week'); // YYYY-MM-DD
         $professionalId = $request->query->getInt('professional');
 
-        // ✅ Image hero depuis /public/uploads/establishments/{id}/...
+        // Image hero depuis /public/uploads/establishments/{id}/...
         $heroSrc = $this->findHeroImageForEstablishment((int) $establishment->getId());
         $professionalCandidates = $userRepository->findBookableCandidatesByEstablishment($establishment);
         $selectedProfessional = $this->resolveSelectedProfessional($professionalId, $professionalCandidates);
@@ -266,7 +266,6 @@ final class EstablishmentPageController extends AbstractController
 
     private function findHeroImageForEstablishment(int $establishmentId): string
     {
-        // Si tu as pas de placeholder, tu peux laisser vide ou mettre une image existante
         $fallback = '/images/placeholder-establishment.jpg';
 
         $dir = $this->getParameter('kernel.project_dir') . '/public/uploads/establishments/' . $establishmentId;
