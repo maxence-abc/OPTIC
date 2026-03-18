@@ -5,13 +5,13 @@
 {% block manager_content %}
   <div class="mgr-pagehead">
     <div>
-      <h1>Horaires d'ouverture</h1>
-      <p class="muted">Définissez les horaires de votre établissement</p>
+      <h1>Plages d'ouverture</h1>
+      <p class="muted">Définissez une ou plusieurs plages par jour, par exemple 09:00 - 12:00 puis 14:00 - 18:00.</p>
     </div>
 
     <a class="btn btn--dark mgr-cta-service" href="{{ path('manager_opening_hour_new', {id: establishment.id}) }}#add">
       <span aria-hidden="true">{{ ux_icon('uil:plus') }}</span>
-      Ajouter
+      Ajouter une plage
     </a>
   </div>
 
@@ -20,13 +20,13 @@
       <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
         <div>
           <h2 style="margin:0;">
-            {% if isEdit %}Modifier un horaire{% else %}Ajouter un horaire{% endif %}
+            {% if isEdit %}Modifier une plage{% else %}Ajouter une plage{% endif %}
           </h2>
           <p class="muted" style="margin:6px 0 0;">
             {% if isEdit %}
-              Modifiez cet horaire.
+              Modifiez cette plage horaire.
             {% else %}
-              Ajoutez un nouvel horaire d’ouverture.
+              Ajoutez une plage d’ouverture. Vous pouvez créer plusieurs plages pour le même jour.
             {% endif %}
           </p>
         </div>
@@ -46,7 +46,7 @@
 
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
           <button class="btn btn--dark mgr-cta-service" type="submit">
-            {% if isEdit %}Enregistrer{% else %}Ajouter{% endif %}
+            {% if isEdit %}Enregistrer{% else %}Ajouter la plage{% endif %}
           </button>
           <a class="btn btn--outline" href="{{ path('manager_opening_hours', {id: establishment.id}) }}">Annuler</a>
         </div>
@@ -55,39 +55,46 @@
   {% endif %}
 
   <section class="mgr-list">
-    {% if hours is empty %}
-      <p class="muted">Aucun horaire enregistré.</p>
-    {% else %}
-      {% for h in hours %}
-        <div class="mgr-item">
-          <div class="mgr-item__main">
-            <div class="mgr-item__title">{{ h.dayOfWeek }}</div>
-            <div class="mgr-item__meta">
-              <span style="display:inline-flex; gap:8px; align-items:center;">
-                {{ ux_icon('uil:clock') }}
-                {{ h.openTime|date('H:i') }} → {{ h.closeTime|date('H:i') }}
-              </span>
+    {% for day in groupedHours %}
+      <article class="mgr-item mgr-item--stack">
+        <div class="mgr-item__main">
+          <div class="mgr-item__title">{{ day.label }}</div>
+
+          {% if day.intervals is empty %}
+            <p class="muted" style="margin: 0;">Fermé</p>
+          {% else %}
+            <div class="mgr-opening-hours__intervals">
+              {% for interval in day.intervals %}
+                <div class="mgr-opening-hours__interval">
+                  <div class="mgr-opening-hours__meta">
+                    <span>
+                      {{ ux_icon('uil:clock') }}
+                      {{ interval.openTime|date('H:i') }} → {{ interval.closeTime|date('H:i') }}
+                    </span>
+                  </div>
+
+                  <div class="mgr-opening-hours__actions">
+                    <a class="btn btn--outline btn--icon"
+                       title="Modifier"
+                       href="{{ path('manager_opening_hour_edit', {id: interval.id}) }}">
+                      {{ ux_icon('uil:pen') }}
+                    </a>
+
+                    <form method="post"
+                          action="{{ path('manager_opening_hour_delete', {id: interval.id}) }}"
+                          onsubmit="return confirm('Supprimer cette plage ?');">
+                      <input type="hidden" name="_token" value="{{ csrf_token('delete_opening_' ~ interval.id) }}">
+                      <button class="btn btn--danger btn--icon" title="Supprimer" type="submit">
+                        {{ ux_icon('uil:trash') }}
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              {% endfor %}
             </div>
-          </div>
-
-          <div class="mgr-item__actions">
-            <a class="btn btn--outline btn--icon"
-               title="Modifier"
-               href="{{ path('manager_opening_hour_edit', {id: h.id}) }}">
-              {{ ux_icon('uil:pen') }}
-            </a>
-
-            <form method="post"
-                  action="{{ path('manager_opening_hour_delete', {id: h.id}) }}"
-                  onsubmit="return confirm('Supprimer cet horaire ?');">
-              <input type="hidden" name="_token" value="{{ csrf_token('delete_opening_' ~ h.id) }}">
-              <button class="btn btn--danger btn--icon" title="Supprimer" type="submit">
-                {{ ux_icon('uil:trash') }}
-              </button>
-            </form>
-          </div>
+          {% endif %}
         </div>
-      {% endfor %}
-    {% endif %}
+      </article>
+    {% endfor %}
   </section>
 {% endblock %}

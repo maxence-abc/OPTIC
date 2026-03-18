@@ -219,7 +219,8 @@
               {# OPENING HOURS #}
               {% if form.openingHours is defined %}
                 <div class="wizard-section wizard-hours">
-                  <label class="wizard-label">Horaires d’ouverture</label>
+                  <label class="wizard-label">Plages d’ouverture</label>
+                  <p class="wizard-hours__hint">Ajoutez plusieurs lignes pour un même jour si votre établissement ferme entre deux services, par exemple 09:00 - 12:00 puis 14:00 - 18:00.</p>
 
                   <div
                     id="hours-collection"
@@ -232,11 +233,11 @@
                             {{ form_widget(form.openingHours.vars.prototype.dayOfWeek, { attr: { class: 'wizard-control' } }) }}
                           </div>
                           <div class='wizard-section' style='margin:0;'>
-                            <label class='wizard-label'>Ouverture</label>
+                            <label class='wizard-label'>Début de plage</label>
                             {{ form_widget(form.openingHours.vars.prototype.openTime, { attr: { class: 'wizard-control' } }) }}
                           </div>
                           <div class='wizard-section' style='margin:0;'>
-                            <label class='wizard-label'>Fermeture</label>
+                            <label class='wizard-label'>Fin de plage</label>
                             {{ form_widget(form.openingHours.vars.prototype.closeTime, { attr: { class: 'wizard-control' } }) }}
                           </div>
                           <button type='button' class='wizard-remove js-remove-hour' aria-label='Supprimer'>✕</button>
@@ -251,11 +252,11 @@
                           {{ form_widget(item.dayOfWeek, { attr: { class: 'wizard-control' } }) }}
                         </div>
                         <div class="wizard-section" style="margin:0;">
-                          <label class="wizard-label">Ouverture</label>
+                          <label class="wizard-label">Début de plage</label>
                           {{ form_widget(item.openTime, { attr: { class: 'wizard-control' } }) }}
                         </div>
                         <div class="wizard-section" style="margin:0;">
-                          <label class="wizard-label">Fermeture</label>
+                          <label class="wizard-label">Fin de plage</label>
                           {{ form_widget(item.closeTime, { attr: { class: 'wizard-control' } }) }}
                         </div>
                         <button type="button" class="wizard-remove js-remove-hour" aria-label="Supprimer">✕</button>
@@ -263,7 +264,7 @@
                     {% endfor %}
                   </div>
 
-                  <button type="button" class="wizard-add" id="add-hour">Ajouter</button>
+                  <button type="button" class="wizard-add" id="add-hour">Ajouter une plage</button>
 
                   {% if form_errors(form.openingHours) %}
                     <div class="auth-error">{{ form_errors(form.openingHours) }}</div>

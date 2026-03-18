@@ -7,9 +7,10 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: EmployeeWeeklyScheduleRepository::class)]
-#[ORM\UniqueConstraint(name: 'uniq_employee_weekly_schedule', columns: ['establishment_id', 'employee_id', 'day_of_week'])]
+#[ORM\UniqueConstraint(name: 'uniq_employee_weekly_schedule', columns: ['establishment_id', 'employee_id', 'day_of_week', 'period_index'])]
 class EmployeeWeeklySchedule
 {
+    public const MAX_PERIODS_PER_DAY = 2;
     public const MONDAY = 1;
     public const TUESDAY = 2;
     public const WEDNESDAY = 3;
@@ -33,6 +34,9 @@ class EmployeeWeeklySchedule
 
     #[ORM\Column]
     private ?int $dayOfWeek = null;
+
+    #[ORM\Column]
+    private int $periodIndex = 1;
 
     #[ORM\Column]
     private bool $isWorking = false;
@@ -170,6 +174,18 @@ class EmployeeWeeklySchedule
     public function getDayLabel(): string
     {
         return self::getDayLabels()[$this->dayOfWeek ?? 0] ?? 'Jour';
+    }
+
+    public function getPeriodIndex(): int
+    {
+        return $this->periodIndex;
+    }
+
+    public function setPeriodIndex(int $periodIndex): static
+    {
+        $this->periodIndex = max(1, $periodIndex);
+
+        return $this;
     }
 
     public function getShortDayLabel(): string

@@ -123,12 +123,16 @@
 
       <div class="est-hours">
         {% for d in days %}
-          {% set oh = (establishment.openingHours|filter(x => x.dayOfWeek == d))|first %}
+          {% set intervals = (establishment.openingHours|filter(x => x.dayOfWeek == d))|sort((a,b) => (a.openTime ? a.openTime|date('H:i') : '99:99') <=> (b.openTime ? b.openTime|date('H:i') : '99:99')) %}
           <div class="est-hours__row">
             <div class="est-hours__day">{{ labels[d] }}</div>
             <div class="est-hours__time">
-              {% if oh %}
-                {{ oh.openTime|date('H:i') }} - {{ oh.closeTime|date('H:i') }}
+              {% if intervals|length > 0 %}
+                <div class="est-hours__slots">
+                  {% for interval in intervals %}
+                    <span class="est-hours__slot">{{ interval.openTime|date('H:i') }} - {{ interval.closeTime|date('H:i') }}</span>
+                  {% endfor %}
+                </div>
               {% else %}
                 Fermé
               {% endif %}
@@ -147,7 +151,7 @@
       </div>
 
       {% if openWeekDays|length == 0 %}
-        <p class="est-muted">Aucune disponibilité cette semaine (établissement fermé).</p>
+        <p class="est-muted">Aucune disponibilité réservable sur les prochaines semaines pour le moment.</p>
       {% else %}
 
         <div class="booking-block">
