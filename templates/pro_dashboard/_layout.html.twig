@@ -48,10 +48,11 @@
         Avis clients
       </span>
 
-      <span class="mgr-tabs__link is-disabled">
-        <span aria-hidden="true">{{ ux_icon('uil:calender') }}</span>
+      <a class="mgr-tabs__link {% if app.request.attributes.get('_route') == 'app_pro_calendar' %}is-active{% endif %}"
+         href="{{ path('app_pro_calendar') }}">
+        <span aria-hidden="true">{{ ux_icon('uil:calendar-alt') }}</span>
         Calendrier
-      </span>
+      </a>
 
       <a class="mgr-tabs__link {% if app.request.attributes.get('_route') == 'app_pro_profile' %}is-active{% endif %}"
          href="{{ path('app_pro_profile') }}">

@@ -3,9 +3,13 @@
 namespace App\Controller;
 
 use App\Entity\Appointment;
+use App\Entity\EmployeeScheduleEvent;
+use App\Entity\EmployeeWeeklySchedule;
 use App\Entity\Establishment;
 use App\Entity\User;
 use App\Repository\AppointmentRepository;
+use App\Repository\EmployeeScheduleEventRepository;
+use App\Repository\EmployeeWeeklyScheduleRepository;
 use App\Repository\EstablishmentRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -87,6 +91,61 @@ final class ProDashboardController extends AbstractController
             $appointmentRepository,
             $userRepository,
             $establishment
+        ));
+    }
+
+    #[Route('/calendar', name: 'app_pro_calendar', methods: ['GET'])]
+    public function calendar(
+        Request $request,
+        AppointmentRepository $appointmentRepository,
+        UserRepository $userRepository,
+        EmployeeScheduleEventRepository $scheduleEventRepository,
+        EmployeeWeeklyScheduleRepository $weeklyScheduleRepository
+    ): Response {
+        $establishment = $this->resolveCurrentEstablishment($request);
+        if (!$establishment instanceof Establishment) {
+            $this->addFlash('warning', 'Aucun établissement n’est associé à votre compte.');
+
+            return $this->redirectToRoute('app_home');
+        }
+
+        $selectedView = (string) $request->query->get('view', 'planning');
+        if (!in_array($selectedView, ['planning', 'calendar'], true)) {
+            $selectedView = 'planning';
+        }
+
+        $user = $this->getCurrentUser();
+        $anchorDate = $this->resolveCalendarAnchorDate($request);
+        $today = new \DateTimeImmutable('today');
+        $weekStart = $this->getWeekStart($anchorDate);
+        $weekEnd = $weekStart->modify('+6 days');
+
+        $weeklySchedules = $weeklyScheduleRepository->findByEmployee($establishment, $user);
+        $weeklyScheduleIndex = $this->indexWeeklySchedules($weeklySchedules);
+        $todayScheduleEvents = $scheduleEventRepository->findByEmployeeBetweenDates($user, $today, $today);
+        $weeklyScheduleEvents = $scheduleEventRepository->findByEmployeeBetweenDates($user, $weekStart, $weekEnd);
+        $todayAppointments = array_values(array_filter(
+            $appointmentRepository->findByEstablishmentBetweenDates($establishment, $today, $today->modify('+1 day'), $user),
+            static fn (Appointment $appointment): bool => $appointment->getStatus() !== 'cancelled'
+        ));
+        $weeklyAppointments = array_values(array_filter(
+            $appointmentRepository->findByEstablishmentBetweenDates($establishment, $weekStart, $weekEnd, $user),
+            static fn (Appointment $appointment): bool => $appointment->getStatus() !== 'cancelled'
+        ));
+
+        return $this->render('pro_dashboard/calendar.html.twig', array_merge(
+            $this->buildDashboardContext($appointmentRepository, $userRepository, $establishment),
+            [
+                'selectedView' => $selectedView,
+                'anchorDate' => $anchorDate,
+                'planningWeekStart' => $weekStart,
+                'planningWeekEnd' => $weekEnd,
+                'calendarWeekDays' => $this->buildPeriodDays($weekStart, 7),
+                'todayScheduleEvents' => array_values(array_filter($todayScheduleEvents, static fn (EmployeeScheduleEvent $event): bool => $event->occursOn($today))),
+                'todayDefaultSchedule' => $weeklyScheduleIndex[(int) $today->format('N')] ?? null,
+                'todayAppointmentsForProfessional' => $todayAppointments,
+                'weeklyPlanningDays' => $this->buildProfessionalPlanningDays($weekStart, $weeklySchedules, $weeklyScheduleEvents, $weeklyAppointments),
+            ]
         ));
     }
 
@@ -346,7 +405,7 @@ final class ProDashboardController extends AbstractController
     private function redirectToProSpace(Request $request): RedirectResponse
     {
         $redirectRoute = (string) $request->request->get('_redirect_route', '');
-        if (in_array($redirectRoute, ['app_pro_dashboard', 'app_pro_reservations', 'app_pro_profile'], true)) {
+        if (in_array($redirectRoute, ['app_pro_dashboard', 'app_pro_reservations', 'app_pro_profile', 'app_pro_calendar'], true)) {
             return $this->redirectToRoute($redirectRoute);
         }
 
@@ -420,5 +479,155 @@ final class ProDashboardController extends AbstractController
         }
 
         return false;
+    }
+
+    private function getWeekStart(\DateTimeImmutable $date): \DateTimeImmutable
+    {
+        return $date->modify('monday this week')->setTime(0, 0);
+    }
+
+    private function resolveCalendarAnchorDate(Request $request): \DateTimeImmutable
+    {
+        $date = trim((string) $request->query->get('date', ''));
+
+        if ($date !== '') {
+            try {
+                return new \DateTimeImmutable($date);
+            } catch (\Throwable) {
+            }
+        }
+
+        return new \DateTimeImmutable('today');
+    }
+
+    /**
+     * @return array<int, array{date: \DateTimeImmutable, label: string, short: string}>
+     */
+    private function buildPeriodDays(\DateTimeImmutable $start, int $length): array
+    {
+        $labels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+        $days = [];
+
+        for ($index = 0; $index < $length; ++$index) {
+            $date = $start->modify(sprintf('+%d days', $index));
+            $days[] = [
+                'date' => $date,
+                'label' => $labels[$index] ?? $date->format('D'),
+                'short' => $date->format('d/m'),
+            ];
+        }
+
+        return $days;
+    }
+
+    /**
+     * @param EmployeeWeeklySchedule[] $weeklySchedules
+     * @param EmployeeScheduleEvent[] $scheduleEvents
+     * @param Appointment[] $appointments
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildProfessionalPlanningDays(\DateTimeImmutable $weekStart, array $weeklySchedules, array $scheduleEvents, array $appointments): array
+    {
+        $weeklyScheduleIndex = $this->indexWeeklySchedules($weeklySchedules);
+        $appointmentsByDay = [];
+        foreach ($appointments as $appointment) {
+            $date = $appointment->getDate();
+            if (!$date instanceof \DateTimeInterface) {
+                continue;
+            }
+
+            $appointmentsByDay[$date->format('Y-m-d')][] = $appointment;
+        }
+
+        $days = [];
+        for ($index = 0; $index < 7; ++$index) {
+            $date = $weekStart->modify(sprintf('+%d days', $index));
+            $key = $date->format('Y-m-d');
+            $dayEvents = array_values(array_filter($scheduleEvents, static fn (EmployeeScheduleEvent $event): bool => $event->occursOn($date)));
+            $dayAppointments = $appointmentsByDay[$key] ?? [];
+            $defaultSchedule = $weeklyScheduleIndex[(int) $date->format('N')] ?? null;
+
+            $days[] = [
+                'date' => $date,
+                'events' => $dayEvents,
+                'defaultSchedule' => $defaultSchedule,
+                'appointments' => $dayAppointments,
+                'summary' => $this->buildProfessionalPlanningSummary($defaultSchedule, $dayEvents, $dayAppointments),
+            ];
+        }
+
+        return $days;
+    }
+
+    /**
+     * @param EmployeeWeeklySchedule[] $weeklySchedules
+     * @return array<int, EmployeeWeeklySchedule>
+     */
+    private function indexWeeklySchedules(array $weeklySchedules): array
+    {
+        $index = [];
+
+        foreach ($weeklySchedules as $weeklySchedule) {
+            $dayOfWeek = $weeklySchedule->getDayOfWeek();
+            if ($dayOfWeek) {
+                $index[$dayOfWeek] = $weeklySchedule;
+            }
+        }
+
+        return $index;
+    }
+
+    /**
+     * @param EmployeeScheduleEvent[] $events
+     * @param Appointment[] $appointments
+     * @return array{label: string, class: string, sublabel: string}
+     */
+    private function buildProfessionalPlanningSummary(?EmployeeWeeklySchedule $defaultSchedule, array $events, array $appointments): array
+    {
+        if ($events !== []) {
+            usort($events, static fn (EmployeeScheduleEvent $left, EmployeeScheduleEvent $right): int => self::getPlanningTypePriority($left->getType()) <=> self::getPlanningTypePriority($right->getType()));
+            $event = $events[0];
+
+            return [
+                'label' => ($event->getType() ?? EmployeeScheduleEvent::TYPE_WORK) === EmployeeScheduleEvent::TYPE_WORK ? 'Actif' : $event->getTypeLabel(),
+                'class' => 'is-'.($event->getType() ?? EmployeeScheduleEvent::TYPE_WORK),
+                'sublabel' => $event->isAllDay()
+                    ? $event->getDisplayTitle()
+                    : trim(sprintf('%s - %s', $event->getStartTime()?->format('H:i') ?? '', $event->getEndTime()?->format('H:i') ?? '')),
+            ];
+        }
+
+        if ($defaultSchedule instanceof EmployeeWeeklySchedule && $defaultSchedule->isConfiguredWorkingDay()) {
+            return [
+                'label' => 'Actif',
+                'class' => 'is-work',
+                'sublabel' => $defaultSchedule->getDisplayRange(),
+            ];
+        }
+
+        if ($appointments !== []) {
+            return [
+                'label' => 'Réservations',
+                'class' => 'is-appointments',
+                'sublabel' => sprintf('%d réservation%s', count($appointments), count($appointments) > 1 ? 's' : ''),
+            ];
+        }
+
+        return [
+            'label' => 'Repos',
+            'class' => 'is-rest',
+            'sublabel' => 'Jour non travaillé',
+        ];
+    }
+
+    private static function getPlanningTypePriority(?string $type): int
+    {
+        return match ($type) {
+            EmployeeScheduleEvent::TYPE_LEAVE => 0,
+            EmployeeScheduleEvent::TYPE_REST => 1,
+            EmployeeScheduleEvent::TYPE_TRAINING => 2,
+            EmployeeScheduleEvent::TYPE_WORK => 3,
+            default => 4,
+        };
     }
 }

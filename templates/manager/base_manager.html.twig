@@ -103,6 +103,12 @@
           Employés
         </a>
 
+        <a class="mgr-tabs__link {% if app.request.attributes.get('_route') == 'manager_planning' %}is-active{% endif %}"
+           href="{{ path('manager_planning', {id: establishment.id}) }}">
+          <span aria-hidden="true">{{ ux_icon('uil:calendar-alt') }}</span>
+          Planning
+        </a>
+
         <a class="mgr-tabs__link {% if app.request.attributes.get('_route') == 'manager_history' %}is-active{% endif %}"
            href="{{ path('manager_history', {id: establishment.id}) }}">
           <span aria-hidden="true">{{ ux_icon('uil:history') }}</span>

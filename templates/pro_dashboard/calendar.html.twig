@@ -1,0 +1,187 @@
+{% extends 'pro_dashboard/_layout.html.twig' %}
+
+{% block title %}Calendrier professionnel{% endblock %}
+
+{% block pro_content %}
+  <section class="pro-calendar-page">
+    <div class="mgr-pagehead pro-calendar-page__head">
+      <div>
+        <h1>Calendrier</h1>
+        <p class="muted">Consultez votre planning, vos repos et les réservations de l’établissement.</p>
+      </div>
+
+      <div class="pro-calendar-page__switch">
+        <a class="pro-calendar-page__switch-btn {% if selectedView == 'planning' %}is-active{% endif %}"
+           href="{{ path('app_pro_calendar', { view: 'planning', date: anchorDate|date('Y-m-d') }) }}#pro-planning-view">
+          Mon planning
+        </a>
+        <a class="pro-calendar-page__switch-btn {% if selectedView == 'calendar' %}is-active{% endif %}"
+           href="{{ path('app_pro_calendar', { view: 'calendar', date: anchorDate|date('Y-m-d') }) }}#pro-calendar-reservations">
+          Calendrier des réservations
+        </a>
+      </div>
+    </div>
+
+    {% if selectedView == 'planning' %}
+      <div class="pro-planning-grid" id="pro-planning-view">
+        <section class="mgr-card">
+          <div class="pro-planning-section__head">
+            <div>
+              <h2>Aujourd’hui</h2>
+              <p class="muted">Votre journée en cours et vos rendez-vous assignés.</p>
+            </div>
+            <span class="mgr-badge">{{ todayAppointmentsForProfessional|length }} rendez-vous</span>
+          </div>
+
+          <div class="pro-planning-today">
+            <div class="pro-planning-today__block">
+              <h3>Planning</h3>
+              {% if todayScheduleEvents is empty and (not todayDefaultSchedule or not todayDefaultSchedule.isConfiguredWorkingDay()) %}
+                <p class="muted">Aucun horaire de travail configuré aujourd’hui.</p>
+              {% else %}
+                <div class="pro-planning-events">
+                  {% if todayScheduleEvents is empty and todayDefaultSchedule and todayDefaultSchedule.isConfiguredWorkingDay() %}
+                    <article class="pro-planning-event-card is-work">
+                      <div class="pro-planning-event-card__title">Actif</div>
+                      <div class="pro-planning-event-card__meta">{{ todayDefaultSchedule.displayRange }}</div>
+                    </article>
+                  {% endif %}
+
+                  {% for event in todayScheduleEvents %}
+                    <article class="pro-planning-event-card is-{{ event.type }}">
+                      <div class="pro-planning-event-card__title">
+                        {{ event.type == 'work' ? 'Actif' : event.displayTitle }}
+                      </div>
+                      <div class="pro-planning-event-card__meta">
+                        {{ event.type == 'work' ? 'Horaire personnalisé' : event.typeLabel }}
+                        {% if not event.isAllDay() %}
+                          · {{ event.startTime ? event.startTime|date('H:i') : '' }} - {{ event.endTime ? event.endTime|date('H:i') : '' }}
+                        {% endif %}
+                      </div>
+                    </article>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="pro-planning-today__block">
+              <h3>Réservations</h3>
+              {% if todayAppointmentsForProfessional is empty %}
+                <p class="muted">Aucune réservation assignée aujourd’hui.</p>
+              {% else %}
+                <div class="pro-planning-appointments">
+                  {% for appointment in todayAppointmentsForProfessional %}
+                    <article class="pro-planning-appointment-card">
+                      <div class="pro-planning-appointment-card__time">
+                        {{ appointment.startTime ? appointment.startTime|date('H:i') : '--:--' }}
+                      </div>
+                      <div>
+                        <strong>{{ appointment.client ? appointment.client.firstName ~ ' ' ~ appointment.client.lastName : 'Client' }}</strong>
+                        <div class="muted">{{ appointment.service ? appointment.service.name : 'Service' }}</div>
+                      </div>
+                    </article>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </section>
+
+        <section class="mgr-card pro-week-shell" id="pro-week-shell">
+          <div class="pro-planning-section__head">
+            <div>
+              <h2>Semaine en cours</h2>
+              <p class="muted">Vision rapide de vos horaires, repos et réservations.</p>
+            </div>
+
+            <div class="mgr-planning-nav">
+              <a class="mgr-planning-nav__btn" href="{{ path('app_pro_calendar', {
+                view: 'planning',
+                date: anchorDate|date_modify('-7 days')|date('Y-m-d')
+              }) }}#pro-week-shell">
+                {{ ux_icon('uil:angle-left') }}
+              </a>
+              <span class="mgr-planning-nav__label">{{ planningWeekStart|date('d/m') }} - {{ planningWeekEnd|date('d/m') }}</span>
+              <a class="mgr-planning-nav__btn" href="{{ path('app_pro_calendar', {
+                view: 'planning',
+                date: anchorDate|date_modify('+7 days')|date('Y-m-d')
+              }) }}#pro-week-shell">
+                {{ ux_icon('uil:angle-right') }}
+              </a>
+            </div>
+          </div>
+
+          <div class="pro-week-strip">
+            <div class="pro-week-grid">
+              {% for day in weeklyPlanningDays %}
+                <article class="pro-week-card {{ day.summary.class }}">
+                  <div class="pro-week-card__head">
+                    <div>
+                      <div class="pro-week-card__day">{{ calendarWeekDays[loop.index0].label }}</div>
+                      <div class="pro-week-card__date">{{ day.date|date('d/m') }}</div>
+                    </div>
+                    <span class="pro-week-card__badge">{{ day.summary.label }}</span>
+                  </div>
+
+                  <div class="pro-week-card__section">
+                    <div class="pro-week-card__section-label">Planning</div>
+                    <div class="pro-week-card__sub">{{ day.summary.sublabel }}</div>
+
+                    {% if day.events is not empty %}
+                      <div class="pro-week-card__list">
+                        {% for event in day.events %}
+                          <div class="pro-week-card__line">
+                            <span>{{ event.type == 'work' ? 'Horaire personnalisé' : event.displayTitle }}</span>
+                            {% if not event.isAllDay() %}
+                              <span>{{ event.startTime ? event.startTime|date('H:i') : '' }} - {{ event.endTime ? event.endTime|date('H:i') : '' }}</span>
+                            {% endif %}
+                          </div>
+                        {% endfor %}
+                      </div>
+                    {% elseif day.defaultSchedule and day.defaultSchedule.isConfiguredWorkingDay() %}
+                      <div class="pro-week-card__list">
+                        <div class="pro-week-card__line">
+                          <span>Horaires habituels</span>
+                          <span>{{ day.defaultSchedule.displayRange }}</span>
+                        </div>
+                      </div>
+                    {% else %}
+                      <div class="pro-week-card__empty">Aucun horaire spécifique</div>
+                    {% endif %}
+                  </div>
+
+                  <div class="pro-week-card__section pro-week-card__section--appointments">
+                    <div class="pro-week-card__section-label">Réservations</div>
+
+                    {% if day.appointments is not empty %}
+                      <div class="pro-week-card__appointment-list">
+                        {% for appointment in day.appointments|slice(0, 3) %}
+                          <div class="pro-week-card__appointment-item">
+                            <span>{{ appointment.startTime ? appointment.startTime|date('H:i') : '--:--' }}</span>
+                            <span>{{ appointment.client ? appointment.client.firstName ~ ' ' ~ appointment.client.lastName : 'Client' }}</span>
+                          </div>
+                        {% endfor %}
+
+                        {% if day.appointments|length > 3 %}
+                          <div class="pro-week-card__more">
+                            + {{ day.appointments|length - 3 }} autre{{ day.appointments|length - 3 > 1 ? 's' : '' }}
+                          </div>
+                        {% endif %}
+                      </div>
+                    {% else %}
+                      <div class="pro-week-card__empty">Aucun rendez-vous assigné</div>
+                    {% endif %}
+                  </div>
+                </article>
+              {% endfor %}
+            </div>
+          </div>
+        </section>
+      </div>
+    {% else %}
+      <div id="pro-calendar-reservations">
+        <twig:ProReservationCalendar establishmentId="{{ establishment.id }}" />
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}
