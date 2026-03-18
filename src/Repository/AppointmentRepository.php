@@ -302,12 +302,13 @@ class AppointmentRepository extends ServiceEntityRepository
     public function findByEstablishmentBetweenDates(
         Establishment $establishment,
         \DateTimeInterface $startDate,
-        \DateTimeInterface $endDate
+        \DateTimeInterface $endDate,
+        ?User $professional = null
     ): array {
         $from = \DateTimeImmutable::createFromInterface($startDate)->setTime(0, 0, 0);
         $to = \DateTimeImmutable::createFromInterface($endDate)->setTime(0, 0, 0);
 
-        return $this->createEstablishmentQueryBuilder($establishment)
+        return $this->createEstablishmentQueryBuilder($establishment, $professional)
             ->andWhere('a.date >= :from')
             ->andWhere('a.date < :to')
             ->setParameter('from', $from)

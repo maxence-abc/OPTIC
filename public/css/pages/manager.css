@@ -981,6 +981,8 @@
 .mgr-card input[type="tel"],
 .mgr-card input[type="password"],
 .mgr-card input[type="number"],
+.mgr-card input[type="date"],
+.mgr-card input[type="time"],
 .mgr-card textarea,
 .mgr-card select{
   width: 100%;
@@ -1437,5 +1439,1235 @@
 
   .mgr-est-card__stat-label{
     font-size: 13px;
+  }
+}
+
+/* =========================================================
+   PLANNING / CALENDRIER
+   ========================================================= */
+.pro-planning-section__head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.pro-planning-section__head h2{
+  margin: 0;
+}
+
+.pro-calendar-page__head,
+.mgr-planning-page__head{
+  align-items: center;
+}
+
+.pro-calendar-page__switch,
+.mgr-planning-page__switch{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.pro-calendar-page__switch-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  height: 54px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(15,23,42,.14);
+  background: #fff;
+  color: #475569;
+  text-decoration:none;
+  font-weight: 600;
+}
+
+.pro-calendar-page__switch-btn.is-active{
+  background: #111827;
+  border-color: #111827;
+  color: #fff;
+}
+
+.pro-planning-grid{
+  display:flex;
+  flex-direction:column;
+  gap: 18px;
+}
+
+.mgr-planning-top{
+  display:grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, .9fr);
+  gap: 18px;
+}
+
+.pro-planning-today{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.pro-planning-today__block h3{
+  margin: 0 0 12px;
+  font-size: 15px;
+}
+
+.pro-planning-events,
+.pro-planning-appointments,
+.mgr-planning-events__list,
+.pro-res-calendar__detail-list{
+  display:flex;
+  flex-direction:column;
+  gap: 12px;
+}
+
+.pro-planning-event-card,
+.pro-planning-appointment-card,
+.pro-res-calendar__detail-card{
+  border: 1px solid rgba(15,23,42,.10);
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: #fff;
+}
+
+.pro-planning-event-card.is-work{
+  background: rgba(34,197,94,.08);
+  border-color: rgba(34,197,94,.18);
+}
+
+.pro-planning-event-card.is-rest{
+  background: rgba(251,191,36,.10);
+  border-color: rgba(251,191,36,.22);
+}
+
+.pro-planning-event-card.is-leave{
+  background: rgba(59,130,246,.10);
+  border-color: rgba(59,130,246,.18);
+}
+
+.pro-planning-event-card.is-training{
+  background: rgba(168,85,247,.10);
+  border-color: rgba(168,85,247,.18);
+}
+
+.pro-planning-event-card__title{
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.pro-planning-event-card__meta,
+.pro-planning-appointment-card .muted,
+.pro-week-card__sub,
+.pro-res-calendar__detail-meta,
+.mgr-planning-table__sub{
+  color: #64748b;
+  font-size: 13px;
+}
+
+.pro-planning-appointment-card{
+  display:flex;
+  align-items:flex-start;
+  gap: 12px;
+}
+
+.pro-planning-appointment-card__time{
+  min-width: 48px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pro-week-shell{
+  overflow: hidden;
+}
+
+.pro-week-strip{
+  overflow-x:auto;
+  padding-bottom: 8px;
+}
+
+.pro-week-grid{
+  display:grid;
+  grid-template-columns: repeat(7, minmax(150px, 1fr));
+  gap: 14px;
+  min-width: 1120px;
+}
+
+.pro-week-card{
+  border: 1px solid rgba(15,23,42,.10);
+  border-radius: 18px;
+  padding: 18px;
+  background: linear-gradient(180deg, #ffffff, #f9fbff);
+  min-height: 250px;
+  display:flex;
+  flex-direction:column;
+  gap: 14px;
+  position: relative;
+}
+
+.pro-week-card.is-work{
+  border-color: rgba(34,197,94,.20);
+  box-shadow: inset 0 3px 0 rgba(34,197,94,.22);
+}
+
+.pro-week-card.is-rest{
+  border-color: rgba(251,191,36,.24);
+  box-shadow: inset 0 3px 0 rgba(251,191,36,.28);
+}
+
+.pro-week-card.is-leave{
+  border-color: rgba(59,130,246,.20);
+  box-shadow: inset 0 3px 0 rgba(59,130,246,.22);
+}
+
+.pro-week-card.is-training{
+  border-color: rgba(168,85,247,.20);
+  box-shadow: inset 0 3px 0 rgba(168,85,247,.22);
+}
+
+.pro-week-card.is-appointments{
+  border-color: rgba(15,23,42,.16);
+  box-shadow: inset 0 3px 0 rgba(15,23,42,.12);
+}
+
+.pro-week-card__head,
+.pro-res-calendar__detail-top,
+.mgr-planning-month-card__head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 12px;
+}
+
+.pro-week-card__day{
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #64748b;
+}
+
+.pro-week-card__date{
+  margin-top: 4px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pro-week-card__badge{
+  display:inline-flex;
+  align-items:center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(15,23,42,.12);
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.pro-week-card__list{
+  display:flex;
+  flex-direction:column;
+  gap: 8px;
+}
+
+.pro-week-card__section{
+  display:flex;
+  flex-direction:column;
+  gap: 8px;
+}
+
+.pro-week-card__section--appointments{
+  margin-top: auto;
+}
+
+.pro-week-card__section-label{
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #64748b;
+}
+
+.pro-week-card__line{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 10px;
+  font-size: 13px;
+  color: #334155;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(248,250,252,.95);
+  border: 1px solid rgba(15,23,42,.06);
+}
+
+.pro-week-card__appointment-list{
+  display:flex;
+  flex-direction:column;
+  gap: 8px;
+}
+
+.pro-week-card__appointment-item{
+  display:flex;
+  flex-direction:column;
+  gap: 4px;
+  padding: 9px 10px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid rgba(15,23,42,.08);
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.pro-week-card__appointment-item span:first-child{
+  font-weight: 700;
+}
+
+.pro-week-card__more{
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.pro-week-card__empty{
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.pro-res-calendar{
+  display:flex;
+  flex-direction:column;
+  gap: 18px;
+}
+
+.pro-res-calendar__toolbar{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 16px;
+}
+
+.pro-res-calendar__title{
+  margin: 0 0 6px;
+}
+
+.pro-res-calendar__nav{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+
+.pro-res-calendar__nav-btn{
+  width: 54px;
+  height: 54px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  box-sizing:border-box;
+  border-radius: 18px;
+  border: 1px solid rgba(15,23,42,.12);
+  background: #fff;
+  color: #0f172a;
+  cursor:pointer;
+  transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+
+.pro-res-calendar__nav-btn:hover{
+  border-color: rgba(15,23,42,.24);
+  box-shadow: 0 10px 24px rgba(15,23,42,.08);
+  transform: translateY(-1px);
+}
+
+.pro-res-calendar__nav-btn svg{
+  width: 18px;
+  height: 18px;
+}
+
+.pro-res-calendar__month{
+  min-width: 160px;
+  height: 54px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding: 0 22px;
+  box-sizing:border-box;
+  border-radius: 999px;
+  border: 1px solid rgba(15,23,42,.12);
+  background: #fff;
+  text-align:center;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1;
+}
+
+.pro-res-calendar__weekdays{
+  display:grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pro-res-calendar__weekday{
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.pro-res-calendar__grid{
+  display:grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pro-res-calendar__day{
+  min-height: 118px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(15,23,42,.10);
+  background: #fff;
+  text-align:left;
+  cursor:pointer;
+}
+
+.pro-res-calendar__day.is-outside{
+  opacity: .48;
+}
+
+.pro-res-calendar__day.is-today{
+  border-color: rgba(15,23,42,.24);
+}
+
+.pro-res-calendar__day.is-selected{
+  border-color: #111827;
+  box-shadow: 0 0 0 2px rgba(17,24,39,.06);
+}
+
+.pro-res-calendar__day-top{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+}
+
+.pro-res-calendar__day-number{
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pro-res-calendar__day-badge{
+  min-width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  background: #111827;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pro-res-calendar__day-meta{
+  display:flex;
+  flex-direction:column;
+  gap: 6px;
+  width:100%;
+}
+
+.pro-res-calendar__chip,
+.mgr-planning-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width: fit-content;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.reservation-status{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.reservation-status--pending{
+  background: rgba(251,191,36,.10);
+  border: 1px solid rgba(251,191,36,.22);
+  color: #92400e;
+}
+
+.reservation-status--confirmed{
+  background: rgba(34,197,94,.10);
+  border: 1px solid rgba(34,197,94,.18);
+  color: #166534;
+}
+
+.reservation-status--cancelled{
+  background: rgba(239,68,68,.10);
+  border: 1px solid rgba(239,68,68,.20);
+  color: #b91c1c;
+}
+
+.pro-res-calendar__chip.is-confirmed{
+  background: rgba(34,197,94,.10);
+  border-color: rgba(34,197,94,.18);
+  color: #166534;
+}
+
+.pro-res-calendar__chip.is-pending{
+  background: rgba(251,191,36,.10);
+  border-color: rgba(251,191,36,.22);
+  color: #92400e;
+}
+
+.pro-res-calendar__empty{
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.pro-res-calendar__detail{
+  border: 1px solid rgba(15,23,42,.10);
+  border-radius: 18px;
+  background: #fff;
+  padding: 18px;
+}
+
+.pro-res-calendar__detail-head h3{
+  margin: 0;
+}
+
+.pro-res-calendar__detail-main{
+  display:flex;
+  flex-direction:column;
+  gap: 8px;
+}
+
+.pro-res-calendar__detail-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap: 10px 16px;
+}
+
+.mgr-planning-page__controls{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+}
+
+.mgr-planning-board,
+.pro-week-shell,
+#pro-planning-view,
+#pro-calendar-reservations{
+  scroll-margin-top: 120px;
+}
+
+.mgr-planning-form__actions{
+  display:flex;
+  justify-content:flex-end;
+  margin-top: 16px;
+}
+
+.mgr-planning-board__actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap: 12px;
+  flex-wrap:wrap;
+}
+
+.mgr-planning-board__actions .mgr-planning-page__switch{
+  align-items:center;
+  flex-wrap:nowrap;
+  margin-bottom: 0;
+}
+
+.mgr-planning-board__actions .pro-calendar-page__switch-btn,
+.mgr-planning-board__actions .mgr-planning-nav__btn,
+.mgr-planning-board__actions .mgr-planning-nav__label{
+  box-sizing: border-box;
+  min-height: 54px;
+  line-height: 1;
+}
+
+.mgr-planning-board__actions .pro-calendar-page__switch-btn{
+  margin: 0;
+}
+
+.mgr-planning-nav{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  flex-wrap:nowrap;
+}
+
+.mgr-planning-nav__btn{
+  width: 54px;
+  height: 54px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius: 18px;
+  border: 1px solid rgba(15,23,42,.12);
+  background: #fff;
+  color: #111827;
+  text-decoration:none;
+  transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+
+.mgr-planning-nav__btn:hover{
+  border-color: rgba(15,23,42,.24);
+  box-shadow: 0 10px 24px rgba(15,23,42,.08);
+  transform: translateY(-1px);
+}
+
+.mgr-planning-nav__btn svg{
+  width: 18px;
+  height: 18px;
+}
+
+.mgr-planning-nav__label{
+  min-width: 146px;
+  height: 54px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding: 0 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(15,23,42,.12);
+  background: #fff;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.mgr-planning-employee-grid{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.mgr-planning-employee-card{
+  border: 1px solid rgba(15,23,42,.10);
+  border-radius: 18px;
+  background: #fff;
+  padding: 20px;
+  box-shadow: var(--mgr-shadow-soft);
+}
+
+.mgr-planning-employee-card.is-selected{
+  border-color: rgba(17,24,39,.28);
+  box-shadow: 0 0 0 2px rgba(17,24,39,.04);
+}
+
+.mgr-planning-employee-card__top{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 14px;
+}
+
+.mgr-planning-employee-card__top h2{
+  margin: 0;
+  font-size: 18px;
+}
+
+.mgr-planning-employee-card__status{
+  display:inline-flex;
+  align-items:center;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(148,163,184,.12);
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mgr-planning-employee-card__status.is-active{
+  background: rgba(34,197,94,.12);
+  color: #15803d;
+}
+
+.mgr-planning-employee-card__actions{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  margin-top: 22px;
+  flex-wrap:wrap;
+}
+
+.mgr-planning-config-grid{
+  display:grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(300px, .75fr);
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.mgr-planning-recurring,
+.mgr-planning-sidecard,
+.mgr-planning-board,
+.mgr-planning-events-shell,
+.mgr-planning-legend{
+  border-radius: 22px;
+}
+
+.mgr-recurring-grid{
+  display:flex;
+  flex-direction:column;
+  gap: 12px;
+}
+
+.mgr-recurring-row{
+  display:grid;
+  grid-template-columns: minmax(120px, .6fr) minmax(120px, .7fr) minmax(240px, 1fr) minmax(110px, .5fr);
+  gap: 14px;
+  align-items:center;
+  padding: 14px 16px;
+  border: 1px solid rgba(15,23,42,.08);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.mgr-recurring-row__day{
+  display:flex;
+  flex-direction:column;
+  gap: 4px;
+}
+
+.mgr-recurring-row__day strong{
+  font-size: 15px;
+  color: #0f172a;
+}
+
+.mgr-recurring-row__day span{
+  font-size: 13px;
+  color: #64748b;
+}
+
+.mgr-recurring-row__toggle{
+  display:inline-flex;
+  align-items:center;
+  gap: 10px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.mgr-recurring-row__toggle input{
+  width: 18px !important;
+  height: 18px;
+  margin: 0;
+}
+
+.mgr-recurring-row__times{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+
+.mgr-recurring-row__times input{
+  min-width: 0;
+}
+
+.mgr-recurring-row__times span{
+  color: #64748b;
+  font-weight: 600;
+}
+
+.mgr-recurring-row__summary{
+  justify-self:flex-end;
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.mgr-planning-sidecard__body{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap: 16px;
+}
+
+.mgr-planning-sidecard__empty{
+  width:100%;
+  border: 1px dashed rgba(15,23,42,.14);
+  border-radius: 16px;
+  background: #f8fafc;
+  padding: 16px;
+  display:flex;
+  flex-direction:column;
+  gap: 6px;
+}
+
+.mgr-planning-sidecard__empty strong{
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.mgr-planning-sidecard__empty span{
+  color: #64748b;
+  font-size: 13px;
+}
+
+.mgr-planning-sidecard__list{
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  gap: 12px;
+}
+
+.mgr-planning-sidecard__item{
+  width:100%;
+  border: 1px solid rgba(15,23,42,.10);
+  border-radius: 16px;
+  background: #fff;
+  padding: 14px 16px;
+}
+
+.mgr-planning-sidecard__item-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.mgr-planning-sidecard__item-top strong{
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.mgr-planning-sidecard__item-meta{
+  display:flex;
+  flex-direction:column;
+  gap: 6px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.mgr-planning-events__item{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 14px;
+  border: 1px solid rgba(15,23,42,.10);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.mgr-planning-events__actions{
+  display:flex;
+  align-items:flex-start;
+  gap: 10px;
+  flex-wrap:wrap;
+}
+
+.mgr-planning-events__actions form{
+  margin: 0;
+}
+
+.mgr-planning-events__actions .mgr-planning-pill,
+.mgr-planning-events__actions .btn{
+  min-height: 34px;
+}
+
+.mgr-planning-pill.is-work{
+  background: rgba(34,197,94,.10);
+  color: #166534;
+}
+
+.mgr-planning-pill.is-rest{
+  background: rgba(251,191,36,.12);
+  color: #92400e;
+}
+
+.mgr-planning-pill.is-leave{
+  background: rgba(59,130,246,.10);
+  color: #1d4ed8;
+}
+
+.mgr-planning-pill.is-training{
+  background: rgba(168,85,247,.10);
+  color: #7e22ce;
+}
+
+.mgr-planning-table{
+  display:grid;
+  grid-template-columns: minmax(220px, 1.2fr) repeat(7, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.mgr-planning-table__head{
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+  text-align: center;
+}
+
+.mgr-planning-table__head--employee{
+  padding-left: 0;
+}
+
+.mgr-planning-table__employee,
+.mgr-planning-table__cell{
+  border: 1px solid rgba(15,23,42,.10);
+  border-radius: 16px;
+  background: #fff;
+  min-height: 112px;
+  padding: 14px;
+}
+
+.mgr-planning-table__employee{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap: 6px;
+}
+
+.mgr-planning-table__cell{
+  display:flex;
+  flex-direction:column;
+  gap: 8px;
+}
+
+.mgr-planning-table__cell.is-work{
+  background: rgba(34,197,94,.06);
+}
+
+.mgr-planning-table__cell.is-rest{
+  background: rgba(251,191,36,.08);
+}
+
+.mgr-planning-table__cell.is-leave{
+  background: rgba(59,130,246,.06);
+}
+
+.mgr-planning-table__cell.is-training{
+  background: rgba(168,85,247,.06);
+}
+
+.mgr-planning-table__cell.is-appointments{
+  background: rgba(15,23,42,.04);
+}
+
+.mgr-planning-table__label{
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.mgr-planning-table__count{
+  margin-top: auto;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.mgr-planning-month-grid{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.mgr-planning-month-card{
+  border: 1px solid rgba(15,23,42,.10);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff, #fafcff);
+  padding: 18px;
+}
+
+.mgr-planning-month-card__stats{
+  margin-top: 18px;
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.mgr-planning-month-card__stats div{
+  border: 1px solid rgba(15,23,42,.08);
+  border-radius: 14px;
+  background: #fff;
+  padding: 12px 14px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+}
+
+.mgr-planning-month-card__stats span{
+  color: #64748b;
+  font-size: 13px;
+}
+
+.mgr-planning-month-card__stats strong{
+  color: #0f172a;
+  font-size: 18px;
+}
+
+.mgr-planning-legend__items{
+  display:flex;
+  align-items:center;
+  gap: 12px;
+  flex-wrap:wrap;
+}
+
+.mgr-planning-board{
+  margin-bottom: 18px;
+}
+
+.mgr-planning-legend{
+  margin-bottom: 18px;
+}
+
+.mgr-planning-modal{
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+}
+
+.mgr-planning-modal__backdrop{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 24px;
+  background: rgba(15,23,42,.38);
+  backdrop-filter: blur(4px);
+}
+
+.mgr-planning-modal__close{
+  position:absolute;
+  inset:0;
+}
+
+.mgr-planning-modal__panel{
+  position:relative;
+  z-index:1;
+  width:min(100%, 560px);
+  border-radius: 24px;
+  background: #fff;
+  border: 1px solid rgba(15,23,42,.10);
+  box-shadow: 0 36px 80px rgba(15,23,42,.20);
+  padding: 28px;
+}
+
+.mgr-planning-modal__head{
+  margin-bottom: 18px;
+}
+
+.mgr-planning-modal__head h2{
+  margin: 0;
+  font-size: 18px;
+}
+
+.mgr-planning-modal__grid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.mgr-planning-modal__field{
+  display:flex;
+  flex-direction:column;
+  gap: 8px;
+}
+
+.mgr-planning-modal__field--full{
+  grid-column: 1 / -1;
+}
+
+.mgr-planning-modal__field label{
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.mgr-planning-modal__field input[type="text"],
+.mgr-planning-modal__field input[type="date"],
+.mgr-planning-modal__field input[type="time"],
+.mgr-planning-modal__field textarea,
+.mgr-planning-modal__field select{
+  width:100%;
+  min-height: 48px;
+  border-radius: 14px;
+  border: 1px solid rgba(15,23,42,.12);
+  background: #fff;
+  color: #111827;
+  padding: 0 14px;
+  font-size: 14px;
+  outline:none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.mgr-planning-modal__field textarea{
+  min-height: 128px;
+  padding: 14px;
+  resize: vertical;
+}
+
+.mgr-planning-modal__field input:focus,
+.mgr-planning-modal__field textarea:focus,
+.mgr-planning-modal__field select:focus{
+  border-color: rgba(17,24,39,.28);
+  box-shadow: 0 0 0 4px rgba(17,24,39,.06);
+}
+
+.mgr-planning-modal__field .form-error,
+.mgr-planning-modal__field .invalid-feedback,
+.mgr-planning-modal__panel > form > ul{
+  color: #b91c1c;
+  font-size: 12px;
+}
+
+.mgr-planning-modal__actions{
+  display:flex;
+  justify-content:flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+@media (max-width: 1200px){
+  .mgr-planning-top,
+  .mgr-planning-config-grid{
+    grid-template-columns: 1fr;
+  }
+
+  .mgr-planning-employee-grid{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mgr-planning-month-grid{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px){
+  .pro-planning-today{
+    grid-template-columns: 1fr;
+  }
+
+  .pro-res-calendar__weekdays,
+  .pro-res-calendar__grid{
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .mgr-planning-employee-grid{
+    grid-template-columns: 1fr;
+  }
+
+  .mgr-recurring-row{
+    grid-template-columns: 1fr;
+    align-items:flex-start;
+  }
+
+  .mgr-recurring-row__summary{
+    justify-self:flex-start;
+  }
+
+  .mgr-planning-table{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mgr-planning-table__head{
+    display:none;
+  }
+
+  .mgr-planning-table__employee{
+    grid-column: 1 / -1;
+    min-height: auto;
+  }
+}
+
+@media (max-width: 760px){
+  .pro-calendar-page__head,
+  .mgr-planning-page__head,
+  .pro-res-calendar__toolbar,
+  .mgr-planning-events__item{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  .mgr-planning-page__controls,
+  .mgr-planning-page__switch,
+  .mgr-planning-board__actions,
+  .mgr-planning-nav,
+  .mgr-planning-modal__actions{
+    width:100%;
+  }
+
+  .mgr-planning-page__controls{
+    justify-content:space-between;
+  }
+
+  .mgr-planning-employee-card__actions{
+    width:100%;
+  }
+
+  .mgr-planning-employee-card__actions .btn{
+    flex: 1 1 180px;
+  }
+
+  .mgr-planning-board__actions{
+    align-items:center;
+  }
+
+  .mgr-planning-nav{
+    justify-content:space-between;
+  }
+
+  .mgr-planning-nav__label{
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .mgr-recurring-row__times{
+    width:100%;
+    flex-wrap:wrap;
+  }
+
+  .mgr-recurring-row__times input{
+    flex:1 1 120px;
+  }
+
+  .pro-res-calendar__weekdays,
+  .pro-res-calendar__grid,
+  .mgr-planning-month-grid{
+    grid-template-columns: 1fr;
+  }
+
+  .mgr-planning-table{
+    grid-template-columns: 1fr;
+  }
+
+  .mgr-planning-table__cell{
+    min-height: auto;
+  }
+
+  .mgr-planning-modal__panel{
+    width:100%;
+    padding: 22px 18px;
+  }
+
+  .mgr-planning-modal__grid{
+    grid-template-columns: 1fr;
   }
 }

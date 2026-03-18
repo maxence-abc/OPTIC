@@ -1,0 +1,383 @@
+{% extends 'manager/base_manager.html.twig' %}
+
+{% block title %}Planning équipe{% endblock %}
+
+{% block manager_content %}
+  <section class="mgr-planning-page">
+    <div class="mgr-pagehead mgr-planning-page__head">
+      <div>
+        <h1>Planning des employés</h1>
+        <p class="muted">Définissez les horaires récurrents de la semaine puis ajustez au cas par cas avec des exceptions.</p>
+      </div>
+    </div>
+
+    <div class="mgr-planning-employee-grid">
+      {% for employee in employees %}
+        {% set isSelected = selectedEmployee and selectedEmployee.id == employee.id %}
+        <article class="mgr-planning-employee-card {% if isSelected %}is-selected{% endif %}">
+          <div class="mgr-planning-employee-card__top">
+            <div>
+              <h2>{{ employee.firstName }} {{ employee.lastName }}</h2>
+              <p class="muted">{{ employee.specialization ?: 'Professionnel' }}</p>
+            </div>
+            <span class="mgr-planning-employee-card__status {% if employee.isActive %}is-active{% endif %}">
+              {{ employee.isActive ? 'Actif' : 'Inactif' }}
+            </span>
+          </div>
+
+          <div class="mgr-planning-employee-card__actions">
+            <a class="btn btn--outline btn--sm" href="{{ path('manager_planning', {
+              id: establishment.id,
+              view: planningView,
+              date: anchorDate|date('Y-m-d'),
+              employee: employee.id
+            }) }}">
+              Voir les horaires
+            </a>
+            <a class="btn btn--ghost btn--sm" href="{{ path('manager_planning', {
+              id: establishment.id,
+              view: planningView,
+              date: anchorDate|date('Y-m-d'),
+              employee: employee.id,
+              open_event: 1
+            }) }}#planning-event-modal">
+              + Ajouter un événement
+            </a>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+
+    {% if selectedEmployee %}
+      <div class="mgr-planning-config-grid">
+        <section class="mgr-card mgr-planning-recurring">
+          <div class="pro-planning-section__head">
+            <div>
+              <h2>Horaires hebdomadaires de {{ selectedEmployee.firstName }} {{ selectedEmployee.lastName }}</h2>
+              <p class="muted">Choisissez simplement les jours travaillés et les heures. Ce rythme s’applique toute l’année, sauf exception.</p>
+            </div>
+          </div>
+
+          <form method="post" action="{{ path('manager_planning_weekly_hours_save', { id: establishment.id, employee: selectedEmployee.id }) }}">
+            <input type="hidden" name="view" value="{{ planningView }}">
+            <input type="hidden" name="date" value="{{ anchorDate|date('Y-m-d') }}">
+
+            <div class="mgr-recurring-grid">
+              {% for row in weeklyScheduleRows %}
+                <article class="mgr-recurring-row">
+                  <div class="mgr-recurring-row__day">
+                    <strong>{{ row.shortLabel }}</strong>
+                    <span>{{ row.label }}</span>
+                  </div>
+
+                  <label class="mgr-recurring-row__toggle">
+                    <input type="checkbox" name="weekly_schedule[{{ row.dayNumber }}][enabled]" value="1" {% if row.enabled %}checked{% endif %}>
+                    <span>Travaillé</span>
+                  </label>
+
+                  <div class="mgr-recurring-row__times">
+                    <input type="time" name="weekly_schedule[{{ row.dayNumber }}][start]" value="{{ row.start }}">
+                    <span>à</span>
+                    <input type="time" name="weekly_schedule[{{ row.dayNumber }}][end]" value="{{ row.end }}">
+                  </div>
+
+                  <div class="mgr-recurring-row__summary">{{ row.summary }}</div>
+                </article>
+              {% endfor %}
+            </div>
+
+            <div class="mgr-planning-form__actions">
+              <button class="btn btn--dark" type="submit">Enregistrer la semaine type</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="mgr-card mgr-planning-sidecard">
+          <div class="pro-planning-section__head">
+            <div>
+              <h2>Exceptions ponctuelles</h2>
+              <p class="muted">Congé, repos, formation ou horaire personnalisé pour un jour donné.</p>
+            </div>
+          </div>
+
+          <div class="mgr-planning-sidecard__body">
+            <p class="muted">Le planning de base se gère à gauche. Pour modifier un ou plusieurs jours précis, ajoutez une exception sur l’employé concerné.</p>
+            <a class="btn btn--dark" href="{{ path('manager_planning', {
+              id: establishment.id,
+              view: planningView,
+              date: anchorDate|date('Y-m-d'),
+              employee: selectedEmployee.id,
+              open_event: 1
+            }) }}#planning-event-modal">
+              Ajouter une exception
+            </a>
+
+            {% if selectedEmployeeUpcomingScheduleEvents is empty %}
+              <div class="mgr-planning-sidecard__empty">
+                <strong>Aucune exception planifiée</strong>
+                <span>Les prochains repos, congés, formations ou horaires personnalisés apparaîtront ici.</span>
+              </div>
+            {% else %}
+              <div class="mgr-planning-sidecard__list">
+                {% for event in selectedEmployeeUpcomingScheduleEvents %}
+                  <article class="mgr-planning-sidecard__item">
+                    <div class="mgr-planning-sidecard__item-top">
+                      <span class="mgr-planning-pill is-{{ event.type }}">{{ event.type == 'work' ? 'Horaire personnalisé' : event.typeLabel }}</span>
+                      <strong>{{ event.startDate ? event.startDate|date('d/m/Y') : '' }}</strong>
+                    </div>
+                    <div class="mgr-planning-sidecard__item-meta">
+                      {% if event.endDate and event.endDate|date('Y-m-d') != event.startDate|date('Y-m-d') %}
+                        <span>Jusqu’au {{ event.endDate|date('d/m/Y') }}</span>
+                      {% endif %}
+                      {% if not event.isAllDay() %}
+                        <span>{{ event.startTime ? event.startTime|date('H:i') : '' }} - {{ event.endTime ? event.endTime|date('H:i') : '' }}</span>
+                      {% endif %}
+                      {% if event.notes %}
+                        <span>{{ event.notes }}</span>
+                      {% endif %}
+                    </div>
+                  </article>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </section>
+      </div>
+    {% endif %}
+
+    <section class="mgr-card mgr-planning-board" id="manager-planning-board">
+      <div class="pro-planning-section__head mgr-planning-board__head">
+        <div>
+          <h2>{{ planningView == 'week' ? 'Vue hebdomadaire' : 'Vue mensuelle' }}</h2>
+          <p class="muted">
+            {{ planningView == 'week'
+              ? 'Statut principal par employé sur la semaine sélectionnée.'
+              : 'Synthèse du mois sélectionné, avec jours travaillés, repos et rendez-vous.' }}
+          </p>
+        </div>
+
+        <div class="mgr-planning-board__actions">
+          <div class="mgr-planning-page__switch">
+            <a class="pro-calendar-page__switch-btn {% if planningView == 'week' %}is-active{% endif %}"
+               href="{{ path('manager_planning', { id: establishment.id, view: 'week', date: anchorDate|date('Y-m-d'), employee: selectedEmployee ? selectedEmployee.id : null }) }}#manager-planning-board">
+              Semaine
+            </a>
+            <a class="pro-calendar-page__switch-btn {% if planningView == 'month' %}is-active{% endif %}"
+               href="{{ path('manager_planning', { id: establishment.id, view: 'month', date: anchorDate|date('Y-m-d'), employee: selectedEmployee ? selectedEmployee.id : null }) }}#manager-planning-board">
+              Mois
+            </a>
+          </div>
+
+          <div class="mgr-planning-nav">
+            <a class="mgr-planning-nav__btn" href="{{ path('manager_planning', {
+              id: establishment.id,
+              view: planningView,
+              date: (planningView == 'month' ? anchorDate|date_modify('-1 month') : anchorDate|date_modify('-7 days'))|date('Y-m-d'),
+              employee: selectedEmployee ? selectedEmployee.id : null
+            }) }}#manager-planning-board">
+              {{ ux_icon('uil:angle-left') }}
+            </a>
+            <span class="mgr-planning-nav__label">
+              {{ planningView == 'month' ? anchorDate|date('F Y') : rangeStart|date('d/m') ~ ' - ' ~ rangeEnd|date('d/m') }}
+            </span>
+            <a class="mgr-planning-nav__btn" href="{{ path('manager_planning', {
+              id: establishment.id,
+              view: planningView,
+              date: (planningView == 'month' ? anchorDate|date_modify('+1 month') : anchorDate|date_modify('+7 days'))|date('Y-m-d'),
+              employee: selectedEmployee ? selectedEmployee.id : null
+            }) }}#manager-planning-board">
+              {{ ux_icon('uil:angle-right') }}
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {% if planningView == 'week' %}
+        <div class="mgr-planning-table">
+          <div class="mgr-planning-table__head mgr-planning-table__head--employee">Employé</div>
+          {% for day in weekDays %}
+            <div class="mgr-planning-table__head">
+              <div>{{ day.label }}</div>
+              <div class="muted">{{ day.short }}</div>
+            </div>
+          {% endfor %}
+
+          {% for row in planningRows %}
+            <div class="mgr-planning-table__employee">
+              <strong>{{ row.employee.firstName }} {{ row.employee.lastName }}</strong>
+              <span class="muted">{{ row.employee.specialization ?: 'Professionnel' }}</span>
+              <span class="mgr-planning-table__count">{{ row.configuredWorkDays }} jour{{ row.configuredWorkDays > 1 ? 's' : '' }} configuré{{ row.configuredWorkDays > 1 ? 's' : '' }}</span>
+            </div>
+
+            {% for day in row.days %}
+              <div class="mgr-planning-table__cell {{ day.summary.class }}">
+                <span class="mgr-planning-table__label">{{ day.summary.label }}</span>
+                <span class="mgr-planning-table__sub">{{ day.summary.sublabel }}</span>
+                {% if day.appointmentsCount > 0 %}
+                  <span class="mgr-planning-table__count">{{ day.appointmentsCount }} rdv</span>
+                {% endif %}
+              </div>
+            {% endfor %}
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="mgr-planning-month-grid">
+          {% for summary in monthlySummaries %}
+            <article class="mgr-planning-month-card">
+              <div class="mgr-planning-month-card__head">
+                <div>
+                  <strong>{{ summary.employee.firstName }} {{ summary.employee.lastName }}</strong>
+                  <div class="muted">{{ summary.employee.specialization ?: 'Professionnel' }}</div>
+                </div>
+                <span class="mgr-badge">{{ summary.appointments }} rdv</span>
+              </div>
+
+              <div class="mgr-planning-month-card__stats">
+                <div><span>Travail</span><strong>{{ summary.work }}</strong></div>
+                <div><span>Repos</span><strong>{{ summary.rest }}</strong></div>
+                <div><span>Congés</span><strong>{{ summary.leave }}</strong></div>
+                <div><span>Formation</span><strong>{{ summary.training }}</strong></div>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="mgr-card mgr-planning-legend">
+      <h2>Légende</h2>
+      <div class="mgr-planning-legend__items">
+        <span class="mgr-planning-pill is-work">Actif / Travail</span>
+        <span class="mgr-planning-pill is-rest">Repos</span>
+        <span class="mgr-planning-pill is-leave">Congé / Vacances</span>
+        <span class="mgr-planning-pill is-training">Formation</span>
+      </div>
+    </section>
+
+    <section class="mgr-card mgr-planning-events-shell">
+      <div class="pro-planning-section__head">
+        <div>
+          <h2>Événements à venir</h2>
+          <p class="muted">Retrouvez ici toutes les exceptions déjà planifiées sur l’équipe.</p>
+        </div>
+      </div>
+
+      {% if upcomingScheduleEvents is empty %}
+        <p class="muted">Aucun événement planifié pour le moment.</p>
+      {% else %}
+        <div class="mgr-planning-events__list">
+          {% for event in upcomingScheduleEvents %}
+            <article class="mgr-planning-events__item">
+              <div>
+                <strong>{{ event.employee ? event.employee.firstName ~ ' ' ~ event.employee.lastName : 'Employé' }}</strong>
+                <div class="muted">
+                  {{ event.type == 'work' ? 'Horaire personnalisé' : event.typeLabel }}
+                  · {{ event.startDate ? event.startDate|date('d/m/Y') : '' }}
+                  {% if event.endDate and event.endDate|date('Y-m-d') != event.startDate|date('Y-m-d') %}
+                    → {{ event.endDate|date('d/m/Y') }}
+                  {% endif %}
+                  {% if not event.isAllDay() %}
+                    · {{ event.startTime ? event.startTime|date('H:i') : '' }} - {{ event.endTime ? event.endTime|date('H:i') : '' }}
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="mgr-planning-events__actions">
+                <span class="mgr-planning-pill is-{{ event.type }}">{{ event.type == 'work' ? 'Horaire personnalisé' : event.typeLabel }}</span>
+                <form method="post" action="{{ path('manager_planning_event_delete', { id: event.id }) }}">
+                  <input type="hidden" name="_token" value="{{ csrf_token('delete_schedule_' ~ event.id) }}">
+                  <input type="hidden" name="view" value="{{ planningView }}">
+                  <input type="hidden" name="date" value="{{ anchorDate|date('Y-m-d') }}">
+                  <input type="hidden" name="employee" value="{{ selectedEmployee ? selectedEmployee.id : '' }}">
+                  <button class="btn btn--outline btn--sm" type="submit">Supprimer</button>
+                </form>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </section>
+  </section>
+
+  {% if openEventModal and selectedEmployee %}
+    <div class="mgr-planning-modal" id="planning-event-modal">
+      <div class="mgr-planning-modal__backdrop">
+        <a class="mgr-planning-modal__close" href="{{ path('manager_planning', {
+          id: establishment.id,
+          view: planningView,
+          date: anchorDate|date('Y-m-d'),
+          employee: selectedEmployee.id
+        }) }}"></a>
+
+        <section class="mgr-planning-modal__panel">
+          <div class="mgr-planning-modal__head">
+            <div>
+              <h2>Ajouter un événement pour {{ selectedEmployee.firstName }} {{ selectedEmployee.lastName }}</h2>
+              <p class="muted">Utilisez cette fenêtre uniquement pour du cas par cas.</p>
+            </div>
+          </div>
+
+          {{ form_start(form, {
+            action: path('manager_planning', {
+              id: establishment.id,
+              view: planningView,
+              date: anchorDate|date('Y-m-d'),
+              employee: selectedEmployee.id,
+              open_event: 1
+            })
+          }) }}
+            {{ form_errors(form) }}
+
+            <div class="mgr-planning-modal__grid">
+              <div class="mgr-planning-modal__field mgr-planning-modal__field--full">
+                {{ form_label(form.type) }}
+                {{ form_widget(form.type) }}
+                {{ form_errors(form.type) }}
+              </div>
+
+              <div class="mgr-planning-modal__field">
+                {{ form_label(form.startDate) }}
+                {{ form_widget(form.startDate) }}
+                {{ form_errors(form.startDate) }}
+              </div>
+
+              <div class="mgr-planning-modal__field">
+                {{ form_label(form.endDate) }}
+                {{ form_widget(form.endDate) }}
+                {{ form_errors(form.endDate) }}
+              </div>
+
+              <div class="mgr-planning-modal__field">
+                {{ form_label(form.startTime) }}
+                {{ form_widget(form.startTime) }}
+                {{ form_errors(form.startTime) }}
+              </div>
+
+              <div class="mgr-planning-modal__field">
+                {{ form_label(form.endTime) }}
+                {{ form_widget(form.endTime) }}
+                {{ form_errors(form.endTime) }}
+              </div>
+
+              <div class="mgr-planning-modal__field mgr-planning-modal__field--full">
+                {{ form_label(form.notes) }}
+                {{ form_widget(form.notes) }}
+                {{ form_errors(form.notes) }}
+              </div>
+            </div>
+
+            <div class="mgr-planning-modal__actions">
+              <a class="btn btn--outline" href="{{ path('manager_planning', {
+                id: establishment.id,
+                view: planningView,
+                date: anchorDate|date('Y-m-d'),
+                employee: selectedEmployee.id
+              }) }}">Annuler</a>
+              <button class="btn btn--dark" type="submit">Ajouter</button>
+            </div>
+          {{ form_end(form) }}
+        </section>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

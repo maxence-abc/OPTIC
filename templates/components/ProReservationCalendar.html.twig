@@ -1,0 +1,103 @@
+<section {{ attributes.defaults({ class: 'pro-res-calendar' }) }}>
+  <div class="pro-res-calendar__toolbar">
+    <div>
+      <h2 class="pro-res-calendar__title">Calendrier des réservations</h2>
+      <p class="muted">Vue globale de l’établissement. Cliquez sur un jour pour afficher le détail.</p>
+    </div>
+
+    <div class="pro-res-calendar__nav">
+      <button
+        type="button"
+        class="pro-res-calendar__nav-btn"
+        data-action="live#action"
+        {{ live_action('previousMonth') }}
+      >
+        {{ ux_icon('uil:angle-left') }}
+      </button>
+
+      <div class="pro-res-calendar__month">{{ this.monthLabel }}</div>
+
+      <button
+        type="button"
+        class="pro-res-calendar__nav-btn"
+        data-action="live#action"
+        {{ live_action('nextMonth') }}
+      >
+        {{ ux_icon('uil:angle-right') }}
+      </button>
+    </div>
+  </div>
+
+  <div class="pro-res-calendar__weekdays">
+    {% for label in this.weekdayLabels %}
+      <div class="pro-res-calendar__weekday">{{ label }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="pro-res-calendar__grid">
+    {% for day in this.calendarDays %}
+      <button
+        type="button"
+        class="pro-res-calendar__day
+          {% if not day.isCurrentMonth %} is-outside{% endif %}
+          {% if day.isToday %} is-today{% endif %}
+          {% if day.isSelected %} is-selected{% endif %}"
+        data-action="live#action"
+        {{ live_action('selectDay', { date: day.dateKey }) }}
+      >
+        <span class="pro-res-calendar__day-top">
+          <span class="pro-res-calendar__day-number">{{ day.label }}</span>
+          {% if day.counts.total > 0 %}
+            <span class="pro-res-calendar__day-badge">{{ day.counts.total }}</span>
+          {% endif %}
+        </span>
+
+        <span class="pro-res-calendar__day-meta">
+          {% if day.counts.confirmed > 0 %}
+            <span class="pro-res-calendar__chip is-confirmed">{{ day.counts.confirmed }} confirme{{ day.counts.confirmed > 1 ? 's' : '' }}</span>
+          {% endif %}
+
+          {% if day.counts.pending > 0 %}
+            <span class="pro-res-calendar__chip is-pending">{{ day.counts.pending }} en attente</span>
+          {% endif %}
+
+          {% if day.counts.total == 0 %}
+            <span class="pro-res-calendar__empty">Aucun rendez-vous</span>
+          {% endif %}
+        </span>
+      </button>
+    {% endfor %}
+  </div>
+
+  <div class="pro-res-calendar__detail">
+    <div class="pro-res-calendar__detail-head">
+      <h3>Réservations du {{ this.selectedDateLabel }}</h3>
+      <span class="mgr-badge">{{ this.selectedAppointments|length }} rendez-vous</span>
+    </div>
+
+    {% if this.selectedAppointments is empty %}
+      <p class="muted">Aucune réservation sur cette journée.</p>
+    {% else %}
+      <div class="pro-res-calendar__detail-list">
+        {% for appointment in this.selectedAppointments %}
+          <article class="pro-res-calendar__detail-card">
+            <div class="pro-res-calendar__detail-main">
+              <div class="pro-res-calendar__detail-top">
+                <strong>{{ appointment.client ? appointment.client.firstName ~ ' ' ~ appointment.client.lastName : 'Client' }}</strong>
+                <span class="reservation-status reservation-status--{{ appointment.status == 'confirmed' ? 'confirmed' : (appointment.status == 'cancelled' ? 'cancelled' : 'pending') }}">
+                  {{ appointment.status == 'confirmed' ? 'Accepté' : (appointment.status == 'cancelled' ? 'Annulé' : 'En attente') }}
+                </span>
+              </div>
+
+              <div class="pro-res-calendar__detail-meta">
+                <span>{{ appointment.startTime ? appointment.startTime|date('H:i') : '--:--' }} - {{ appointment.endTime ? appointment.endTime|date('H:i') : '--:--' }}</span>
+                <span>{{ appointment.service ? appointment.service.name : 'Service' }}</span>
+                <span>Pro: {{ appointment.professional ? appointment.professional.firstName ~ ' ' ~ appointment.professional.lastName : 'Non assigné' }}</span>
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</section>

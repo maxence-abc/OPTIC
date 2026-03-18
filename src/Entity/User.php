@@ -101,6 +101,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: Appointment::class, mappedBy: 'professional', orphanRemoval: true)]
     private Collection $appointments;
 
+    /**
+     * @var Collection<int, EmployeeScheduleEvent>
+     */
+    #[ORM\OneToMany(targetEntity: EmployeeScheduleEvent::class, mappedBy: 'employee', orphanRemoval: true)]
+    private Collection $scheduleEvents;
+
+    /**
+     * @var Collection<int, EmployeeWeeklySchedule>
+     */
+    #[ORM\OneToMany(targetEntity: EmployeeWeeklySchedule::class, mappedBy: 'employee', orphanRemoval: true)]
+    private Collection $weeklySchedules;
+
     public function __construct()
     {
         $this->appointmentsAsClient = new ArrayCollection();
@@ -110,6 +122,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->accountSuspensions = new ArrayCollection();
         $this->adminSuspensions = new ArrayCollection();
         $this->appointments = new ArrayCollection();
+        $this->scheduleEvents = new ArrayCollection();
+        $this->weeklySchedules = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -249,6 +263,64 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setIsActive(?bool $isActive): static
     {
         $this->isActive = $isActive;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, EmployeeScheduleEvent>
+     */
+    public function getScheduleEvents(): Collection
+    {
+        return $this->scheduleEvents;
+    }
+
+    public function addScheduleEvent(EmployeeScheduleEvent $scheduleEvent): static
+    {
+        if (!$this->scheduleEvents->contains($scheduleEvent)) {
+            $this->scheduleEvents->add($scheduleEvent);
+            $scheduleEvent->setEmployee($this);
+        }
+
+        return $this;
+    }
+
+    public function removeScheduleEvent(EmployeeScheduleEvent $scheduleEvent): static
+    {
+        if ($this->scheduleEvents->removeElement($scheduleEvent)) {
+            if ($scheduleEvent->getEmployee() === $this) {
+                $scheduleEvent->setEmployee(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, EmployeeWeeklySchedule>
+     */
+    public function getWeeklySchedules(): Collection
+    {
+        return $this->weeklySchedules;
+    }
+
+    public function addWeeklySchedule(EmployeeWeeklySchedule $weeklySchedule): static
+    {
+        if (!$this->weeklySchedules->contains($weeklySchedule)) {
+            $this->weeklySchedules->add($weeklySchedule);
+            $weeklySchedule->setEmployee($this);
+        }
+
+        return $this;
+    }
+
+    public function removeWeeklySchedule(EmployeeWeeklySchedule $weeklySchedule): static
+    {
+        if ($this->weeklySchedules->removeElement($weeklySchedule)) {
+            if ($weeklySchedule->getEmployee() === $this) {
+                $weeklySchedule->setEmployee(null);
+            }
+        }
 
         return $this;
     }

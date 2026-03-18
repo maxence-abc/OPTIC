@@ -2,12 +2,17 @@
 
 namespace App\Controller;
 
+use App\Entity\EmployeeScheduleEvent;
+use App\Entity\EmployeeWeeklySchedule;
 use App\Entity\Establishment;
 use App\Entity\OpeningHour;
 use App\Entity\Service;
 use App\Entity\User;
+use App\Form\EmployeeScheduleEventType;
 use App\Form\ManagerEmployeeType;
 use App\Form\OpeningHourType;
+use App\Repository\EmployeeScheduleEventRepository;
+use App\Repository\EmployeeWeeklyScheduleRepository;
 use App\Form\ServiceType;
 use App\Repository\AppointmentRepository;
 use App\Repository\EstablishmentRepository;
@@ -98,6 +103,10 @@ final class ManagerController extends AbstractController
             ]),
 
             'manager_stats' => $this->redirectToRoute('manager_stats', [
+                'id' => $establishment->getId(),
+            ]),
+
+            'manager_planning' => $this->redirectToRoute('manager_planning', [
                 'id' => $establishment->getId(),
             ]),
 
@@ -347,6 +356,206 @@ final class ManagerController extends AbstractController
         }
 
         return $this->redirectToRoute('manager_employees', ['id' => $establishment->getId()]);
+    }
+
+    #[Route('/establishment/{id}/planning', name: 'manager_planning', methods: ['GET', 'POST'])]
+    public function planning(
+        Establishment $establishment,
+        EstablishmentRepository $establishmentRepository,
+        SessionInterface $session,
+        UserRepository $userRepository,
+        EmployeeScheduleEventRepository $scheduleEventRepository,
+        EmployeeWeeklyScheduleRepository $weeklyScheduleRepository,
+        AppointmentRepository $appointmentRepository,
+        EntityManagerInterface $entityManager,
+        Request $request
+    ): Response {
+        $this->denyAccessUnlessGranted(EstablishmentVoter::MANAGE, $establishment);
+        $session->set(self::SESSION_ACTIVE_ESTABLISHMENT, $establishment->getId());
+
+        $owned = $establishmentRepository->findBy(['owner' => $this->getUser()], ['id' => 'DESC']);
+        $employees = $userRepository->findProfessionalsByEstablishment($establishment);
+        $view = (string) $request->query->get('view', 'week');
+        if (!in_array($view, ['week', 'month'], true)) {
+            $view = 'week';
+        }
+
+        $anchorDate = $this->resolvePlanningAnchorDate($request);
+        $selectedEmployee = $this->resolveSelectedPlanningEmployee($employees, $request);
+        $rangeStart = $view === 'month'
+            ? $anchorDate->modify('first day of this month')
+            : $this->getWeekStart($anchorDate);
+        $rangeEnd = $view === 'month'
+            ? $anchorDate->modify('last day of this month')
+            : $rangeStart->modify('+6 days');
+
+        $scheduleEvent = new EmployeeScheduleEvent();
+        $scheduleEvent->setEstablishment($establishment);
+        if ($selectedEmployee instanceof User) {
+            $scheduleEvent->setEmployee($selectedEmployee);
+            $scheduleEvent->setStartDate(\DateTime::createFromImmutable($anchorDate));
+            $scheduleEvent->setEndDate(\DateTime::createFromImmutable($anchorDate));
+        }
+
+        $form = $this->createForm(EmployeeScheduleEventType::class, $scheduleEvent, [
+            'establishment' => $establishment,
+            'show_employee' => false,
+        ]);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid() && $selectedEmployee instanceof User) {
+            $scheduleEvent->setEmployee($selectedEmployee);
+            $this->validateScheduleEvent($scheduleEvent, $establishment, $form);
+
+            if ($form->isValid()) {
+                $scheduleEvent->setEstablishment($establishment);
+                $entityManager->persist($scheduleEvent);
+                $entityManager->flush();
+
+                $this->addFlash('success', 'L’événement de planning a été ajouté.');
+
+                return $this->redirectToRoute('manager_planning', [
+                    'id' => $establishment->getId(),
+                    'view' => $view,
+                    'date' => $anchorDate->format('Y-m-d'),
+                    'employee' => $selectedEmployee->getId(),
+                ]);
+            }
+        }
+
+        $weeklySchedules = $weeklyScheduleRepository->findByEmployees($employees);
+        $scheduleEvents = $scheduleEventRepository->findByEstablishmentBetweenDates($establishment, $rangeStart, $rangeEnd);
+        $appointments = $appointmentRepository->findByEstablishmentBetweenDates($establishment, $rangeStart, $rangeEnd);
+        $upcomingScheduleEvents = $scheduleEventRepository->findUpcomingByEstablishment($establishment, 18);
+        $selectedEmployeeUpcomingScheduleEvents = $selectedEmployee instanceof User
+            ? array_values(array_filter(
+                $upcomingScheduleEvents,
+                static fn (EmployeeScheduleEvent $event): bool => $event->getEmployee()?->getId() === $selectedEmployee->getId()
+            ))
+            : [];
+
+        return $this->render('manager/planning.html.twig', [
+            'establishment' => $establishment,
+            'ownedEstablishments' => $owned,
+            'employees' => $employees,
+            'selectedEmployee' => $selectedEmployee,
+            'planningView' => $view,
+            'anchorDate' => $anchorDate,
+            'rangeStart' => $rangeStart,
+            'rangeEnd' => $rangeEnd,
+            'weeklyScheduleRows' => $this->buildWeeklyScheduleRows(
+                $selectedEmployee instanceof User ? $weeklyScheduleRepository->findByEmployee($establishment, $selectedEmployee) : []
+            ),
+            'weekDays' => $this->buildPeriodDays($this->getWeekStart($anchorDate), 7),
+            'planningRows' => $this->buildEmployeePlanningRows($employees, $weeklySchedules, $scheduleEvents, $appointments, $this->getWeekStart($anchorDate)),
+            'monthlySummaries' => $this->buildMonthlyEmployeeSummaries($employees, $weeklySchedules, $scheduleEvents, $appointments, $rangeStart, $rangeEnd),
+            'upcomingScheduleEvents' => $upcomingScheduleEvents,
+            'selectedEmployeeUpcomingScheduleEvents' => $selectedEmployeeUpcomingScheduleEvents,
+            'weeklyScheduleIndex' => $this->indexWeeklySchedules($weeklySchedules),
+            'openEventModal' => $request->query->getBoolean('open_event') && $selectedEmployee instanceof User,
+            'form' => $form->createView(),
+        ]);
+    }
+
+    #[Route('/establishment/{id}/planning/weekly-hours/{employee}', name: 'manager_planning_weekly_hours_save', methods: ['POST'])]
+    public function planningWeeklyHoursSave(
+        Establishment $establishment,
+        User $employee,
+        EmployeeWeeklyScheduleRepository $weeklyScheduleRepository,
+        EntityManagerInterface $entityManager,
+        Request $request
+    ): Response {
+        $this->denyAccessUnlessGranted(EstablishmentVoter::MANAGE, $establishment);
+        $this->assertEmployeeBelongsToEstablishment($employee, $establishment);
+
+        $rows = (array) ($request->request->all()['weekly_schedule'] ?? []);
+        $existingSchedules = [];
+
+        foreach ($weeklyScheduleRepository->findByEmployee($establishment, $employee) as $schedule) {
+            $existingSchedules[$schedule->getDayOfWeek() ?? 0] = $schedule;
+        }
+
+        $hasError = false;
+
+        foreach (EmployeeWeeklySchedule::getOrderedDayNumbers() as $dayNumber) {
+            $payload = (array) ($rows[$dayNumber] ?? []);
+            $enabled = array_key_exists('enabled', $payload);
+            $startValue = trim((string) ($payload['start'] ?? ''));
+            $endValue = trim((string) ($payload['end'] ?? ''));
+            $schedule = $existingSchedules[$dayNumber] ?? null;
+
+            if (!$enabled) {
+                if ($schedule instanceof EmployeeWeeklySchedule) {
+                    $entityManager->remove($schedule);
+                }
+                continue;
+            }
+
+            $startTime = $this->parseTimeValue($startValue);
+            $endTime = $this->parseTimeValue($endValue);
+
+            if (!$startTime instanceof \DateTimeInterface || !$endTime instanceof \DateTimeInterface || $endTime <= $startTime) {
+                $hasError = true;
+                $this->addFlash(
+                    'error',
+                    sprintf('Le créneau du %s est invalide. Renseignez une heure de début et une heure de fin cohérentes.', EmployeeWeeklySchedule::getDayLabels()[$dayNumber] ?? 'jour')
+                );
+                continue;
+            }
+
+            if (!$schedule instanceof EmployeeWeeklySchedule) {
+                $schedule = new EmployeeWeeklySchedule();
+                $schedule
+                    ->setEstablishment($establishment)
+                    ->setEmployee($employee)
+                    ->setDayOfWeek($dayNumber);
+                $entityManager->persist($schedule);
+            }
+
+            $schedule
+                ->setIsWorking(true)
+                ->setStartTime($startTime)
+                ->setEndTime($endTime);
+        }
+
+        if (!$hasError) {
+            $entityManager->flush();
+            $this->addFlash('success', 'Les horaires hebdomadaires ont été enregistrés.');
+        }
+
+        return $this->redirectToRoute('manager_planning', [
+            'id' => $establishment->getId(),
+            'view' => (string) $request->request->get('view', 'week'),
+            'date' => (string) $request->request->get('date', (new \DateTimeImmutable())->format('Y-m-d')),
+            'employee' => $employee->getId(),
+        ]);
+    }
+
+    #[Route('/planning/event/{id}/delete', name: 'manager_planning_event_delete', methods: ['POST'])]
+    public function planningEventDelete(
+        EmployeeScheduleEvent $event,
+        EntityManagerInterface $entityManager,
+        Request $request
+    ): Response {
+        $establishment = $event->getEstablishment();
+        if (!$establishment instanceof Establishment) {
+            throw $this->createNotFoundException('Événement sans établissement.');
+        }
+
+        $this->denyAccessUnlessGranted(EstablishmentVoter::MANAGE, $establishment);
+
+        if ($this->isCsrfTokenValid('delete_schedule_'.$event->getId(), (string) $request->request->get('_token'))) {
+            $entityManager->remove($event);
+            $entityManager->flush();
+            $this->addFlash('success', 'L’événement a été supprimé.');
+        }
+
+        return $this->redirectToRoute('manager_planning', [
+            'id' => $establishment->getId(),
+            'view' => (string) $request->request->get('view', 'week'),
+            'date' => (string) $request->request->get('date', (new \DateTimeImmutable())->format('Y-m-d')),
+            'employee' => $request->request->getInt('employee'),
+        ]);
     }
 
     #[Route('/establishment/{id}/opening-hours', name: 'manager_opening_hours', methods: ['GET'])]
@@ -854,5 +1063,411 @@ final class ManagerController extends AbstractController
             'Y-m-d H:i:s',
             sprintf('%s %s', $date->format('Y-m-d'), $endTime->format('H:i:s'))
         ) ?: null;
+    }
+
+    private function resolvePlanningAnchorDate(Request $request): \DateTimeImmutable
+    {
+        $date = trim((string) $request->query->get('date', ''));
+
+        if ($date !== '') {
+            try {
+                return new \DateTimeImmutable($date);
+            } catch (\Throwable) {
+            }
+        }
+
+        return new \DateTimeImmutable('today');
+    }
+
+    private function getWeekStart(\DateTimeImmutable $date): \DateTimeImmutable
+    {
+        return $date->modify('monday this week')->setTime(0, 0);
+    }
+
+    /**
+     * @return array<int, array{date: \DateTimeImmutable, label: string, short: string}>
+     */
+    private function buildPeriodDays(\DateTimeImmutable $start, int $length): array
+    {
+        $labels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+        $days = [];
+
+        for ($index = 0; $index < $length; ++$index) {
+            $date = $start->modify(sprintf('+%d days', $index));
+            $days[] = [
+                'date' => $date,
+                'label' => $labels[$index] ?? $date->format('D'),
+                'short' => $date->format('d/m'),
+            ];
+        }
+
+        return $days;
+    }
+
+    /**
+     * @param User[] $employees
+     */
+    private function resolveSelectedPlanningEmployee(array $employees, Request $request): ?User
+    {
+        $selectedId = $request->query->getInt('employee');
+
+        if ($selectedId <= 0) {
+            $selectedId = $request->request->getInt('employee');
+        }
+
+        foreach ($employees as $employee) {
+            if ($employee->getId() === $selectedId) {
+                return $employee;
+            }
+        }
+
+        return $employees[0] ?? null;
+    }
+
+    /**
+     * @param EmployeeWeeklySchedule[] $weeklySchedules
+     * @return array<int, array<int, EmployeeWeeklySchedule>>
+     */
+    private function indexWeeklySchedules(array $weeklySchedules): array
+    {
+        $index = [];
+
+        foreach ($weeklySchedules as $weeklySchedule) {
+            $employee = $weeklySchedule->getEmployee();
+            $dayOfWeek = $weeklySchedule->getDayOfWeek();
+
+            if (!$employee instanceof User || !$dayOfWeek) {
+                continue;
+            }
+
+            $index[$employee->getId()][$dayOfWeek] = $weeklySchedule;
+        }
+
+        return $index;
+    }
+
+    /**
+     * @param EmployeeWeeklySchedule[] $weeklySchedules
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildWeeklyScheduleRows(array $weeklySchedules): array
+    {
+        $index = [];
+        foreach ($weeklySchedules as $weeklySchedule) {
+            if ($weeklySchedule->getDayOfWeek()) {
+                $index[$weeklySchedule->getDayOfWeek()] = $weeklySchedule;
+            }
+        }
+
+        $rows = [];
+        foreach (EmployeeWeeklySchedule::getOrderedDayNumbers() as $dayNumber) {
+            $schedule = $index[$dayNumber] ?? null;
+            $rows[] = [
+                'dayNumber' => $dayNumber,
+                'label' => EmployeeWeeklySchedule::getDayLabels()[$dayNumber] ?? 'Jour',
+                'shortLabel' => EmployeeWeeklySchedule::getShortDayLabels()[$dayNumber] ?? 'Jour',
+                'enabled' => $schedule instanceof EmployeeWeeklySchedule && $schedule->isConfiguredWorkingDay(),
+                'start' => $schedule?->getStartTime()?->format('H:i') ?? '',
+                'end' => $schedule?->getEndTime()?->format('H:i') ?? '',
+                'summary' => $schedule instanceof EmployeeWeeklySchedule && $schedule->isConfiguredWorkingDay()
+                    ? $schedule->getDisplayRange()
+                    : 'Repos',
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @param User[] $employees
+     * @param EmployeeWeeklySchedule[] $weeklySchedules
+     * @param EmployeeScheduleEvent[] $scheduleEvents
+     * @param \App\Entity\Appointment[] $appointments
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildEmployeePlanningRows(array $employees, array $weeklySchedules, array $scheduleEvents, array $appointments, \DateTimeImmutable $weekStart): array
+    {
+        $weeklyScheduleIndex = $this->indexWeeklySchedules($weeklySchedules);
+        $eventsByEmployeeDay = $this->indexScheduleEventsByDay($scheduleEvents, $weekStart);
+        $appointmentsByEmployeeDay = $this->indexAppointmentsByEmployeeDay($appointments);
+        $rows = [];
+
+        foreach ($employees as $employee) {
+            $days = [];
+
+            for ($index = 0; $index < 7; ++$index) {
+                $date = $weekStart->modify(sprintf('+%d days', $index));
+                $key = $date->format('Y-m-d');
+                $dayEvents = $eventsByEmployeeDay[$employee->getId()][$key] ?? [];
+                $dayAppointments = $appointmentsByEmployeeDay[$employee->getId()][$key] ?? [];
+                $defaultSchedule = $weeklyScheduleIndex[$employee->getId()][(int) $date->format('N')] ?? null;
+
+                $days[] = [
+                    'date' => $date,
+                    'summary' => $this->buildPlanningDaySummary($defaultSchedule, $dayEvents, $dayAppointments),
+                    'events' => $dayEvents,
+                    'defaultSchedule' => $defaultSchedule,
+                    'appointmentsCount' => count($dayAppointments),
+                ];
+            }
+
+            $rows[] = [
+                'employee' => $employee,
+                'days' => $days,
+                'configuredWorkDays' => $this->countConfiguredWorkingDays($weeklyScheduleIndex[$employee->getId()] ?? []),
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @param User[] $employees
+     * @param EmployeeWeeklySchedule[] $weeklySchedules
+     * @param EmployeeScheduleEvent[] $scheduleEvents
+     * @param \App\Entity\Appointment[] $appointments
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildMonthlyEmployeeSummaries(
+        array $employees,
+        array $weeklySchedules,
+        array $scheduleEvents,
+        array $appointments,
+        \DateTimeImmutable $rangeStart,
+        \DateTimeImmutable $rangeEnd
+    ): array {
+        $summary = [];
+        $weeklyScheduleIndex = $this->indexWeeklySchedules($weeklySchedules);
+        $eventsByEmployeeDay = $this->indexScheduleEventsByDay($scheduleEvents, $rangeStart);
+
+        foreach ($employees as $employee) {
+            $summary[$employee->getId()] = [
+                'employee' => $employee,
+                'work' => 0,
+                'rest' => 0,
+                'leave' => 0,
+                'training' => 0,
+                'appointments' => 0,
+            ];
+
+            $cursor = $rangeStart;
+            while ($cursor <= $rangeEnd) {
+                $dayKey = $cursor->format('Y-m-d');
+                $defaultSchedule = $weeklyScheduleIndex[$employee->getId()][(int) $cursor->format('N')] ?? null;
+                $dayEvents = $eventsByEmployeeDay[$employee->getId()][$dayKey] ?? [];
+                $effectiveType = $this->resolveEffectivePlanningType($defaultSchedule, $dayEvents);
+                ++$summary[$employee->getId()][$effectiveType];
+                $cursor = $cursor->modify('+1 day');
+            }
+        }
+
+        foreach ($appointments as $appointment) {
+            if ($appointment->getStatus() === 'cancelled') {
+                continue;
+            }
+
+            $employee = $appointment->getProfessional();
+            if (!$employee instanceof User || !isset($summary[$employee->getId()])) {
+                continue;
+            }
+
+            ++$summary[$employee->getId()]['appointments'];
+        }
+
+        return array_values($summary);
+    }
+
+    /**
+     * @param EmployeeScheduleEvent[] $scheduleEvents
+     * @return array<int, array<string, EmployeeScheduleEvent[]>>
+     */
+    private function indexScheduleEventsByDay(array $scheduleEvents, \DateTimeImmutable $fallbackDate): array
+    {
+        $eventsByEmployeeDay = [];
+
+        foreach ($scheduleEvents as $event) {
+            $employee = $event->getEmployee();
+            if (!$employee instanceof User) {
+                continue;
+            }
+
+            $current = \DateTimeImmutable::createFromInterface($event->getStartDate() ?? $fallbackDate)->setTime(0, 0);
+            $end = \DateTimeImmutable::createFromInterface($event->getEndDate() ?? $current)->setTime(0, 0);
+
+            while ($current <= $end) {
+                $eventsByEmployeeDay[$employee->getId()][$current->format('Y-m-d')][] = $event;
+                $current = $current->modify('+1 day');
+            }
+        }
+
+        return $eventsByEmployeeDay;
+    }
+
+    /**
+     * @param \App\Entity\Appointment[] $appointments
+     * @return array<int, array<string, \App\Entity\Appointment[]>>
+     */
+    private function indexAppointmentsByEmployeeDay(array $appointments): array
+    {
+        $appointmentsByEmployeeDay = [];
+
+        foreach ($appointments as $appointment) {
+            if ($appointment->getStatus() === 'cancelled') {
+                continue;
+            }
+
+            $professional = $appointment->getProfessional();
+            $date = $appointment->getDate();
+
+            if (!$professional instanceof User || !$date instanceof \DateTimeInterface) {
+                continue;
+            }
+
+            $appointmentsByEmployeeDay[$professional->getId()][$date->format('Y-m-d')][] = $appointment;
+        }
+
+        return $appointmentsByEmployeeDay;
+    }
+
+    /**
+     * @param array<int, EmployeeWeeklySchedule> $weeklySchedules
+     */
+    private function countConfiguredWorkingDays(array $weeklySchedules): int
+    {
+        $count = 0;
+
+        foreach ($weeklySchedules as $weeklySchedule) {
+            if ($weeklySchedule instanceof EmployeeWeeklySchedule && $weeklySchedule->isConfiguredWorkingDay()) {
+                ++$count;
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * @param EmployeeScheduleEvent[] $events
+     * @param \App\Entity\Appointment[] $appointments
+     * @return array{label: string, class: string, sublabel: string}
+     */
+    private function buildPlanningDaySummary(?EmployeeWeeklySchedule $defaultSchedule, array $events, array $appointments): array
+    {
+        $effectiveType = $this->resolveEffectivePlanningType($defaultSchedule, $events);
+
+        if ($events !== []) {
+            usort($events, static fn (EmployeeScheduleEvent $left, EmployeeScheduleEvent $right): int => self::getPlanningTypePriority($left->getType()) <=> self::getPlanningTypePriority($right->getType()));
+            $event = $events[0];
+
+            return [
+                'label' => $effectiveType === EmployeeScheduleEvent::TYPE_WORK ? 'Actif' : $event->getTypeLabel(),
+                'class' => 'is-'.$effectiveType,
+                'sublabel' => $event->isAllDay()
+                    ? $event->getDisplayTitle()
+                    : trim(sprintf('%s - %s', $event->getStartTime()?->format('H:i') ?? '', $event->getEndTime()?->format('H:i') ?? '')),
+            ];
+        }
+
+        if ($defaultSchedule instanceof EmployeeWeeklySchedule && $defaultSchedule->isConfiguredWorkingDay()) {
+            return [
+                'label' => 'Actif',
+                'class' => 'is-work',
+                'sublabel' => $defaultSchedule->getDisplayRange(),
+            ];
+        }
+
+        return [
+            'label' => $appointments !== [] ? 'Rendez-vous' : 'Repos',
+            'class' => $appointments !== [] ? 'is-appointments' : 'is-rest',
+            'sublabel' => $appointments !== [] ? sprintf('%d réservation%s', count($appointments), count($appointments) > 1 ? 's' : '') : 'Jour non travaillé',
+        ];
+    }
+
+    /**
+     * @param EmployeeScheduleEvent[] $events
+     */
+    private function resolveEffectivePlanningType(?EmployeeWeeklySchedule $defaultSchedule, array $events): string
+    {
+        if ($events !== []) {
+            usort($events, static fn (EmployeeScheduleEvent $left, EmployeeScheduleEvent $right): int => self::getPlanningTypePriority($left->getType()) <=> self::getPlanningTypePriority($right->getType()));
+
+            return $events[0]->getType() ?? EmployeeScheduleEvent::TYPE_WORK;
+        }
+
+        if ($defaultSchedule instanceof EmployeeWeeklySchedule && $defaultSchedule->isConfiguredWorkingDay()) {
+            return EmployeeScheduleEvent::TYPE_WORK;
+        }
+
+        return EmployeeScheduleEvent::TYPE_REST;
+    }
+
+    private static function getPlanningTypePriority(?string $type): int
+    {
+        return match ($type) {
+            EmployeeScheduleEvent::TYPE_LEAVE => 0,
+            EmployeeScheduleEvent::TYPE_REST => 1,
+            EmployeeScheduleEvent::TYPE_TRAINING => 2,
+            EmployeeScheduleEvent::TYPE_WORK => 3,
+            default => 4,
+        };
+    }
+
+    private function validateScheduleEvent(EmployeeScheduleEvent $scheduleEvent, Establishment $establishment, \Symfony\Component\Form\FormInterface $form): void
+    {
+        $employee = $scheduleEvent->getEmployee();
+        if (!$employee instanceof User) {
+            return;
+        }
+
+        $employeeBelongsToEstablishment = $employee->getEstablishment()?->getId() === $establishment->getId()
+            || $establishment->getOwner()?->getId() === $employee->getId();
+
+        if (!$employeeBelongsToEstablishment) {
+            if ($form->has('employee')) {
+                $form->get('employee')->addError(new FormError('Cet employé n’appartient pas à cet établissement.'));
+            } else {
+                $form->addError(new FormError('Cet employé n’appartient pas à cet établissement.'));
+            }
+        }
+
+        $startDate = $scheduleEvent->getStartDate();
+        $endDate = $scheduleEvent->getEndDate();
+
+        if ($startDate instanceof \DateTimeInterface && $endDate instanceof \DateTimeInterface && $endDate < $startDate) {
+            $form->get('endDate')->addError(new FormError('La date de fin doit être postérieure ou égale à la date de début.'));
+        }
+
+        if ($scheduleEvent->getType() === EmployeeScheduleEvent::TYPE_WORK) {
+            if (!$scheduleEvent->getStartTime() instanceof \DateTimeInterface || !$scheduleEvent->getEndTime() instanceof \DateTimeInterface) {
+                $form->get('startTime')->addError(new FormError('Les horaires sont requis pour un créneau de travail.'));
+            } elseif ($scheduleEvent->getEndTime() <= $scheduleEvent->getStartTime()) {
+                $form->get('endTime')->addError(new FormError('L’heure de fin doit être postérieure à l’heure de début.'));
+            }
+        }
+    }
+
+    private function assertEmployeeBelongsToEstablishment(User $employee, Establishment $establishment): void
+    {
+        $employeeBelongsToEstablishment = $employee->getEstablishment()?->getId() === $establishment->getId()
+            || $establishment->getOwner()?->getId() === $employee->getId();
+
+        if (!$employeeBelongsToEstablishment) {
+            throw $this->createAccessDeniedException('Cet employé n’appartient pas à cet établissement.');
+        }
+    }
+
+    private function parseTimeValue(string $value): ?\DateTime
+    {
+        if ($value === '') {
+            return null;
+        }
+
+        $time = \DateTime::createFromFormat('H:i', $value);
+        if ($time instanceof \DateTime) {
+            return $time;
+        }
+
+        $time = \DateTime::createFromFormat('H:i:s', $value);
+
+        return $time instanceof \DateTime ? $time : null;
     }
 }
