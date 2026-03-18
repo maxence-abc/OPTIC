@@ -1,5 +1,9 @@
 {% if this.enabled %}
-<header class="navbar" data-navbar>
+<header
+  class="navbar"
+  data-controller="navbar"
+  data-action="click@window->navbar#closeOnOutside keydown.esc@window->navbar#closeAll"
+>
   <div class="container container--wide navbar__container">
 
     {# Brand #}
@@ -15,12 +19,25 @@
     </div>
 
     {# Burger (mobile only) #}
-    <button class="navbar__burger" type="button" aria-label="Ouvrir le menu" aria-expanded="false">
+    <button
+      class="navbar__burger"
+      type="button"
+      aria-label="Ouvrir le menu"
+      aria-controls="navbar-main-nav"
+      aria-expanded="false"
+      data-action="navbar#toggleNav"
+      data-navbar-target="burgerButton"
+    >
       <span class="navbar__burger-icon" aria-hidden="true">{{ ux_icon('uil:bars') }}</span>
     </button>
 
     {# Navigation #}
-    <nav class="navbar__nav" aria-label="Navigation principale">
+    <nav
+      id="navbar-main-nav"
+      class="navbar__nav"
+      aria-label="Navigation principale"
+      data-navbar-target="nav"
+    >
       <a href="{{ this.homeHref ?? path('app_home') }}" class="navbar__link">Accueil</a>
       <a href="{{ this.searchHref ?? path('app_store_search') }}" class="navbar__link">Rechercher un service</a>
 
@@ -36,19 +53,63 @@
     {# User #}
     <div class="navbar__user">
       {% if app.user %}
+        {% set reservationsHref = path('app_account', { tab: 'reservations' }) %}
+        {% set reviewsHref = path('app_account', { tab: 'reviews' }) %}
+        {% set settingsHref = path('app_account', { tab: 'profile' }) ~ '#account-settings' %}
+
         <div class="navbar__user-info">
           <div class="navbar__user-text">
             <span class="navbar__user-name">{{ app.user.firstName }} {{ app.user.lastName }}</span>
             <span class="navbar__email">{{ app.user.email }}</span>
           </div>
 
-          <twig:Button
-            label="{{ this.accountLabel }}"
-            href="{{ this.accountHref ?? path('app_account') }}"
-            variant="outline"
-            size="md"
-            iconLeft="{{ this.userIcon }}"
-          />
+          <div class="navbar__account" data-navbar-target="accountContainer">
+            <button
+              class="navbar__account-trigger"
+              type="button"
+              aria-label="Ouvrir le menu Mon compte"
+              aria-haspopup="menu"
+              aria-controls="navbar-account-menu"
+              aria-expanded="false"
+              data-action="navbar#toggleAccount"
+              data-navbar-target="accountButton"
+            >
+              <span class="navbar__account-trigger-icon" aria-hidden="true">{{ ux_icon(this.userIcon) }}</span>
+              <span class="navbar__account-trigger-label">{{ this.accountLabel }}</span>
+            </button>
+
+            <div
+              id="navbar-account-menu"
+              class="navbar__account-menu"
+              role="menu"
+              hidden
+              data-navbar-target="accountPanel"
+            >
+              <div class="navbar__account-section">
+                <a href="{{ reservationsHref }}" class="navbar__account-link" role="menuitem">
+                  <span class="navbar__account-link-icon" aria-hidden="true">{{ ux_icon('uil:bookmark') }}</span>
+                  <span>Mes réservations</span>
+                </a>
+
+                <a href="{{ reviewsHref }}" class="navbar__account-link" role="menuitem">
+                  <span class="navbar__account-link-icon" aria-hidden="true">{{ ux_icon('uil:star') }}</span>
+                  <span>Mes avis</span>
+                </a>
+
+                <a href="{{ settingsHref }}" class="navbar__account-link" role="menuitem">
+                  <span class="navbar__account-link-icon" aria-hidden="true">{{ ux_icon('uil:setting') }}</span>
+                  <span>Paramètres</span>
+                </a>
+              </div>
+
+              <div class="navbar__account-section">
+                <a href="{{ path('app_logout') }}" class="navbar__account-link navbar__account-link--logout" role="menuitem">
+                  <span class="navbar__account-link-icon" aria-hidden="true">{{ ux_icon('uil:signout') }}</span>
+                  <span>Déconnexion</span>
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       {% else %}
         <div class="navbar__user-info">

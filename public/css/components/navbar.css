@@ -85,6 +85,10 @@
   gap: 10px;
 }
 
+.navbar__user-name{
+  font-weight: 600;
+}
+
 .navbar__user-text{
   display:flex;
   flex-direction: column;
@@ -96,6 +100,99 @@
 .navbar__email{
   font-size: 12px;
   color: rgba(0,0,0,.55);
+}
+
+.navbar__account{
+  position: relative;
+}
+
+.navbar__account-trigger{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid rgba(0,0,0,.14);
+  border-radius: 14px;
+  background: #fff;
+  color: #111;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .18s ease, border-color .18s ease, box-shadow .18s ease;
+  text-decoration: none;
+}
+
+.navbar__account-trigger:hover,
+.navbar__account.is-open .navbar__account-trigger{
+  background: #f8f8f8;
+  border-color: rgba(0,0,0,.20);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .08);
+}
+
+.navbar__account-trigger-icon,
+.navbar__account-link-icon{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navbar__account-trigger-icon svg,
+.navbar__account-link-icon svg{
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.navbar__account-trigger-label{
+  white-space: nowrap;
+}
+
+.navbar__account-menu{
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: min(320px, calc(100vw - 32px));
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, .12);
+  border-radius: 18px;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, .14);
+  overflow: hidden;
+  z-index: 70;
+}
+
+.navbar__account-menu[hidden]{
+  display: none;
+}
+
+.navbar__account-section + .navbar__account-section{
+  border-top: 1px solid rgba(15, 23, 42, .10);
+}
+
+.navbar__account-link{
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 18px 22px;
+  text-decoration: none;
+  color: #111;
+  font-size: 16px;
+  font-weight: 500;
+  transition: background .18s ease, color .18s ease;
+}
+
+.navbar__account-link:hover{
+  background: #f8f8f8;
+}
+
+.navbar__account-link--logout{
+  color: #ff5a57;
+}
+
+.navbar__account-link--logout:hover{
+  background: rgba(255, 90, 87, .06);
 }
 
 /* Burger */
@@ -147,6 +244,10 @@
     display:none;
   }
 
+  .navbar__account-menu{
+    width: min(320px, calc(100vw - 32px));
+  }
+
   .navbar.is-open .navbar__nav{ display:flex; }
 }
 
@@ -155,5 +256,20 @@
   .navbar__container{
     padding-left: 16px;
     padding-right: 16px;
+  }
+
+  .navbar__account-trigger{
+    min-height: 42px;
+    padding: 0 14px;
+  }
+
+  .navbar__account-menu{
+    right: 0;
+    width: min(300px, calc(100vw - 24px));
+  }
+
+  .navbar__account-link{
+    padding: 16px 18px;
+    font-size: 15px;
   }
 }
