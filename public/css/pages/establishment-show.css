@@ -137,6 +137,25 @@
   color:rgba(0,0,0,.58);
 }
 
+.page-establishment-show .est-hours__slots{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.page-establishment-show .est-hours__slot{
+  display:inline-flex;
+  align-items:center;
+  min-height:32px;
+  padding:0 10px;
+  border-radius:999px;
+  border:1px solid rgba(0,0,0,.08);
+  background:#f8fafc;
+  color:rgba(0,0,0,.72);
+  font-size:13px;
+  font-weight:600;
+}
+
 /* ===========================
    Booking
    =========================== */
@@ -261,5 +280,10 @@
   /* Sur mobile, les boutons semaine prennent toute la largeur */
   .page-establishment-show .booking-week__nav{
     width: 100%;
+  }
+
+  .page-establishment-show .est-hours__row{
+    grid-template-columns:1fr;
+    gap:8px;
   }
 }

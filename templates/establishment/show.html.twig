@@ -121,15 +121,20 @@
   } %}
 
   {% if establishment.openingHours is defined and establishment.openingHours|length > 0 %}
-    {% set hours = establishment.openingHours|sort((a,b) => (dayOrder[a.dayOfWeek] ?? 99) <=> (dayOrder[b.dayOfWeek] ?? 99)) %}
+    {% set days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] %}
 
     <ul>
-      {% for oh in hours %}
+      {% for day in days %}
+        {% set intervals = (establishment.openingHours|filter(x => x.dayOfWeek == day))|sort((a,b) => (a.openTime ? a.openTime|date('H:i') : '99:99') <=> (b.openTime ? b.openTime|date('H:i') : '99:99')) %}
         <li style="margin-bottom: 6px;">
-          <strong>{{ dayLabel[oh.dayOfWeek] ?? oh.dayOfWeek }}</strong> :
-          {{ oh.openTime ? oh.openTime|date('H:i') : '' }}
-          -
-          {{ oh.closeTime ? oh.closeTime|date('H:i') : '' }}
+          <strong>{{ dayLabel[day] ?? day }}</strong> :
+          {% if intervals|length > 0 %}
+            {% for interval in intervals %}
+              {{ interval.openTime ? interval.openTime|date('H:i') : '' }} - {{ interval.closeTime ? interval.closeTime|date('H:i') : '' }}{% if not loop.last %} • {% endif %}
+            {% endfor %}
+          {% else %}
+            Fermé
+          {% endif %}
         </li>
       {% endfor %}
     </ul>
@@ -146,4 +151,3 @@
 
 </div>
 {% endblock %}
-

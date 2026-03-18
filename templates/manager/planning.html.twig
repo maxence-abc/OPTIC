@@ -54,7 +54,7 @@
           <div class="pro-planning-section__head">
             <div>
               <h2>Horaires hebdomadaires de {{ selectedEmployee.firstName }} {{ selectedEmployee.lastName }}</h2>
-              <p class="muted">Choisissez simplement les jours travaillés et les heures. Ce rythme s’applique toute l’année, sauf exception.</p>
+              <p class="muted">Définissez jusqu’à deux plages par jour pour gérer le matin et l’après-midi. Ce rythme s’applique toute l’année, sauf exception.</p>
             </div>
           </div>
 
@@ -70,18 +70,30 @@
                     <span>{{ row.label }}</span>
                   </div>
 
-                  <label class="mgr-recurring-row__toggle">
-                    <input type="checkbox" name="weekly_schedule[{{ row.dayNumber }}][enabled]" value="1" {% if row.enabled %}checked{% endif %}>
-                    <span>Travaillé</span>
-                  </label>
-
                   <div class="mgr-recurring-row__times">
-                    <input type="time" name="weekly_schedule[{{ row.dayNumber }}][start]" value="{{ row.start }}">
-                    <span>à</span>
-                    <input type="time" name="weekly_schedule[{{ row.dayNumber }}][end]" value="{{ row.end }}">
+                    {% for slot in row.slots %}
+                      <div class="mgr-recurring-slot">
+                        <div class="mgr-recurring-slot__label">Plage {{ slot.periodIndex }}</div>
+                        <div class="mgr-recurring-slot__inputs">
+                          <input type="time" name="weekly_schedule[{{ row.dayNumber }}][slots][{{ slot.periodIndex }}][start]" value="{{ slot.start }}">
+                          <span>à</span>
+                          <input type="time" name="weekly_schedule[{{ row.dayNumber }}][slots][{{ slot.periodIndex }}][end]" value="{{ slot.end }}">
+                        </div>
+                      </div>
+                    {% endfor %}
                   </div>
 
-                  <div class="mgr-recurring-row__summary">{{ row.summary }}</div>
+                  <div class="mgr-recurring-row__summary">
+                    {% if row.summary == 'Repos' %}
+                      Repos
+                    {% else %}
+                      {% for slot in row.slots %}
+                        {% if slot.summary is not empty %}
+                          <span class="mgr-recurring-row__summary-line">{{ slot.summary }}</span>
+                        {% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  </div>
                 </article>
               {% endfor %}
             </div>
@@ -202,17 +214,25 @@
             </div>
           {% endfor %}
 
-          {% for row in planningRows %}
-            <div class="mgr-planning-table__employee">
-              <strong>{{ row.employee.firstName }} {{ row.employee.lastName }}</strong>
-              <span class="muted">{{ row.employee.specialization ?: 'Professionnel' }}</span>
-              <span class="mgr-planning-table__count">{{ row.configuredWorkDays }} jour{{ row.configuredWorkDays > 1 ? 's' : '' }} configuré{{ row.configuredWorkDays > 1 ? 's' : '' }}</span>
+            {% for row in planningRows %}
+              <div class="mgr-planning-table__employee">
+                <strong>{{ row.employee.firstName }} {{ row.employee.lastName }}</strong>
+                <span class="muted">{{ row.employee.specialization ?: 'Professionnel' }}</span>
+                <span class="mgr-planning-table__count">{{ row.configuredWorkDays }} jour{{ row.configuredWorkDays > 1 ? 's' : '' }} configuré{{ row.configuredWorkDays > 1 ? 's' : '' }}</span>
             </div>
 
             {% for day in row.days %}
               <div class="mgr-planning-table__cell {{ day.summary.class }}">
                 <span class="mgr-planning-table__label">{{ day.summary.label }}</span>
-                <span class="mgr-planning-table__sub">{{ day.summary.sublabel }}</span>
+                {% if day.events is empty and day.defaultSchedules is not empty %}
+                  <div class="mgr-planning-table__substack">
+                    {% for schedule in day.defaultSchedules %}
+                      <span class="mgr-planning-table__subline">{{ schedule.displayRange }}</span>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <span class="mgr-planning-table__sub">{{ day.summary.sublabel }}</span>
+                {% endif %}
                 {% if day.appointmentsCount > 0 %}
                   <span class="mgr-planning-table__count">{{ day.appointmentsCount }} rdv</span>
                 {% endif %}

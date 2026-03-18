@@ -319,6 +319,13 @@
   gap: 12px;
 }
 
+.wizard-hours__hint{
+  margin: -2px 0 0;
+  color: rgba(0,0,0,.58);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .wizard-hours__row{
   display: grid;
   grid-template-columns: 1.2fr 1fr 1fr auto;

@@ -12,6 +12,7 @@ use App\Repository\EmployeeScheduleEventRepository;
 use App\Repository\EmployeeWeeklyScheduleRepository;
 use App\Repository\EstablishmentRepository;
 use App\Repository\UserRepository;
+use App\Service\EmployeeWeeklyScheduleService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -119,9 +120,10 @@ final class ProDashboardController extends AbstractController
         $today = new \DateTimeImmutable('today');
         $weekStart = $this->getWeekStart($anchorDate);
         $weekEnd = $weekStart->modify('+6 days');
+        $weeklyScheduleService = new EmployeeWeeklyScheduleService();
 
         $weeklySchedules = $weeklyScheduleRepository->findByEmployee($establishment, $user);
-        $weeklyScheduleIndex = $this->indexWeeklySchedules($weeklySchedules);
+        $weeklyScheduleIndex = $this->indexWeeklySchedules($weeklySchedules, $weeklyScheduleService);
         $todayScheduleEvents = $scheduleEventRepository->findByEmployeeBetweenDates($user, $today, $today);
         $weeklyScheduleEvents = $scheduleEventRepository->findByEmployeeBetweenDates($user, $weekStart, $weekEnd);
         $todayAppointments = array_values(array_filter(
@@ -142,9 +144,10 @@ final class ProDashboardController extends AbstractController
                 'planningWeekEnd' => $weekEnd,
                 'calendarWeekDays' => $this->buildPeriodDays($weekStart, 7),
                 'todayScheduleEvents' => array_values(array_filter($todayScheduleEvents, static fn (EmployeeScheduleEvent $event): bool => $event->occursOn($today))),
-                'todayDefaultSchedule' => $weeklyScheduleIndex[(int) $today->format('N')] ?? null,
+                'todayDefaultSchedules' => $weeklyScheduleIndex[(int) $today->format('N')] ?? [],
+                'todayDefaultSchedulesDisplay' => $weeklyScheduleService->formatDisplayRanges($weeklyScheduleIndex[(int) $today->format('N')] ?? []),
                 'todayAppointmentsForProfessional' => $todayAppointments,
-                'weeklyPlanningDays' => $this->buildProfessionalPlanningDays($weekStart, $weeklySchedules, $weeklyScheduleEvents, $weeklyAppointments),
+                'weeklyPlanningDays' => $this->buildProfessionalPlanningDays($weekStart, $weeklySchedules, $weeklyScheduleEvents, $weeklyAppointments, $weeklyScheduleService),
             ]
         ));
     }
@@ -526,9 +529,9 @@ final class ProDashboardController extends AbstractController
      * @param Appointment[] $appointments
      * @return array<int, array<string, mixed>>
      */
-    private function buildProfessionalPlanningDays(\DateTimeImmutable $weekStart, array $weeklySchedules, array $scheduleEvents, array $appointments): array
+    private function buildProfessionalPlanningDays(\DateTimeImmutable $weekStart, array $weeklySchedules, array $scheduleEvents, array $appointments, EmployeeWeeklyScheduleService $weeklyScheduleService): array
     {
-        $weeklyScheduleIndex = $this->indexWeeklySchedules($weeklySchedules);
+        $weeklyScheduleIndex = $this->indexWeeklySchedules($weeklySchedules, $weeklyScheduleService);
         $appointmentsByDay = [];
         foreach ($appointments as $appointment) {
             $date = $appointment->getDate();
@@ -545,14 +548,14 @@ final class ProDashboardController extends AbstractController
             $key = $date->format('Y-m-d');
             $dayEvents = array_values(array_filter($scheduleEvents, static fn (EmployeeScheduleEvent $event): bool => $event->occursOn($date)));
             $dayAppointments = $appointmentsByDay[$key] ?? [];
-            $defaultSchedule = $weeklyScheduleIndex[(int) $date->format('N')] ?? null;
+            $defaultSchedules = $weeklyScheduleIndex[(int) $date->format('N')] ?? [];
 
             $days[] = [
                 'date' => $date,
                 'events' => $dayEvents,
-                'defaultSchedule' => $defaultSchedule,
+                'defaultSchedules' => $defaultSchedules,
                 'appointments' => $dayAppointments,
-                'summary' => $this->buildProfessionalPlanningSummary($defaultSchedule, $dayEvents, $dayAppointments),
+                'summary' => $this->buildProfessionalPlanningSummary($defaultSchedules, $dayEvents, $dayAppointments, $weeklyScheduleService),
             ];
         }
 
@@ -561,28 +564,20 @@ final class ProDashboardController extends AbstractController
 
     /**
      * @param EmployeeWeeklySchedule[] $weeklySchedules
-     * @return array<int, EmployeeWeeklySchedule>
+     * @return array<int, EmployeeWeeklySchedule[]>
      */
-    private function indexWeeklySchedules(array $weeklySchedules): array
+    private function indexWeeklySchedules(array $weeklySchedules, EmployeeWeeklyScheduleService $weeklyScheduleService): array
     {
-        $index = [];
-
-        foreach ($weeklySchedules as $weeklySchedule) {
-            $dayOfWeek = $weeklySchedule->getDayOfWeek();
-            if ($dayOfWeek) {
-                $index[$dayOfWeek] = $weeklySchedule;
-            }
-        }
-
-        return $index;
+        return $weeklyScheduleService->indexByDay($weeklySchedules);
     }
 
     /**
+     * @param EmployeeWeeklySchedule[] $defaultSchedules
      * @param EmployeeScheduleEvent[] $events
      * @param Appointment[] $appointments
      * @return array{label: string, class: string, sublabel: string}
      */
-    private function buildProfessionalPlanningSummary(?EmployeeWeeklySchedule $defaultSchedule, array $events, array $appointments): array
+    private function buildProfessionalPlanningSummary(array $defaultSchedules, array $events, array $appointments, EmployeeWeeklyScheduleService $weeklyScheduleService): array
     {
         if ($events !== []) {
             usort($events, static fn (EmployeeScheduleEvent $left, EmployeeScheduleEvent $right): int => self::getPlanningTypePriority($left->getType()) <=> self::getPlanningTypePriority($right->getType()));
@@ -597,11 +592,11 @@ final class ProDashboardController extends AbstractController
             ];
         }
 
-        if ($defaultSchedule instanceof EmployeeWeeklySchedule && $defaultSchedule->isConfiguredWorkingDay()) {
+        if ($weeklyScheduleService->getConfiguredIntervals($defaultSchedules) !== []) {
             return [
                 'label' => 'Actif',
                 'class' => 'is-work',
-                'sublabel' => $defaultSchedule->getDisplayRange(),
+                'sublabel' => $weeklyScheduleService->formatDisplayRanges($defaultSchedules),
             ];
         }
 

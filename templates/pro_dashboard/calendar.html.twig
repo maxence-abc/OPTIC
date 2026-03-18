@@ -36,14 +36,18 @@
           <div class="pro-planning-today">
             <div class="pro-planning-today__block">
               <h3>Planning</h3>
-              {% if todayScheduleEvents is empty and (not todayDefaultSchedule or not todayDefaultSchedule.isConfiguredWorkingDay()) %}
+              {% if todayScheduleEvents is empty and todayDefaultSchedules is empty %}
                 <p class="muted">Aucun horaire de travail configuré aujourd’hui.</p>
               {% else %}
                 <div class="pro-planning-events">
-                  {% if todayScheduleEvents is empty and todayDefaultSchedule and todayDefaultSchedule.isConfiguredWorkingDay() %}
+                  {% if todayScheduleEvents is empty and todayDefaultSchedules is not empty %}
                     <article class="pro-planning-event-card is-work">
                       <div class="pro-planning-event-card__title">Actif</div>
-                      <div class="pro-planning-event-card__meta">{{ todayDefaultSchedule.displayRange }}</div>
+                      <div class="pro-planning-event-card__meta pro-planning-event-card__meta--stack">
+                        {% for schedule in todayDefaultSchedules %}
+                          <span>{{ schedule.displayRange }}</span>
+                        {% endfor %}
+                      </div>
                     </article>
                   {% endif %}
 
@@ -125,9 +129,9 @@
 
                   <div class="pro-week-card__section">
                     <div class="pro-week-card__section-label">Planning</div>
-                    <div class="pro-week-card__sub">{{ day.summary.sublabel }}</div>
 
                     {% if day.events is not empty %}
+                      <div class="pro-week-card__sub">{{ day.summary.sublabel }}</div>
                       <div class="pro-week-card__list">
                         {% for event in day.events %}
                           <div class="pro-week-card__line">
@@ -138,14 +142,14 @@
                           </div>
                         {% endfor %}
                       </div>
-                    {% elseif day.defaultSchedule and day.defaultSchedule.isConfiguredWorkingDay() %}
-                      <div class="pro-week-card__list">
-                        <div class="pro-week-card__line">
-                          <span>Horaires habituels</span>
-                          <span>{{ day.defaultSchedule.displayRange }}</span>
-                        </div>
+                    {% elseif day.defaultSchedules is not empty %}
+                      <div class="pro-week-card__substack">
+                        {% for schedule in day.defaultSchedules %}
+                          <span class="pro-week-card__subline">{{ schedule.displayRange }}</span>
+                        {% endfor %}
                       </div>
                     {% else %}
+                      <div class="pro-week-card__sub">{{ day.summary.sublabel }}</div>
                       <div class="pro-week-card__empty">Aucun horaire spécifique</div>
                     {% endif %}
                   </div>

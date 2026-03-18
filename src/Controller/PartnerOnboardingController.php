@@ -10,10 +10,12 @@ use App\Entity\Service;
 use App\Form\PartnerStep1Type;
 use App\Form\PartnerStep2Type;
 use App\Form\PartnerStep3Type;
+use App\Service\OpeningHoursService;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
+use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -116,6 +118,7 @@ final class PartnerOnboardingController extends AbstractController
     public function step3(
         Request $request,
         EntityManagerInterface $em,
+        OpeningHoursService $openingHoursService,
         #[Target('uploads.storage')]
         FilesystemOperator $uploadsStorage
     ): Response {
@@ -139,6 +142,13 @@ final class PartnerOnboardingController extends AbstractController
         }
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $openingHoursError = $this->validateDraftOpeningHours($draft, $openingHoursService);
+            if ($openingHoursError !== null && $form->has('openingHours')) {
+                $form->get('openingHours')->addError(new FormError($openingHoursError));
+            }
+        }
+
+        if ($form->isSubmitted() && $form->isValid() && !$form->getErrors(true)->count()) {
             // Création finale (tous les champs NOT NULL sont présents)
             $establishment = new Establishment();
 
@@ -248,6 +258,27 @@ final class PartnerOnboardingController extends AbstractController
             'step' => 3,
             'form' => $form,
         ]);
+    }
+
+    private function validateDraftOpeningHours(EstablishmentDraft $draft, OpeningHoursService $openingHoursService): ?string
+    {
+        foreach ($draft->getOpeningHours() as $openingHour) {
+            if (
+                !$openingHour instanceof OpeningHour
+                || !$openingHour->getDayOfWeek()
+                || !$openingHour->getOpenTime()
+                || !$openingHour->getCloseTime()
+            ) {
+                continue;
+            }
+
+            $validationError = $openingHoursService->validateInterval($openingHour, $draft->getOpeningHours());
+            if ($validationError !== null) {
+                return $validationError;
+            }
+        }
+
+        return null;
     }
 
     /**

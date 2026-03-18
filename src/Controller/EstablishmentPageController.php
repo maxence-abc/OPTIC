@@ -7,6 +7,7 @@ use App\Entity\Establishment;
 use App\Entity\Service;
 use App\Entity\User;
 use App\Repository\UserRepository;
+use App\Service\OpeningHoursService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Finder\Finder;
@@ -18,6 +19,11 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route('/establishments')]
 final class EstablishmentPageController extends AbstractController
 {
+    public function __construct(
+        private readonly OpeningHoursService $openingHoursService
+    ) {
+    }
+
     #[Route('/{id}', name: 'front_establishment_show', methods: ['GET'])]
     public function show(
         Establishment $establishment,
@@ -47,13 +53,13 @@ final class EstablishmentPageController extends AbstractController
 
         // Semaine (lundi)
         $weekStart = $this->weekStart($weekStr ?: $dateStr ?: 'today');
+        $openWeekDays = $this->buildReservableWeekDays($establishment, $weekStart);
 
-        // Jours ouverts uniquement
-        $openWeekDays = [];
-        for ($i = 0; $i < 7; $i++) {
-            $d = (clone $weekStart)->modify("+{$i} days");
-            if ($this->isOpenOnDate($establishment, $d) && !$this->isPastDay($d)) {
-                $openWeekDays[] = $d;
+        if ($openWeekDays === []) {
+            $nextReservableWeekStart = $this->findNextReservableWeekStart($establishment, $weekStart);
+            if ($nextReservableWeekStart instanceof \DateTime) {
+                $weekStart = $nextReservableWeekStart;
+                $openWeekDays = $this->buildReservableWeekDays($establishment, $weekStart);
             }
         }
 
@@ -297,31 +303,43 @@ final class EstablishmentPageController extends AbstractController
         return $d->modify('-' . ($isoDay - 1) . ' days');
     }
 
-    private function dowToKey(int $isoDay): ?string
+    /**
+     * @return \DateTime[]
+     */
+    private function buildReservableWeekDays(Establishment $establishment, \DateTime $weekStart): array
     {
-        return match ($isoDay) {
-            1 => 'Monday',
-            2 => 'Tuesday',
-            3 => 'Wednesday',
-            4 => 'Thursday',
-            5 => 'Friday',
-            6 => 'Saturday',
-            7 => 'Sunday',
-            default => null,
-        };
+        $days = [];
+
+        for ($i = 0; $i < 7; $i++) {
+            $date = (clone $weekStart)->modify("+{$i} days");
+
+            if ($this->isOpenOnDate($establishment, $date) && !$this->isPastDay($date)) {
+                $days[] = $date;
+            }
+        }
+
+        return $days;
+    }
+
+    private function findNextReservableWeekStart(Establishment $establishment, \DateTime $requestedWeekStart, int $maxWeeks = 12): ?\DateTime
+    {
+        $todayWeekStart = $this->weekStart('today');
+        $searchStart = $requestedWeekStart < $todayWeekStart ? $todayWeekStart : clone $requestedWeekStart;
+
+        for ($weekOffset = 0; $weekOffset < $maxWeeks; ++$weekOffset) {
+            $candidateWeekStart = (clone $searchStart)->modify('+' . (7 * $weekOffset) . ' days');
+
+            if ($this->buildReservableWeekDays($establishment, $candidateWeekStart) !== []) {
+                return $candidateWeekStart;
+            }
+        }
+
+        return null;
     }
 
     private function isOpenOnDate(Establishment $establishment, \DateTime $date): bool
     {
-        $dayKey = $this->dowToKey((int) $date->format('N'));
-        if (!$dayKey) return false;
-
-        foreach ($establishment->getOpeningHours() as $oh) {
-            if ($oh->getDayOfWeek() === $dayKey) {
-                return true;
-            }
-        }
-        return false;
+        return $this->openingHoursService->isOpenOnDate($establishment, $date);
     }
 
     private function generateAvailableSlots(
@@ -336,21 +354,8 @@ final class EstablishmentPageController extends AbstractController
             return [];
         }
 
-        $dayKey = $this->dowToKey((int) $date->format('N'));
-        if (!$dayKey) return [];
-
-        $opening = null;
-        foreach ($establishment->getOpeningHours() as $oh) {
-            if ($oh->getDayOfWeek() === $dayKey) { $opening = $oh; break; }
-        }
-        if (!$opening) return [];
-
-        $openTime  = $opening->getOpenTime();
-        $closeTime = $opening->getCloseTime();
-        if (!$openTime || !$closeTime) return [];
-
-        $open  = (clone $date)->setTime((int) $openTime->format('H'), (int) $openTime->format('i'), 0);
-        $close = (clone $date)->setTime((int) $closeTime->format('H'), (int) $closeTime->format('i'), 0);
+        $openingHours = $this->openingHoursService->getIntervalsForDate($establishment, $date);
+        if ($openingHours === []) return [];
 
         $duration = (int) $service->getDuration();
         if ($duration <= 0) return [];
@@ -362,40 +367,51 @@ final class EstablishmentPageController extends AbstractController
         if (!$professionals) return [];
 
         $slots = [];
-        $cursor = clone $open;
 
-        while ($cursor < $close) {
-            $start = clone $cursor;
-            $end   = (clone $start)->modify("+{$duration} minutes");
-
-            if ($buffer > 0) {
-                $end = (clone $end)->modify("+{$buffer} minutes");
-            }
-
-            if ($end > $close) break;
-
-            if ($this->isPastSlot($start)) {
-                $cursor->modify("+{$stepMinutes} minutes");
+        foreach ($openingHours as $openingHour) {
+            $openTime = $openingHour->getOpenTime();
+            $closeTime = $openingHour->getCloseTime();
+            if (!$openTime || !$closeTime) {
                 continue;
             }
 
-            $hasAvailableProfessional = false;
-            foreach ($professionals as $professional) {
-                if (!$this->hasOverlap($em, $professional, $date, $start, $end)) {
-                    $hasAvailableProfessional = true;
-                    break;
+            $open = (clone $date)->setTime((int) $openTime->format('H'), (int) $openTime->format('i'), 0);
+            $close = (clone $date)->setTime((int) $closeTime->format('H'), (int) $closeTime->format('i'), 0);
+            $cursor = clone $open;
+
+            while ($cursor < $close) {
+                $start = clone $cursor;
+                $end   = (clone $start)->modify("+{$duration} minutes");
+
+                if ($buffer > 0) {
+                    $end = (clone $end)->modify("+{$buffer} minutes");
                 }
-            }
 
-            if ($hasAvailableProfessional) {
-                $t = $start->format('H:i');
-                $slots[] = ['time' => $t, 'label' => $t];
-            }
+                if ($end > $close) break;
 
-            $cursor->modify("+{$stepMinutes} minutes");
+                if ($this->isPastSlot($start)) {
+                    $cursor->modify("+{$stepMinutes} minutes");
+                    continue;
+                }
+
+                $hasAvailableProfessional = false;
+                foreach ($professionals as $professional) {
+                    if (!$this->hasOverlap($em, $professional, $date, $start, $end)) {
+                        $hasAvailableProfessional = true;
+                        break;
+                    }
+                }
+
+                if ($hasAvailableProfessional) {
+                    $t = $start->format('H:i');
+                    $slots[$t] = ['time' => $t, 'label' => $t];
+                }
+
+                $cursor->modify("+{$stepMinutes} minutes");
+            }
         }
 
-        return $slots;
+        return array_values($slots);
     }
 
     /**

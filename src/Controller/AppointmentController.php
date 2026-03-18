@@ -5,12 +5,12 @@ namespace App\Controller;
 use App\Entity\Appointment;
 use App\Entity\Equipement;
 use App\Entity\Establishment;
-use App\Entity\OpeningHour;
 use App\Entity\Service;
 use App\Entity\User;
 use App\Form\AppointmentType;
 use App\Repository\AppointmentRepository;
 use App\Repository\UserRepository;
+use App\Service\OpeningHoursService;
 use Doctrine\DBAL\Exception\DriverException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -24,6 +24,11 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route('/appointment')]
 final class AppointmentController extends AbstractController
 {
+    public function __construct(
+        private readonly OpeningHoursService $openingHoursService
+    ) {
+    }
+
     #[Route(name: 'app_appointment_index', methods: ['GET'])]
     #[IsGranted('ROLE_ADMIN')]
     public function index(AppointmentRepository $appointmentRepository): Response
@@ -481,25 +486,10 @@ final class AppointmentController extends AbstractController
             return [];
         }
 
-        $dayOfWeek = $date->format('l');
-        $openingHour = $em->getRepository(OpeningHour::class)->findOneBy([
-            'establishment' => $establishment,
-            'dayOfWeek' => $dayOfWeek,
-        ]);
-
-        if (!$openingHour) {
+        $openingHours = $this->openingHoursService->getIntervalsForDate($establishment, $date);
+        if ($openingHours === []) {
             return [];
         }
-
-        $open = (clone $date)->setTime(
-            (int) $openingHour->getOpenTime()->format('H'),
-            (int) $openingHour->getOpenTime()->format('i')
-        );
-
-        $close = (clone $date)->setTime(
-            (int) $openingHour->getCloseTime()->format('H'),
-            (int) $openingHour->getCloseTime()->format('i')
-        );
 
         $duration = (int) $service->getDuration();
         $buffer = (int) ($service->getBufferTime() ?? 0);
@@ -520,44 +510,63 @@ final class AppointmentController extends AbstractController
         }
 
         $slots = [];
-        $current = clone $open;
 
-        while ($current < $close) {
-            $slotStart = clone $current;
-            $slotEndBlocking = (clone $slotStart)->modify("+{$duration} minutes")->modify("+{$buffer} minutes");
-
-            if ($slotEndBlocking > $close) {
-                break;
-            }
-
-            if ($this->isPastSlot($slotStart)) {
-                $current->modify("+{$stepMinutes} minutes");
+        foreach ($openingHours as $openingHour) {
+            $openTime = $openingHour->getOpenTime();
+            $closeTime = $openingHour->getCloseTime();
+            if (!$openTime || !$closeTime) {
                 continue;
             }
 
-            if ($equipementId) {
-                if ($repo->hasOverlapForEquipment($equipementId, $date, $slotStart, $slotEndBlocking)) {
+            $open = (clone $date)->setTime(
+                (int) $openTime->format('H'),
+                (int) $openTime->format('i')
+            );
+
+            $close = (clone $date)->setTime(
+                (int) $closeTime->format('H'),
+                (int) $closeTime->format('i')
+            );
+
+            $current = clone $open;
+
+            while ($current < $close) {
+                $slotStart = clone $current;
+                $slotEndBlocking = (clone $slotStart)->modify("+{$duration} minutes")->modify("+{$buffer} minutes");
+
+                if ($slotEndBlocking > $close) {
+                    break;
+                }
+
+                if ($this->isPastSlot($slotStart)) {
                     $current->modify("+{$stepMinutes} minutes");
                     continue;
                 }
-            }
 
-            $hasAnyPro = false;
-            foreach ($proIds as $pid) {
-                if (!$repo->hasOverlapForProfessional($pid, $date, $slotStart, $slotEndBlocking)) {
-                    $hasAnyPro = true;
-                    break;
+                if ($equipementId) {
+                    if ($repo->hasOverlapForEquipment($equipementId, $date, $slotStart, $slotEndBlocking)) {
+                        $current->modify("+{$stepMinutes} minutes");
+                        continue;
+                    }
                 }
-            }
 
-            if ($hasAnyPro) {
-                $slots[] = $slotStart->format('H:i');
-            }
+                $hasAnyPro = false;
+                foreach ($proIds as $pid) {
+                    if (!$repo->hasOverlapForProfessional($pid, $date, $slotStart, $slotEndBlocking)) {
+                        $hasAnyPro = true;
+                        break;
+                    }
+                }
 
-            $current->modify("+{$stepMinutes} minutes");
+                if ($hasAnyPro) {
+                    $slots[$slotStart->format('H:i')] = $slotStart->format('H:i');
+                }
+
+                $current->modify("+{$stepMinutes} minutes");
+            }
         }
 
-        return $slots;
+        return array_values($slots);
     }
 
     private function isPastSlot(\DateTimeInterface $startTime): bool

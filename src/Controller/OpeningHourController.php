@@ -6,8 +6,10 @@ use App\Entity\OpeningHour;
 use App\Entity\Establishment;
 use App\Form\OpeningHourType;
 use App\Repository\OpeningHourRepository;
+use App\Service\OpeningHoursService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -25,7 +27,12 @@ final class OpeningHourController extends AbstractController
 
     #[Route('/new', name: 'app_opening_hour_new', methods: ['GET', 'POST'])]
     #[Route('/new/{id}', name: 'app_opening_hour_new_for_establishment', methods: ['GET', 'POST'])]
-    public function new(Request $request, EntityManagerInterface $entityManager, ?Establishment $establishment = null): Response
+    public function new(
+        Request $request,
+        EntityManagerInterface $entityManager,
+        OpeningHoursService $openingHoursService,
+        ?Establishment $establishment = null
+    ): Response
     {
         $openingHour = new OpeningHour();
 
@@ -42,16 +49,26 @@ final class OpeningHourController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->persist($openingHour);
-            $entityManager->flush();
-
-            $this->addFlash('success', 'Horaire ajouté avec succès !');
-
-            if ($establishment) {
-                return $this->redirectToRoute('app_establishment_show', ['id' => $establishment->getId()]);
+            $hours = [];
+            if ($openingHour->getEstablishment() instanceof Establishment) {
+                $hours = $openingHour->getEstablishment()->getOpeningHours()->toArray();
             }
 
-            return $this->redirectToRoute('app_opening_hour_index');
+            $validationError = $openingHoursService->validateInterval($openingHour, $hours);
+            if ($validationError !== null) {
+                $form->addError(new FormError($validationError));
+            } else {
+                $entityManager->persist($openingHour);
+                $entityManager->flush();
+
+                $this->addFlash('success', 'Plage horaire ajoutée avec succès.');
+
+                if ($establishment) {
+                    return $this->redirectToRoute('app_establishment_show', ['id' => $establishment->getId()]);
+                }
+
+                return $this->redirectToRoute('app_opening_hour_index');
+            }
         }
 
         return $this->render('opening_hour/new.html.twig', [
@@ -70,16 +87,31 @@ final class OpeningHourController extends AbstractController
     }
 
     #[Route('/{id}/edit', name: 'app_opening_hour_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, OpeningHour $openingHour, EntityManagerInterface $entityManager): Response
+    public function edit(
+        Request $request,
+        OpeningHour $openingHour,
+        EntityManagerInterface $entityManager,
+        OpeningHoursService $openingHoursService
+    ): Response
     {
         $form = $this->createForm(OpeningHourType::class, $openingHour);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->flush();
-            $this->addFlash('success', 'Horaire mis à jour avec succès.');
+            $hours = [];
+            if ($openingHour->getEstablishment() instanceof Establishment) {
+                $hours = $openingHour->getEstablishment()->getOpeningHours()->toArray();
+            }
 
-            return $this->redirectToRoute('app_opening_hour_index');
+            $validationError = $openingHoursService->validateInterval($openingHour, $hours);
+            if ($validationError !== null) {
+                $form->addError(new FormError($validationError));
+            } else {
+                $entityManager->flush();
+                $this->addFlash('success', 'Plage horaire mise à jour avec succès.');
+
+                return $this->redirectToRoute('app_opening_hour_index');
+            }
         }
 
         return $this->render('opening_hour/edit.html.twig', [

@@ -19,6 +19,8 @@ use App\Repository\EstablishmentRepository;
 use App\Repository\OpeningHourRepository;
 use App\Repository\ServiceRepository;
 use App\Repository\UserRepository;
+use App\Service\EmployeeWeeklyScheduleService;
+use App\Service\OpeningHoursService;
 use App\Security\Voter\EstablishmentVoter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -427,6 +429,7 @@ final class ManagerController extends AbstractController
         $scheduleEvents = $scheduleEventRepository->findByEstablishmentBetweenDates($establishment, $rangeStart, $rangeEnd);
         $appointments = $appointmentRepository->findByEstablishmentBetweenDates($establishment, $rangeStart, $rangeEnd);
         $upcomingScheduleEvents = $scheduleEventRepository->findUpcomingByEstablishment($establishment, 18);
+        $weeklyScheduleService = new EmployeeWeeklyScheduleService();
         $selectedEmployeeUpcomingScheduleEvents = $selectedEmployee instanceof User
             ? array_values(array_filter(
                 $upcomingScheduleEvents,
@@ -444,14 +447,14 @@ final class ManagerController extends AbstractController
             'rangeStart' => $rangeStart,
             'rangeEnd' => $rangeEnd,
             'weeklyScheduleRows' => $this->buildWeeklyScheduleRows(
-                $selectedEmployee instanceof User ? $weeklyScheduleRepository->findByEmployee($establishment, $selectedEmployee) : []
+                $selectedEmployee instanceof User ? $weeklyScheduleRepository->findByEmployee($establishment, $selectedEmployee) : [],
+                $weeklyScheduleService
             ),
             'weekDays' => $this->buildPeriodDays($this->getWeekStart($anchorDate), 7),
-            'planningRows' => $this->buildEmployeePlanningRows($employees, $weeklySchedules, $scheduleEvents, $appointments, $this->getWeekStart($anchorDate)),
-            'monthlySummaries' => $this->buildMonthlyEmployeeSummaries($employees, $weeklySchedules, $scheduleEvents, $appointments, $rangeStart, $rangeEnd),
+            'planningRows' => $this->buildEmployeePlanningRows($employees, $weeklySchedules, $scheduleEvents, $appointments, $this->getWeekStart($anchorDate), $weeklyScheduleService),
+            'monthlySummaries' => $this->buildMonthlyEmployeeSummaries($employees, $weeklySchedules, $scheduleEvents, $appointments, $rangeStart, $rangeEnd, $weeklyScheduleService),
             'upcomingScheduleEvents' => $upcomingScheduleEvents,
             'selectedEmployeeUpcomingScheduleEvents' => $selectedEmployeeUpcomingScheduleEvents,
-            'weeklyScheduleIndex' => $this->indexWeeklySchedules($weeklySchedules),
             'openEventModal' => $request->query->getBoolean('open_event') && $selectedEmployee instanceof User,
             'form' => $form->createView(),
         ]);
@@ -470,52 +473,88 @@ final class ManagerController extends AbstractController
 
         $rows = (array) ($request->request->all()['weekly_schedule'] ?? []);
         $existingSchedules = [];
+        $weeklyScheduleService = new EmployeeWeeklyScheduleService();
 
         foreach ($weeklyScheduleRepository->findByEmployee($establishment, $employee) as $schedule) {
-            $existingSchedules[$schedule->getDayOfWeek() ?? 0] = $schedule;
+            $dayNumber = $schedule->getDayOfWeek() ?? 0;
+            if ($dayNumber > 0) {
+                $existingSchedules[$dayNumber][$schedule->getPeriodIndex()] = $schedule;
+            }
         }
 
         $hasError = false;
 
         foreach (EmployeeWeeklySchedule::getOrderedDayNumbers() as $dayNumber) {
             $payload = (array) ($rows[$dayNumber] ?? []);
-            $enabled = array_key_exists('enabled', $payload);
-            $startValue = trim((string) ($payload['start'] ?? ''));
-            $endValue = trim((string) ($payload['end'] ?? ''));
-            $schedule = $existingSchedules[$dayNumber] ?? null;
+            $slotPayloads = (array) ($payload['slots'] ?? []);
+            $submittedIntervals = [];
 
-            if (!$enabled) {
-                if ($schedule instanceof EmployeeWeeklySchedule) {
-                    $entityManager->remove($schedule);
+            for ($periodIndex = 1; $periodIndex <= EmployeeWeeklySchedule::MAX_PERIODS_PER_DAY; ++$periodIndex) {
+                $slotPayload = (array) ($slotPayloads[$periodIndex] ?? []);
+                $startValue = trim((string) ($slotPayload['start'] ?? ''));
+                $endValue = trim((string) ($slotPayload['end'] ?? ''));
+
+                if ($startValue === '' && $endValue === '') {
+                    continue;
                 }
-                continue;
+
+                $startTime = $this->parseTimeValue($startValue);
+                $endTime = $this->parseTimeValue($endValue);
+
+                if (!$startTime instanceof \DateTimeInterface || !$endTime instanceof \DateTimeInterface) {
+                    $hasError = true;
+                    $this->addFlash(
+                        'error',
+                        sprintf('Une plage du %s est incomplète. Renseignez une heure de début et une heure de fin.', EmployeeWeeklySchedule::getDayLabels()[$dayNumber] ?? 'jour')
+                    );
+                    continue 2;
+                }
+
+                $submittedIntervals[] = [
+                    'startTime' => $startTime,
+                    'endTime' => $endTime,
+                ];
             }
 
-            $startTime = $this->parseTimeValue($startValue);
-            $endTime = $this->parseTimeValue($endValue);
+            usort($submittedIntervals, fn (array $left, array $right): int => $left['startTime'] <=> $right['startTime']);
 
-            if (!$startTime instanceof \DateTimeInterface || !$endTime instanceof \DateTimeInterface || $endTime <= $startTime) {
-                $hasError = true;
-                $this->addFlash(
-                    'error',
-                    sprintf('Le créneau du %s est invalide. Renseignez une heure de début et une heure de fin cohérentes.', EmployeeWeeklySchedule::getDayLabels()[$dayNumber] ?? 'jour')
-                );
-                continue;
-            }
+            $existingDaySchedules = $existingSchedules[$dayNumber] ?? [];
+            $daySchedules = [];
 
-            if (!$schedule instanceof EmployeeWeeklySchedule) {
-                $schedule = new EmployeeWeeklySchedule();
+            foreach ($submittedIntervals as $index => $interval) {
+                $periodIndex = $index + 1;
+                $schedule = $existingDaySchedules[$periodIndex] ?? null;
+
+                if (!$schedule instanceof EmployeeWeeklySchedule) {
+                    $schedule = new EmployeeWeeklySchedule();
+                    $schedule
+                        ->setEstablishment($establishment)
+                        ->setEmployee($employee)
+                        ->setDayOfWeek($dayNumber)
+                        ->setPeriodIndex($periodIndex);
+                    $entityManager->persist($schedule);
+                }
+
                 $schedule
-                    ->setEstablishment($establishment)
-                    ->setEmployee($employee)
-                    ->setDayOfWeek($dayNumber);
-                $entityManager->persist($schedule);
+                    ->setIsWorking(true)
+                    ->setPeriodIndex($periodIndex)
+                    ->setStartTime($interval['startTime'])
+                    ->setEndTime($interval['endTime']);
+
+                $daySchedules[] = $schedule;
             }
 
-            $schedule
-                ->setIsWorking(true)
-                ->setStartTime($startTime)
-                ->setEndTime($endTime);
+            foreach ($existingDaySchedules as $periodIndex => $existingSchedule) {
+                if ($periodIndex > count($submittedIntervals) && $existingSchedule instanceof EmployeeWeeklySchedule) {
+                    $entityManager->remove($existingSchedule);
+                }
+            }
+
+            $validationError = $weeklyScheduleService->validateIntervals($daySchedules, $dayNumber);
+            if ($validationError !== null) {
+                $hasError = true;
+                $this->addFlash('error', $validationError);
+            }
         }
 
         if (!$hasError) {
@@ -563,7 +602,8 @@ final class ManagerController extends AbstractController
         Establishment $establishment,
         EstablishmentRepository $establishmentRepository,
         SessionInterface $session,
-        OpeningHourRepository $openingHourRepository
+        OpeningHourRepository $openingHourRepository,
+        OpeningHoursService $openingHoursService
     ): Response {
         $this->denyAccessUnlessGranted(EstablishmentVoter::MANAGE, $establishment);
         $session->set(self::SESSION_ACTIVE_ESTABLISHMENT, $establishment->getId());
@@ -575,6 +615,7 @@ final class ManagerController extends AbstractController
             'establishment' => $establishment,
             'ownedEstablishments' => $owned,
             'hours' => $hours,
+            'groupedHours' => $openingHoursService->groupByDay($hours),
             'form' => null,
             'hour' => null,
             'isEdit' => false,
@@ -587,6 +628,7 @@ final class ManagerController extends AbstractController
         EstablishmentRepository $establishmentRepository,
         SessionInterface $session,
         OpeningHourRepository $openingHourRepository,
+        OpeningHoursService $openingHoursService,
         EntityManagerInterface $em,
         Request $request
     ): Response {
@@ -604,16 +646,23 @@ final class ManagerController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $hour->setEstablishment($establishment);
-            $em->persist($hour);
-            $em->flush();
+            $validationError = $openingHoursService->validateInterval($hour, $hours);
 
-            return $this->redirectToRoute('manager_opening_hours', ['id' => $establishment->getId()]);
+            if ($validationError !== null) {
+                $form->addError(new FormError($validationError));
+            } else {
+                $em->persist($hour);
+                $em->flush();
+
+                return $this->redirectToRoute('manager_opening_hours', ['id' => $establishment->getId()]);
+            }
         }
 
         return $this->render('manager/opening_hours.html.twig', [
             'establishment' => $establishment,
             'ownedEstablishments' => $owned,
             'hours' => $hours,
+            'groupedHours' => $openingHoursService->groupByDay($hours),
             'form' => $form->createView(),
             'hour' => $hour,
             'isEdit' => false,
@@ -626,6 +675,7 @@ final class ManagerController extends AbstractController
         EstablishmentRepository $establishmentRepository,
         SessionInterface $session,
         OpeningHourRepository $openingHourRepository,
+        OpeningHoursService $openingHoursService,
         EntityManagerInterface $em,
         Request $request
     ): Response {
@@ -640,14 +690,21 @@ final class ManagerController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $em->flush();
-            return $this->redirectToRoute('manager_opening_hours', ['id' => $establishment->getId()]);
+            $validationError = $openingHoursService->validateInterval($hour, $hours);
+
+            if ($validationError !== null) {
+                $form->addError(new FormError($validationError));
+            } else {
+                $em->flush();
+                return $this->redirectToRoute('manager_opening_hours', ['id' => $establishment->getId()]);
+            }
         }
 
         return $this->render('manager/opening_hours.html.twig', [
             'establishment' => $establishment,
             'ownedEstablishments' => $owned,
             'hours' => $hours,
+            'groupedHours' => $openingHoursService->groupByDay($hours),
             'form' => $form->createView(),
             'hour' => $hour,
             'isEdit' => true,
@@ -1126,56 +1183,20 @@ final class ManagerController extends AbstractController
 
     /**
      * @param EmployeeWeeklySchedule[] $weeklySchedules
-     * @return array<int, array<int, EmployeeWeeklySchedule>>
+     * @return array<int, array<int, EmployeeWeeklySchedule[]>>
      */
-    private function indexWeeklySchedules(array $weeklySchedules): array
+    private function indexWeeklySchedules(array $weeklySchedules, EmployeeWeeklyScheduleService $weeklyScheduleService): array
     {
-        $index = [];
-
-        foreach ($weeklySchedules as $weeklySchedule) {
-            $employee = $weeklySchedule->getEmployee();
-            $dayOfWeek = $weeklySchedule->getDayOfWeek();
-
-            if (!$employee instanceof User || !$dayOfWeek) {
-                continue;
-            }
-
-            $index[$employee->getId()][$dayOfWeek] = $weeklySchedule;
-        }
-
-        return $index;
+        return $weeklyScheduleService->indexByEmployeeAndDay($weeklySchedules);
     }
 
     /**
      * @param EmployeeWeeklySchedule[] $weeklySchedules
      * @return array<int, array<string, mixed>>
      */
-    private function buildWeeklyScheduleRows(array $weeklySchedules): array
+    private function buildWeeklyScheduleRows(array $weeklySchedules, EmployeeWeeklyScheduleService $weeklyScheduleService): array
     {
-        $index = [];
-        foreach ($weeklySchedules as $weeklySchedule) {
-            if ($weeklySchedule->getDayOfWeek()) {
-                $index[$weeklySchedule->getDayOfWeek()] = $weeklySchedule;
-            }
-        }
-
-        $rows = [];
-        foreach (EmployeeWeeklySchedule::getOrderedDayNumbers() as $dayNumber) {
-            $schedule = $index[$dayNumber] ?? null;
-            $rows[] = [
-                'dayNumber' => $dayNumber,
-                'label' => EmployeeWeeklySchedule::getDayLabels()[$dayNumber] ?? 'Jour',
-                'shortLabel' => EmployeeWeeklySchedule::getShortDayLabels()[$dayNumber] ?? 'Jour',
-                'enabled' => $schedule instanceof EmployeeWeeklySchedule && $schedule->isConfiguredWorkingDay(),
-                'start' => $schedule?->getStartTime()?->format('H:i') ?? '',
-                'end' => $schedule?->getEndTime()?->format('H:i') ?? '',
-                'summary' => $schedule instanceof EmployeeWeeklySchedule && $schedule->isConfiguredWorkingDay()
-                    ? $schedule->getDisplayRange()
-                    : 'Repos',
-            ];
-        }
-
-        return $rows;
+        return $weeklyScheduleService->buildEditorRows($weeklySchedules);
     }
 
     /**
@@ -1185,9 +1206,16 @@ final class ManagerController extends AbstractController
      * @param \App\Entity\Appointment[] $appointments
      * @return array<int, array<string, mixed>>
      */
-    private function buildEmployeePlanningRows(array $employees, array $weeklySchedules, array $scheduleEvents, array $appointments, \DateTimeImmutable $weekStart): array
+    private function buildEmployeePlanningRows(
+        array $employees,
+        array $weeklySchedules,
+        array $scheduleEvents,
+        array $appointments,
+        \DateTimeImmutable $weekStart,
+        EmployeeWeeklyScheduleService $weeklyScheduleService
+    ): array
     {
-        $weeklyScheduleIndex = $this->indexWeeklySchedules($weeklySchedules);
+        $weeklyScheduleIndex = $this->indexWeeklySchedules($weeklySchedules, $weeklyScheduleService);
         $eventsByEmployeeDay = $this->indexScheduleEventsByDay($scheduleEvents, $weekStart);
         $appointmentsByEmployeeDay = $this->indexAppointmentsByEmployeeDay($appointments);
         $rows = [];
@@ -1200,13 +1228,13 @@ final class ManagerController extends AbstractController
                 $key = $date->format('Y-m-d');
                 $dayEvents = $eventsByEmployeeDay[$employee->getId()][$key] ?? [];
                 $dayAppointments = $appointmentsByEmployeeDay[$employee->getId()][$key] ?? [];
-                $defaultSchedule = $weeklyScheduleIndex[$employee->getId()][(int) $date->format('N')] ?? null;
+                $defaultSchedules = $weeklyScheduleIndex[$employee->getId()][(int) $date->format('N')] ?? [];
 
                 $days[] = [
                     'date' => $date,
-                    'summary' => $this->buildPlanningDaySummary($defaultSchedule, $dayEvents, $dayAppointments),
+                    'summary' => $this->buildPlanningDaySummary($defaultSchedules, $dayEvents, $dayAppointments, $weeklyScheduleService),
                     'events' => $dayEvents,
-                    'defaultSchedule' => $defaultSchedule,
+                    'defaultSchedules' => $defaultSchedules,
                     'appointmentsCount' => count($dayAppointments),
                 ];
             }
@@ -1214,7 +1242,7 @@ final class ManagerController extends AbstractController
             $rows[] = [
                 'employee' => $employee,
                 'days' => $days,
-                'configuredWorkDays' => $this->countConfiguredWorkingDays($weeklyScheduleIndex[$employee->getId()] ?? []),
+                'configuredWorkDays' => $weeklyScheduleService->countConfiguredDays($weeklyScheduleIndex[$employee->getId()] ?? []),
             ];
         }
 
@@ -1234,10 +1262,11 @@ final class ManagerController extends AbstractController
         array $scheduleEvents,
         array $appointments,
         \DateTimeImmutable $rangeStart,
-        \DateTimeImmutable $rangeEnd
+        \DateTimeImmutable $rangeEnd,
+        EmployeeWeeklyScheduleService $weeklyScheduleService
     ): array {
         $summary = [];
-        $weeklyScheduleIndex = $this->indexWeeklySchedules($weeklySchedules);
+        $weeklyScheduleIndex = $this->indexWeeklySchedules($weeklySchedules, $weeklyScheduleService);
         $eventsByEmployeeDay = $this->indexScheduleEventsByDay($scheduleEvents, $rangeStart);
 
         foreach ($employees as $employee) {
@@ -1253,9 +1282,9 @@ final class ManagerController extends AbstractController
             $cursor = $rangeStart;
             while ($cursor <= $rangeEnd) {
                 $dayKey = $cursor->format('Y-m-d');
-                $defaultSchedule = $weeklyScheduleIndex[$employee->getId()][(int) $cursor->format('N')] ?? null;
+                $defaultSchedules = $weeklyScheduleIndex[$employee->getId()][(int) $cursor->format('N')] ?? [];
                 $dayEvents = $eventsByEmployeeDay[$employee->getId()][$dayKey] ?? [];
-                $effectiveType = $this->resolveEffectivePlanningType($defaultSchedule, $dayEvents);
+                $effectiveType = $this->resolveEffectivePlanningType($defaultSchedules, $dayEvents, $weeklyScheduleService);
                 ++$summary[$employee->getId()][$effectiveType];
                 $cursor = $cursor->modify('+1 day');
             }
@@ -1330,29 +1359,19 @@ final class ManagerController extends AbstractController
     }
 
     /**
-     * @param array<int, EmployeeWeeklySchedule> $weeklySchedules
-     */
-    private function countConfiguredWorkingDays(array $weeklySchedules): int
-    {
-        $count = 0;
-
-        foreach ($weeklySchedules as $weeklySchedule) {
-            if ($weeklySchedule instanceof EmployeeWeeklySchedule && $weeklySchedule->isConfiguredWorkingDay()) {
-                ++$count;
-            }
-        }
-
-        return $count;
-    }
-
-    /**
+     * @param EmployeeWeeklySchedule[] $defaultSchedules
      * @param EmployeeScheduleEvent[] $events
      * @param \App\Entity\Appointment[] $appointments
      * @return array{label: string, class: string, sublabel: string}
      */
-    private function buildPlanningDaySummary(?EmployeeWeeklySchedule $defaultSchedule, array $events, array $appointments): array
+    private function buildPlanningDaySummary(
+        array $defaultSchedules,
+        array $events,
+        array $appointments,
+        EmployeeWeeklyScheduleService $weeklyScheduleService
+    ): array
     {
-        $effectiveType = $this->resolveEffectivePlanningType($defaultSchedule, $events);
+        $effectiveType = $this->resolveEffectivePlanningType($defaultSchedules, $events, $weeklyScheduleService);
 
         if ($events !== []) {
             usort($events, static fn (EmployeeScheduleEvent $left, EmployeeScheduleEvent $right): int => self::getPlanningTypePriority($left->getType()) <=> self::getPlanningTypePriority($right->getType()));
@@ -1367,11 +1386,11 @@ final class ManagerController extends AbstractController
             ];
         }
 
-        if ($defaultSchedule instanceof EmployeeWeeklySchedule && $defaultSchedule->isConfiguredWorkingDay()) {
+        if ($weeklyScheduleService->getConfiguredIntervals($defaultSchedules) !== []) {
             return [
                 'label' => 'Actif',
                 'class' => 'is-work',
-                'sublabel' => $defaultSchedule->getDisplayRange(),
+                'sublabel' => $weeklyScheduleService->formatDisplayRanges($defaultSchedules),
             ];
         }
 
@@ -1385,7 +1404,11 @@ final class ManagerController extends AbstractController
     /**
      * @param EmployeeScheduleEvent[] $events
      */
-    private function resolveEffectivePlanningType(?EmployeeWeeklySchedule $defaultSchedule, array $events): string
+    private function resolveEffectivePlanningType(
+        array $defaultSchedules,
+        array $events,
+        EmployeeWeeklyScheduleService $weeklyScheduleService
+    ): string
     {
         if ($events !== []) {
             usort($events, static fn (EmployeeScheduleEvent $left, EmployeeScheduleEvent $right): int => self::getPlanningTypePriority($left->getType()) <=> self::getPlanningTypePriority($right->getType()));
@@ -1393,7 +1416,7 @@ final class ManagerController extends AbstractController
             return $events[0]->getType() ?? EmployeeScheduleEvent::TYPE_WORK;
         }
 
-        if ($defaultSchedule instanceof EmployeeWeeklySchedule && $defaultSchedule->isConfiguredWorkingDay()) {
+        if ($weeklyScheduleService->getConfiguredIntervals($defaultSchedules) !== []) {
             return EmployeeScheduleEvent::TYPE_WORK;
         }
 

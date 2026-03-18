@@ -29,6 +29,8 @@ class EmployeeWeeklyScheduleRepository extends ServiceEntityRepository
             ->setParameter('establishment', $establishment)
             ->setParameter('employee', $employee)
             ->addOrderBy('s.dayOfWeek', 'ASC')
+            ->addOrderBy('s.periodIndex', 'ASC')
+            ->addOrderBy('s.startTime', 'ASC')
             ->getQuery()
             ->getResult();
     }
@@ -51,6 +53,8 @@ class EmployeeWeeklyScheduleRepository extends ServiceEntityRepository
             ->addOrderBy('employee.first_name', 'ASC')
             ->addOrderBy('employee.lastName', 'ASC')
             ->addOrderBy('s.dayOfWeek', 'ASC')
+            ->addOrderBy('s.periodIndex', 'ASC')
+            ->addOrderBy('s.startTime', 'ASC')
             ->getQuery()
             ->getResult();
     }
@@ -68,6 +72,8 @@ class EmployeeWeeklyScheduleRepository extends ServiceEntityRepository
             ->addOrderBy('employee.first_name', 'ASC')
             ->addOrderBy('employee.lastName', 'ASC')
             ->addOrderBy('s.dayOfWeek', 'ASC')
+            ->addOrderBy('s.periodIndex', 'ASC')
+            ->addOrderBy('s.startTime', 'ASC')
             ->getQuery()
             ->getResult();
     }

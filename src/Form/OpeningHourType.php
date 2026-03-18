@@ -17,7 +17,7 @@ class OpeningHourType extends AbstractType
     {
         $builder
             ->add('dayOfWeek', ChoiceType::class, [
-                'label' => 'Jour de la semaine',
+                'label' => 'Jour',
                 'placeholder' => 'Choisir un jour',
                 'choices' => [
                     'Lundi' => 'Monday',
@@ -31,18 +31,14 @@ class OpeningHourType extends AbstractType
                 'required' => true,
             ])
             ->add('openTime', TimeType::class, [
-                'label' => 'Heure d’ouverture',
+                'label' => 'Début de plage',
                 'widget' => 'single_text',
                 'required' => true,
-                // Optionnel mais souvent utile
-                // 'minutes' => [0, 15, 30, 45],
             ])
             ->add('closeTime', TimeType::class, [
-                'label' => 'Heure de fermeture',
+                'label' => 'Fin de plage',
                 'widget' => 'single_text',
                 'required' => true,
-                // Optionnel mais souvent utile
-                // 'minutes' => [0, 15, 30, 45],
             ])
         ;
 

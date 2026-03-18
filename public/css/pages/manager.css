@@ -597,6 +597,46 @@
   flex: 0 0 auto;
 }
 
+.mgr-opening-hours__intervals{
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+}
+
+.mgr-opening-hours__interval{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  flex-wrap:wrap;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(15,23,42,.08);
+  background: #f8fafc;
+}
+
+.mgr-opening-hours__meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap: 8px;
+  align-items:center;
+  color: #475569;
+  font-size: 14px;
+}
+
+.mgr-opening-hours__meta span{
+  display:inline-flex;
+  align-items:center;
+  gap: 8px;
+}
+
+.mgr-opening-hours__actions{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
 .mgr-item--stack{
   align-items:stretch;
 }
@@ -866,6 +906,11 @@
 
   .mgr-filterbar__actions .btn{
     flex: 1 1 160px;
+  }
+
+  .mgr-opening-hours__actions{
+    width: 100%;
+    justify-content:flex-end;
   }
 
   .mgr-select{
@@ -1564,6 +1609,8 @@
 .mgr-planning-table__sub{
   color: #64748b;
   font-size: 13px;
+  white-space: pre-line;
+  line-height: 1.4;
 }
 
 .pro-planning-appointment-card{
@@ -2136,7 +2183,7 @@
 
 .mgr-recurring-row{
   display:grid;
-  grid-template-columns: minmax(120px, .6fr) minmax(120px, .7fr) minmax(240px, 1fr) minmax(110px, .5fr);
+  grid-template-columns: minmax(120px, .55fr) minmax(320px, 1.4fr) minmax(140px, .55fr);
   gap: 14px;
   align-items:center;
   padding: 14px 16px;
@@ -2161,31 +2208,41 @@
   color: #64748b;
 }
 
-.mgr-recurring-row__toggle{
-  display:inline-flex;
-  align-items:center;
-  gap: 10px;
-  font-weight: 600;
-  color: #0f172a;
-}
-
-.mgr-recurring-row__toggle input{
-  width: 18px !important;
-  height: 18px;
-  margin: 0;
-}
-
 .mgr-recurring-row__times{
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+}
+
+.mgr-recurring-slot{
+  display:flex;
+  align-items:center;
+  gap: 12px;
+  flex-wrap:wrap;
+}
+
+.mgr-recurring-slot__label{
+  min-width: 58px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.mgr-recurring-slot__inputs{
   display:flex;
   align-items:center;
   gap: 10px;
+  flex: 1 1 auto;
 }
 
-.mgr-recurring-row__times input{
+.mgr-recurring-slot__inputs input{
   min-width: 0;
+  flex: 1 1 120px;
 }
 
-.mgr-recurring-row__times span{
+.mgr-recurring-slot__inputs span{
   color: #64748b;
   font-weight: 600;
 }
@@ -2195,6 +2252,12 @@
   font-size: 13px;
   font-weight: 700;
   color: #475569;
+  white-space: pre-line;
+  line-height: 1.4;
+}
+
+.mgr-recurring-row__summary-line{
+  display:block;
 }
 
 .mgr-planning-sidecard__body{
@@ -2345,6 +2408,22 @@
   display:flex;
   flex-direction:column;
   gap: 8px;
+}
+
+.mgr-planning-table__substack,
+.pro-planning-event-card__meta--stack,
+.pro-week-card__substack{
+  display:flex;
+  flex-direction:column;
+  gap: 4px;
+}
+
+.mgr-planning-table__subline,
+.pro-week-card__subline,
+.pro-planning-event-card__meta--stack span{
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .mgr-planning-table__cell.is-work{
@@ -2641,10 +2720,18 @@
 
   .mgr-recurring-row__times{
     width:100%;
+  }
+
+  .mgr-recurring-slot{
+    width:100%;
+  }
+
+  .mgr-recurring-slot__inputs{
+    width:100%;
     flex-wrap:wrap;
   }
 
-  .mgr-recurring-row__times input{
+  .mgr-recurring-slot__inputs input{
     flex:1 1 120px;
   }
 
