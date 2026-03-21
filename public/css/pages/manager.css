@@ -1995,6 +1995,14 @@
   padding: 18px;
 }
 
+.pro-res-calendar__detail-head{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
 .pro-res-calendar__detail-head h3{
   margin: 0;
 }

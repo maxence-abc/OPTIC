@@ -23,6 +23,8 @@
     category: category,
     _fragment: 'booking'
   } %}
+  {% set serviceSelectionBaseParams = bookingBaseParams|merge({ _fragment: 'booking-schedule' }) %}
+  {% set serviceListBaseParams = bookingBaseParams|merge({ _fragment: 'services' }) %}
   {% if q or city or category %}
     {% set backUrl = path('app_store_search', { q: q, city: city, category: category }) %}
   {% endif %}
@@ -50,13 +52,6 @@
       </div>
     </section>
 
-    {# Bouton Réserver (scroll natif) #}
-    <div class="est-hero-actions">
-      <a class="btn btn--primary btn--md" href="#booking">
-        Réserver
-      </a>
-    </div>
-
     <section class="account-card">
       <div class="account-card__header">
         <h2 class="account-card__title">À propos</h2>
@@ -69,7 +64,7 @@
     {# =========================
        SERVICES (désélection possible)
        ========================= #}
-    <section class="account-card">
+    <section class="account-card" id="services">
       <div class="account-card__header">
         <h2 class="account-card__title">Services proposés</h2>
       </div>
@@ -83,12 +78,12 @@
 
             <a class="est-service {{ isActiveService ? 'is-active' : '' }}"
                href="{{ path('front_establishment_show', isActiveService
-                 ? bookingBaseParams|merge({
+                 ? serviceListBaseParams|merge({
                      week: weekStart|date('Y-m-d'),
                      date: selectedDateStr ?: null,
                      professional: selectedProfessionalId ?: null
                    })
-                 : bookingBaseParams|merge({
+                 : serviceSelectionBaseParams|merge({
                      service: s.id,
                      week: weekStart|date('Y-m-d'),
                      date: selectedDateStr ?: null,
@@ -154,7 +149,7 @@
         <p class="est-muted">Aucune disponibilité réservable sur les prochaines semaines pour le moment.</p>
       {% else %}
 
-        <div class="booking-block">
+        <div class="booking-block" id="booking-schedule">
           <div class="booking-label">Choisis un jour (jours ouverts uniquement)</div>
 
           <div class="booking-week">

@@ -14,11 +14,11 @@
 }
 
 /* Force les liens de cette page à ne PAS redevenir bleus */
-.page-establishment-show a{
+.page-establishment-show a:not(.btn){
   color: inherit;
   text-decoration: none;
 }
-.page-establishment-show a:hover{
+.page-establishment-show a:not(.btn):hover{
   text-decoration: none;
 }
 
@@ -53,13 +53,6 @@
 .page-establishment-show .est-center{
   text-align:center;
   margin-top:10px;
-}
-
-/* Bouton Réserver (haut) */
-.page-establishment-show .est-hero-actions{
-  margin: 12px 0 18px;
-  display:flex;
-  justify-content:flex-end;
 }
 
 /* ===========================
@@ -159,6 +152,14 @@
 /* ===========================
    Booking
    =========================== */
+.page-establishment-show #booking{
+  scroll-margin-top: 110px;
+}
+
+.page-establishment-show #booking-schedule{
+  scroll-margin-top: 110px;
+}
+
 .page-establishment-show .booking-block{
   margin-top:14px;
 }
@@ -269,12 +270,6 @@
   }
   .page-establishment-show .booking-slots{
     grid-template-columns:repeat(2, minmax(0, 1fr));
-  }
-  .page-establishment-show .est-hero-actions{
-    justify-content:stretch;
-  }
-  .page-establishment-show .est-hero-actions .btn{
-    width:100%;
   }
 
   /* Sur mobile, les boutons semaine prennent toute la largeur */

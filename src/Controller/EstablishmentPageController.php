@@ -31,11 +31,12 @@ final class EstablishmentPageController extends AbstractController
         EntityManagerInterface $em,
         UserRepository $userRepository
     ): Response {
-        $serviceId = $request->query->getInt('service');
+        $query = $request->query->all();
+        $serviceId = $this->parsePositiveInt($query['service'] ?? null);
         $dateStr   = (string) $request->query->get('date'); // YYYY-MM-DD
         $timeStr   = (string) $request->query->get('time'); // HH:mm
         $weekStr   = (string) $request->query->get('week'); // YYYY-MM-DD
-        $professionalId = $request->query->getInt('professional');
+        $professionalId = $this->parsePositiveInt($query['professional'] ?? null);
 
         // Image hero depuis /public/uploads/establishments/{id}/...
         $heroSrc = $this->findHeroImageForEstablishment((int) $establishment->getId());
@@ -123,10 +124,11 @@ final class EstablishmentPageController extends AbstractController
             return $this->redirectToRoute('front_establishment_show', ['id' => $establishment->getId()]);
         }
 
-        $serviceId = (int) $request->request->get('service');
+        $requestData = $request->request->all();
+        $serviceId = $this->parsePositiveInt($requestData['service'] ?? null);
         $dateStr   = (string) $request->request->get('date');
         $timeStr   = (string) $request->request->get('time');
-        $professionalId = $request->request->getInt('professional');
+        $professionalId = $this->parsePositiveInt($requestData['professional'] ?? null);
         $professionalCandidates = $userRepository->findBookableCandidatesByEstablishment($establishment);
         $selectedProfessional = $this->resolveSelectedProfessional($professionalId, $professionalCandidates);
 
@@ -490,5 +492,24 @@ final class EstablishmentPageController extends AbstractController
             ->setParameter('end', $end);
 
         return (int) $qb->getQuery()->getSingleScalarResult() > 0;
+    }
+
+    private function parsePositiveInt(mixed $value): int
+    {
+        if (\is_int($value)) {
+            return $value > 0 ? $value : 0;
+        }
+
+        if (!\is_string($value)) {
+            return 0;
+        }
+
+        $value = trim($value);
+
+        if ($value === '' || !ctype_digit($value)) {
+            return 0;
+        }
+
+        return (int) $value;
     }
 }
