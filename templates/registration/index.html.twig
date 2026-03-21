@@ -24,14 +24,6 @@
       registerHref="{{ path('app_registration') }}"
     />
 
-    {# Flash messages #}
-    {% for message in app.flashes('success') %}
-      <div class="auth-alert auth-alert--info">{{ message }}</div>
-    {% endfor %}
-    {% for message in app.flashes('error') %}
-      <div class="auth-alert auth-alert--error">{{ message }}</div>
-    {% endfor %}
-
     {{ form_start(form, { attr: { class: 'auth-form' } }) }}
 
       <div class="auth-field">

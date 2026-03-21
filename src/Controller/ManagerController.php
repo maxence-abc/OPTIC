@@ -5,10 +5,12 @@ namespace App\Controller;
 use App\Entity\EmployeeScheduleEvent;
 use App\Entity\EmployeeWeeklySchedule;
 use App\Entity\Establishment;
+use App\Entity\EstablishmentImage;
 use App\Entity\OpeningHour;
 use App\Entity\Service;
 use App\Entity\User;
 use App\Form\EmployeeScheduleEventType;
+use App\Form\ManagerEstablishmentSettingsType;
 use App\Form\ManagerEmployeeType;
 use App\Form\OpeningHourType;
 use App\Repository\EmployeeScheduleEventRepository;
@@ -19,12 +21,12 @@ use App\Repository\EstablishmentRepository;
 use App\Repository\OpeningHourRepository;
 use App\Repository\ServiceRepository;
 use App\Repository\UserRepository;
+use App\Service\EstablishmentImageManager;
 use App\Service\EmployeeWeeklyScheduleService;
 use App\Service\OpeningHoursService;
 use App\Security\Voter\EstablishmentVoter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Finder\Finder;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -725,21 +727,79 @@ final class ManagerController extends AbstractController
         return $this->redirectToRoute('manager_opening_hours', ['id' => $establishment->getId()]);
     }
 
-    #[Route('/establishment/{id}/settings', name: 'manager_settings', methods: ['GET'])]
+    #[Route('/establishment/{id}/settings', name: 'manager_settings', methods: ['GET', 'POST'])]
     public function settings(
         Establishment $establishment,
         EstablishmentRepository $establishmentRepository,
-        SessionInterface $session
+        SessionInterface $session,
+        Request $request,
+        EntityManagerInterface $entityManager,
+        EstablishmentImageManager $establishmentImageManager
     ): Response {
         $this->denyAccessUnlessGranted(EstablishmentVoter::MANAGE, $establishment);
         $session->set(self::SESSION_ACTIVE_ESTABLISHMENT, $establishment->getId());
 
         $owned = $establishmentRepository->findBy(['owner' => $this->getUser()], ['id' => 'DESC']);
+        $form = $this->createForm(ManagerEstablishmentSettingsType::class, $establishment);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $addedPhotos = $establishmentImageManager->addUploadedImages(
+                $establishment,
+                $form->get('photos')->getData() ?? []
+            );
+
+            $entityManager->flush();
+
+            $this->addFlash(
+                'success',
+                $addedPhotos > 0
+                    ? sprintf(
+                        'Les informations ont été enregistrées et %d photo%s %s ajoutée%s.',
+                        $addedPhotos,
+                        $addedPhotos > 1 ? 's' : '',
+                        $addedPhotos > 1 ? 'ont été' : 'a été',
+                        $addedPhotos > 1 ? 's' : ''
+                    )
+                    : 'Les informations de l’établissement ont été mises à jour.'
+            );
+
+            return $this->redirectToRoute('manager_settings', ['id' => $establishment->getId()]);
+        }
 
         return $this->render('manager/settings.html.twig', [
             'establishment' => $establishment,
             'ownedEstablishments' => $owned,
+            'form' => $form->createView(),
         ]);
+    }
+
+    #[Route('/establishment-image/{id}/delete', name: 'manager_establishment_image_delete', methods: ['POST'])]
+    public function deleteEstablishmentImage(
+        EstablishmentImage $image,
+        Request $request,
+        EntityManagerInterface $entityManager,
+        EstablishmentImageManager $establishmentImageManager
+    ): Response {
+        $establishment = $image->getEstablishment();
+
+        if (!$establishment instanceof Establishment) {
+            throw $this->createNotFoundException('Photo introuvable.');
+        }
+
+        $this->denyAccessUnlessGranted(EstablishmentVoter::MANAGE, $establishment);
+
+        if ($this->isCsrfTokenValid('delete_establishment_image_'.$image->getId(), (string) $request->request->get('_token'))) {
+            $establishmentImageManager->reindexPositions($establishment, $image);
+            $entityManager->remove($image);
+            $entityManager->flush();
+
+            $this->addFlash('success', 'La photo a été supprimée.');
+        } else {
+            $this->addFlash('error', 'Token invalide.');
+        }
+
+        return $this->redirectToRoute('manager_settings', ['id' => $establishment->getId()]);
     }
 
     #[Route('/establishment/{id}/history', name: 'manager_history', methods: ['GET'])]
@@ -839,34 +899,11 @@ final class ManagerController extends AbstractController
         foreach ($establishments as $establishment) {
             $cards[] = [
                 'entity' => $establishment,
-                'heroSrc' => $this->findHeroImageForEstablishment((int) $establishment->getId()),
+                'heroSrc' => $establishment->getPrimaryImage()?->getPublicPath() ?? '/images/placeholder-establishment.jpg',
             ];
         }
 
         return $cards;
-    }
-
-    private function findHeroImageForEstablishment(int $establishmentId): string
-    {
-        $fallback = '/images/placeholder-establishment.jpg';
-
-        $dir = $this->getParameter('kernel.project_dir') . '/public/uploads/establishments/' . $establishmentId;
-        if (!is_dir($dir)) {
-            return $fallback;
-        }
-
-        $finder = new Finder();
-        $finder->files()
-            ->in($dir)
-            ->depth('== 0')
-            ->name('/\.(jpe?g|png|webp)$/i')
-            ->sortByName();
-
-        foreach ($finder as $file) {
-            return '/uploads/establishments/' . $establishmentId . '/' . $file->getFilename();
-        }
-
-        return $fallback;
     }
 
     /**

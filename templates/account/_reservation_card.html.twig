@@ -9,7 +9,7 @@
   {% set cover = establishment.establishmentImages|first %}
 {% endif %}
 
-{% set imgUrl = cover ? asset('uploads/' ~ cover.path) : asset('uploads/establishments/default.jpg') %}
+{% set imgUrl = cover ? cover.publicPath : asset('uploads/establishments/default.jpg') %}
 
 {# ===== Status ===== #}
 {% set status = appointment.status ?? 'pending' %}

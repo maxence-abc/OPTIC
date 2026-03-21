@@ -29,6 +29,8 @@ final class EstablishmentRepository extends ServiceEntityRepository
             ->leftJoin('e.establishmentImages', 'ei')->addSelect('ei')
             ->leftJoin('e.services', 's')->addSelect('s')
             ->orderBy('e.id', 'DESC')
+            ->addOrderBy('ei.position', 'ASC')
+            ->addOrderBy('ei.id', 'ASC')
             ->distinct()
             ->getQuery()
             ->getResult();
@@ -47,6 +49,8 @@ final class EstablishmentRepository extends ServiceEntityRepository
             ->leftJoin('e.establishmentImages', 'ei')->addSelect('ei')
             ->leftJoin('e.services', 's')->addSelect('s')
             ->orderBy('e.id', 'DESC')
+            ->addOrderBy('ei.position', 'ASC')
+            ->addOrderBy('ei.id', 'ASC')
             ->distinct()
             ->getQuery()
             ->getResult();
@@ -66,6 +70,8 @@ final class EstablishmentRepository extends ServiceEntityRepository
             ->leftJoin('e.establishmentImages', 'ei')->addSelect('ei')
             ->leftJoin('e.services', 's')->addSelect('s')
             ->orderBy('e.id', 'DESC')
+            ->addOrderBy('ei.position', 'ASC')
+            ->addOrderBy('ei.id', 'ASC')
             ->distinct();
 
         // --- Filtre q (service / établissement) ---

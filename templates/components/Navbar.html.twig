@@ -38,6 +38,10 @@
       aria-label="Navigation principale"
       data-navbar-target="nav"
     >
+      {% set canAccessProSpace = app.user
+        and is_granted('ROLE_PRO')
+        and (app.user.establishment is not null or app.user.establishments|length > 0) %}
+
       <a href="{{ this.homeHref ?? path('app_home') }}" class="navbar__link">Accueil</a>
       <a href="{{ this.searchHref ?? path('app_store_search') }}" class="navbar__link">Rechercher un service</a>
 
@@ -45,7 +49,7 @@
         <a href="{{ path('app_manager_home') }}" class="navbar__link">Gestion</a>
       {% endif %}
 
-      {% if app.user and is_granted('ROLE_PRO') %}
+      {% if canAccessProSpace %}
         <a href="{{ path('app_pro_dashboard') }}" class="navbar__link">Mon entreprise</a>
       {% endif %}
     </nav>

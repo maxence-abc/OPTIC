@@ -28,6 +28,7 @@
   {% if q or city or category %}
     {% set backUrl = path('app_store_search', { q: q, city: city, category: category }) %}
   {% endif %}
+  {% set hasGallery = heroImages|length > 1 %}
 
   <div class="container container--wide est-show">
 
@@ -36,12 +37,55 @@
       Retour aux résultats
     </a>
 
-    <section class="est-card est-show__hero">
+    <section class="est-card est-show__hero{% if hasGallery %} has-gallery{% endif %}"
+             {% if hasGallery %}
+               data-controller="carousel"
+               data-carousel-interval-value="5000"
+             {% endif %}>
       <div class="est-card__media">
-        <img class="est-card__img"
-             src="{{ heroSrc }}"
-             alt="Photo de {{ establishment.name }}"
-             loading="lazy">
+        {% if hasGallery %}
+          <div class="est-gallery__track" data-carousel-target="track">
+            {% for imageSrc in heroImages %}
+              <div class="est-gallery__slide">
+                <img class="est-card__img"
+                     src="{{ imageSrc }}"
+                     alt="Photo {{ loop.index }} de {{ establishment.name }}"
+                     loading="lazy">
+              </div>
+            {% endfor %}
+          </div>
+
+          <button class="est-gallery__nav est-gallery__nav--prev"
+                  type="button"
+                  aria-label="Photo précédente"
+                  data-action="carousel#prev">
+            {{ ux_icon('uil:angle-left-b') }}
+          </button>
+
+          <button class="est-gallery__nav est-gallery__nav--next"
+                  type="button"
+                  aria-label="Photo suivante"
+                  data-action="carousel#next">
+            {{ ux_icon('uil:angle-right-b') }}
+          </button>
+
+          <div class="est-gallery__dots">
+            {% for imageSrc in heroImages %}
+              <button class="est-gallery__dot{% if loop.first %} is-active{% endif %}"
+                      type="button"
+                      aria-label="Voir la photo {{ loop.index }}"
+                      data-carousel-target="dot"
+                      data-index="{{ loop.index0 }}"
+                      data-action="carousel#goTo">
+              </button>
+            {% endfor %}
+          </div>
+        {% else %}
+          <img class="est-card__img"
+               src="{{ heroSrc }}"
+               alt="Photo de {{ establishment.name }}"
+               loading="lazy">
+        {% endif %}
       </div>
       <div class="est-card__body">
         <h1 class="est-card__title">{{ establishment.name }}</h1>

@@ -10,7 +10,6 @@ use App\Repository\UserRepository;
 use App\Service\OpeningHoursService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -38,8 +37,20 @@ final class EstablishmentPageController extends AbstractController
         $weekStr   = (string) $request->query->get('week'); // YYYY-MM-DD
         $professionalId = $this->parsePositiveInt($query['professional'] ?? null);
 
-        // Image hero depuis /public/uploads/establishments/{id}/...
-        $heroSrc = $this->findHeroImageForEstablishment((int) $establishment->getId());
+        $heroSrc = $establishment->getPrimaryImage()?->getPublicPath() ?? '/images/placeholder-establishment.jpg';
+        $heroImages = [];
+
+        foreach ($establishment->getEstablishmentImages() as $image) {
+            $publicPath = $image->getPublicPath();
+            if ($publicPath !== null && $publicPath !== '') {
+                $heroImages[] = $publicPath;
+            }
+        }
+
+        if ($heroImages === []) {
+            $heroImages[] = $heroSrc;
+        }
+
         $professionalCandidates = $userRepository->findBookableCandidatesByEstablishment($establishment);
         $selectedProfessional = $this->resolveSelectedProfessional($professionalId, $professionalCandidates);
 
@@ -96,6 +107,7 @@ final class EstablishmentPageController extends AbstractController
         return $this->render('establishment_page/show.html.twig', [
             'establishment'     => $establishment,
             'heroSrc'           => $heroSrc,
+            'heroImages'        => $heroImages,
 
             'selectedService'   => $selectedService,
             'selectedServiceId' => $selectedService?->getId(),
@@ -270,29 +282,6 @@ final class EstablishmentPageController extends AbstractController
             'date' => $date->format('Y-m-d'),
             'professional' => $selectedProfessional?->getId(),
         ]);
-    }
-
-    private function findHeroImageForEstablishment(int $establishmentId): string
-    {
-        $fallback = '/images/placeholder-establishment.jpg';
-
-        $dir = $this->getParameter('kernel.project_dir') . '/public/uploads/establishments/' . $establishmentId;
-        if (!is_dir($dir)) {
-            return $fallback;
-        }
-
-        $finder = new Finder();
-        $finder->files()
-            ->in($dir)
-            ->depth('== 0')
-            ->name('/\.(jpe?g|png|webp)$/i')
-            ->sortByName();
-
-        foreach ($finder as $file) {
-            return '/uploads/establishments/' . $establishmentId . '/' . $file->getFilename();
-        }
-
-        return $fallback;
     }
 
     private function weekStart(string $dateStr): \DateTime

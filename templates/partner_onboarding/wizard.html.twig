@@ -274,15 +274,24 @@
 
               {# PHOTOS (Flysystem + FileType multiple) #}
               {% if form.photos is defined %}
-                <div class="wizard-section">
+                <div class="wizard-section file-preview" data-controller="file-preview">
                   <label class="wizard-label">Photos de votre établissement (recommandé)</label>
 
                   {# label cliquable => ouvre le file picker #}
                   <label class="wizard-upload" style="cursor:pointer;">
-                    {{ form_widget(form.photos, { attr: { style: 'display:none;', accept: 'image/*' } }) }}
+                    {{ form_widget(form.photos, { attr: {
+                      style: 'display:none;',
+                      accept: 'image/*',
+                      'data-file-preview-target': 'input',
+                      'data-action': 'change->file-preview#update'
+                    } }) }}
                     Glissez-déposez vos images ou cliquez pour parcourir<br>
-                    PNG, JPG, JPEG jusqu’à 10MB
+                    JPG, PNG, WEBP jusqu’à 12MB par image
                   </label>
+
+                  <p class="file-preview__summary" data-file-preview-target="empty">Aucune photo sélectionnée pour le moment.</p>
+                  <p class="file-preview__summary" data-file-preview-target="count" hidden></p>
+                  <div class="file-preview__grid" data-file-preview-target="list" hidden></div>
 
                   {% if form_errors(form.photos) %}
                     <div class="auth-error">{{ form_errors(form.photos) }}</div>
@@ -294,7 +303,7 @@
                   <label class="wizard-label">Photos de votre établissement (recommandé)</label>
                   <div class="wizard-upload">
                     Glissez-déposez vos images ou cliquez pour parcourir<br>
-                    PNG, JPG, JPEG jusqu’à 10MB
+                    JPG, PNG, WEBP jusqu’à 12MB par image
                   </div>
                 </div>
               {% endif %}

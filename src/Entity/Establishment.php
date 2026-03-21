@@ -91,6 +91,7 @@ class Establishment
      * @var Collection<int, EstablishmentImage>
      */
     #[ORM\OneToMany(targetEntity: EstablishmentImage::class, mappedBy: 'establishment', orphanRemoval: true)]
+    #[ORM\OrderBy(['position' => 'ASC', 'id' => 'ASC'])]
     private Collection $establishmentImages;
 
     /**
@@ -531,6 +532,13 @@ class Establishment
         }
 
         return $this;
+    }
+
+    public function getPrimaryImage(): ?EstablishmentImage
+    {
+        $primaryImage = $this->establishmentImages->first();
+
+        return $primaryImage instanceof EstablishmentImage ? $primaryImage : null;
     }
 
     public function getCategory(): ?string

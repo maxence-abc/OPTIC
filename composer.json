@@ -14,7 +14,6 @@
         "doctrine/doctrine-migrations-bundle": "^3.7",
         "doctrine/orm": "^3.6.1",
         "easycorp/easyadmin-bundle": "^4.27.8",
-        "league/flysystem-bundle": "^3.6.1",
         "runtime/frankenphp-symfony": ">=1",
         "symfony/asset": "7.4.*",
         "symfony/asset-mapper": "7.4.*",
@@ -34,7 +33,8 @@
         "symfony/ux-twig-component": "^2.32",
         "symfony/validator": "7.4.*",
         "symfony/yaml": "7.4.*",
-        "symfonycasts/reset-password-bundle": "^1.24"
+        "symfonycasts/reset-password-bundle": "^1.24",
+        "vich/uploader-bundle": "^2.9"
     },
     "config": {
         "allow-plugins": {
