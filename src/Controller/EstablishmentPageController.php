@@ -4,10 +4,15 @@ namespace App\Controller;
 
 use App\Entity\Appointment;
 use App\Entity\Establishment;
+use App\Entity\Review;
 use App\Entity\Service;
 use App\Entity\User;
+use App\Form\ReviewType;
+use App\Repository\AppointmentRepository;
+use App\Repository\ReviewRepository;
 use App\Repository\UserRepository;
 use App\Service\OpeningHoursService;
+use App\Service\ReviewEligibilityService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -28,7 +33,10 @@ final class EstablishmentPageController extends AbstractController
         Establishment $establishment,
         Request $request,
         EntityManagerInterface $em,
-        UserRepository $userRepository
+        UserRepository $userRepository,
+        AppointmentRepository $appointmentRepository,
+        ReviewRepository $reviewRepository,
+        ReviewEligibilityService $reviewEligibilityService
     ): Response {
         $query = $request->query->all();
         $serviceId = $this->parsePositiveInt($query['service'] ?? null);
@@ -50,6 +58,17 @@ final class EstablishmentPageController extends AbstractController
         if ($heroImages === []) {
             $heroImages[] = $heroSrc;
         }
+
+        $reviewStats = $reviewRepository->getSummaryForEstablishment($establishment);
+        $establishmentReviews = $reviewRepository->findPublicByEstablishment($establishment, 8);
+        $reviewBaseParams = $request->query->all();
+        unset($reviewBaseParams['review']);
+        $reviewBaseParams['id'] = $establishment->getId();
+        $reviewBaseParams['_fragment'] = 'reviews';
+        $requestedReviewAppointmentId = $this->parsePositiveInt($query['review'] ?? null);
+        $reviewableAppointment = null;
+        $reviewModalAppointment = null;
+        $reviewForm = null;
 
         $professionalCandidates = $userRepository->findBookableCandidatesByEstablishment($establishment);
         $selectedProfessional = $this->resolveSelectedProfessional($professionalId, $professionalCandidates);
@@ -104,10 +123,41 @@ final class EstablishmentPageController extends AbstractController
             );
         }
 
+        $currentUser = $this->getUser();
+        if ($currentUser instanceof User) {
+            foreach ($appointmentRepository->findPastForClient($currentUser, 100) as $appointment) {
+                if (!$reviewEligibilityService->canReviewEstablishmentAppointment($currentUser, $establishment, $appointment)) {
+                    continue;
+                }
+
+                $reviewableAppointment ??= $appointment;
+
+                if ($requestedReviewAppointmentId > 0 && $appointment->getId() === $requestedReviewAppointmentId) {
+                    $reviewModalAppointment = $appointment;
+                    break;
+                }
+            }
+        }
+
+        if ($currentUser instanceof User && $reviewModalAppointment instanceof Appointment) {
+            $review = (new Review())
+                ->setAppointment($reviewModalAppointment)
+                ->setClient($currentUser)
+                ->setEstablishment($establishment);
+
+            $reviewForm = $this->createForm(ReviewType::class, $review)->createView();
+        }
+
         return $this->render('establishment_page/show.html.twig', [
             'establishment'     => $establishment,
             'heroSrc'           => $heroSrc,
             'heroImages'        => $heroImages,
+            'establishmentReviews' => $establishmentReviews,
+            'reviewStats'       => $reviewStats,
+            'reviewBaseParams'  => $reviewBaseParams,
+            'reviewableAppointment' => $reviewableAppointment,
+            'reviewModalAppointment' => $reviewModalAppointment,
+            'reviewForm'        => $reviewForm,
 
             'selectedService'   => $selectedService,
             'selectedServiceId' => $selectedService?->getId(),

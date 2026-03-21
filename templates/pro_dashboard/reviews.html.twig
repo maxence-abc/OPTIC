@@ -1,0 +1,126 @@
+{% extends 'pro_dashboard/_layout.html.twig' %}
+
+{% block title %}Avis clients{% endblock %}
+
+{% block pro_content %}
+  <section class="mgr-pagehead pro-pagehead mgr-review-pagehead">
+    <div>
+      <h1>Avis clients</h1>
+      <p>Consultez les retours laissés sur {{ establishment.name }} et répondez publiquement au nom de l’établissement.</p>
+    </div>
+  </section>
+
+  <section class="mgr-kpis mgr-review-kpis">
+    <article class="mgr-kpi">
+      <div class="mgr-kpi__label">Note moyenne</div>
+      <div class="mgr-kpi__value">{{ reviewSummary.count > 0 ? reviewSummary.average|number_format(1, ',', ' ') ~ '/5' : '—' }}</div>
+    </article>
+
+    <article class="mgr-kpi">
+      <div class="mgr-kpi__label">Avis publiés</div>
+      <div class="mgr-kpi__value">{{ reviewSummary.count }}</div>
+    </article>
+
+    <article class="mgr-kpi">
+      <div class="mgr-kpi__label">Réponses envoyées</div>
+      <div class="mgr-kpi__value">{{ reviews|filter(review => review.businessReply)|length }}</div>
+    </article>
+  </section>
+
+  <section class="mgr-card mgr-review-card-shell">
+    <div class="mgr-sectionhead">
+      <div>
+        <h2>Tous les avis de l’établissement</h2>
+        <p class="muted">La réponse affichera automatiquement le nom de {{ establishment.name }} sous l’avis du client.</p>
+      </div>
+    </div>
+
+    {% if reviews is empty %}
+      <p class="muted" style="margin-top: 12px;">Aucun avis client pour le moment.</p>
+    {% else %}
+      <div class="mgr-review-list">
+        {% for review in reviews %}
+          {% set isReplyTarget = app.request.query.getInt('reply') == review.id %}
+          <article class="mgr-review-card" id="review-{{ review.id }}">
+            <div class="mgr-review-card__head">
+              <div class="mgr-review-card__main">
+                <div class="mgr-review-card__author">
+                  {{ review.client.firstName }}
+                  {% if review.client.lastName %}
+                    {{ review.client.lastName|first }}.
+                  {% endif %}
+                </div>
+
+                <div class="mgr-review-card__meta">
+                  {% include 'review/_stars.html.twig' with {
+                    rating: review.rating,
+                    class: 'review-stars--sm'
+                  } only %}
+                  {% if review.appointment and review.appointment.service %}
+                    <span class="mgr-review-card__meta-item">{{ review.appointment.service.name }}</span>
+                  {% endif %}
+                  {% if review.createdAt %}
+                    <span class="mgr-review-card__meta-item">{{ review.createdAt|date('d/m/Y') }}</span>
+                  {% endif %}
+                </div>
+              </div>
+
+              {% if isReplyTarget %}
+                <a class="btn btn--outline mgr-review-card__action"
+                   href="{{ path('app_pro_reviews') }}#review-{{ review.id }}">
+                  Annuler
+                </a>
+              {% else %}
+                <a class="btn btn--outline mgr-review-card__action"
+                   href="{{ path('app_pro_reviews', { reply: review.id }) }}#reply-form-{{ review.id }}">
+                  {{ review.businessReply ? 'Modifier la réponse' : 'Répondre' }}
+                </a>
+              {% endif %}
+            </div>
+
+            <p class="mgr-review-card__comment">{{ review.comment }}</p>
+
+            {% if review.businessReply %}
+              <div class="review-reply review-reply--business">
+                <div class="review-reply__head">
+                  <div class="review-reply__author">{{ establishment.name }}</div>
+                  {% if review.businessRepliedAt %}
+                    <time class="review-reply__date" datetime="{{ review.businessRepliedAt|date('c') }}">
+                      {{ review.businessRepliedAt|date('d/m/Y') }}
+                    </time>
+                  {% endif %}
+                </div>
+
+                <p class="review-reply__comment">{{ review.businessReply }}</p>
+              </div>
+            {% endif %}
+
+            <form id="reply-form-{{ review.id }}"
+                  class="mgr-review-reply-form{{ isReplyTarget ? ' is-open' : '' }}"
+                  method="post"
+                  action="{{ path('app_pro_review_reply', { id: review.id }) }}">
+              <input type="hidden" name="_token" value="{{ csrf_token('pro_review_reply_' ~ review.id) }}">
+              <input type="hidden" name="_redirect_route" value="app_pro_reviews">
+
+              <label for="business_reply_{{ review.id }}">Réponse de l’établissement</label>
+              <textarea id="business_reply_{{ review.id }}"
+                        name="business_reply"
+                        rows="4"
+                        maxlength="1500"
+                        placeholder="Répondez au client au nom de {{ establishment.name }}...">{{ review.businessReply }}</textarea>
+
+              <div class="mgr-review-reply-form__actions">
+                <a class="btn btn--outline" href="{{ path('app_pro_reviews') }}#review-{{ review.id }}">
+                  Annuler
+                </a>
+                <button class="btn btn--dark" type="submit">
+                  {{ review.businessReply ? 'Mettre à jour la réponse' : 'Publier la réponse' }}
+                </button>
+              </div>
+            </form>
+          </article>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

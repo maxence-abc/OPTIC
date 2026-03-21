@@ -105,6 +105,18 @@
   opacity: 0.8;
 }
 
+.account-tabs__icon,
+.account-hero__back-icon,
+.account-hero__avatar-icon,
+.account-logout__icon,
+.reservation-info__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  line-height: 1;
+}
+
 /* Panels */
 .account-panels {
   display: block;
@@ -257,6 +269,54 @@
   gap: 10px;
 }
 
+.account-list__item--reviewable {
+  align-items: center;
+}
+
+.account-review-list {
+  display: grid;
+  gap: 12px;
+}
+
+.account-review {
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 12px;
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.account-review__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.account-review__title {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.account-review__comment {
+  margin: 0;
+  color: rgba(0,0,0,0.76);
+  line-height: 1.55;
+}
+
+.account-review__link {
+  width: fit-content;
+  color: rgba(0,0,0,0.72);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.account-review__link:hover {
+  text-decoration: underline;
+}
+
 /* Badge */
 .account-badge {
   display: inline-flex;
@@ -334,20 +394,17 @@
 .account-stars svg {
   width: 18px;
   height: 18px;
-  display: inline-block;
-  vertical-align: -3px;
+  display: block;
 }
 
 .account-hero__avatar-icon svg {
   width: 32px;
   height: 32px;
-  vertical-align: middle;
 }
 
 .account-stars svg {
   width: 16px;
   height: 16px;
-  vertical-align: -2px;
 }
 
 /* =============================== */
@@ -486,7 +543,7 @@
 .reservation-info__icon svg {
   width: 16px;
   height: 16px;
-  vertical-align: -2px;
+  display: block;
 }
 
 .reservation-info__label {
@@ -587,6 +644,10 @@
   .account-list__item {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .account-review__top {
+    flex-direction: column;
   }
 
   /* reservations responsive */

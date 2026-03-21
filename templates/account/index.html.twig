@@ -127,9 +127,103 @@
         <div class="account-panel is-active" role="tabpanel">
           <div class="account-card">
             <div class="account-card__header">
-              <h2 class="account-card__title">Mes avis</h2>
+              <h2 class="account-card__title">Réservations à évaluer</h2>
+              <span class="account-badge account-badge--neutral">{{ reviewableAppointments|length }} en attente</span>
             </div>
-            <p class="account-muted">Fonctionnalité en cours.</p>
+
+            {% if reviewableAppointments is empty %}
+              <p class="account-muted">Aucun avis à laisser pour le moment.</p>
+            {% else %}
+              <div class="account-list">
+                {% for appointment in reviewableAppointments %}
+                  {% set service = appointment.service %}
+                  {% set establishment = service ? service.establishment : null %}
+
+                  {% if establishment %}
+                    <div class="account-list__item account-list__item--reviewable">
+                      <div>
+                        <div class="account-list__title">{{ establishment.name }}</div>
+                        <div class="account-list__meta">
+                          <span>{{ service ? service.name : 'Service' }}</span>
+                          <span>{{ appointment.date ? appointment.date|date('d/m/Y') : 'Date indisponible' }}</span>
+                          {% if appointment.startTime %}
+                            <span>{{ appointment.startTime|date('H:i') }}</span>
+                          {% endif %}
+                        </div>
+                      </div>
+
+                      <div class="account-list__actions">
+                        <a class="btn btn--primary"
+                           href="{{ path('front_establishment_show', {
+                             id: establishment.id,
+                             review: appointment.id,
+                             _fragment: 'reviews'
+                           }) }}">
+                          Laisser un avis
+                        </a>
+                      </div>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="account-card">
+            <div class="account-card__header">
+              <h2 class="account-card__title">Avis publiés</h2>
+              <span class="account-badge account-badge--neutral">{{ clientReviews|length }} avis</span>
+            </div>
+
+            {% if clientReviews is empty %}
+              <p class="account-muted">Vous n’avez encore publié aucun avis.</p>
+            {% else %}
+              <div class="account-review-list">
+                {% for review in clientReviews %}
+                  <article class="account-review">
+                    <div class="account-review__top">
+                      <div>
+                        <h3 class="account-review__title">{{ review.establishment.name }}</h3>
+                        <div class="account-list__meta">
+                          <span>{{ review.appointment and review.appointment.service ? review.appointment.service.name : 'Service' }}</span>
+                          <span>{{ review.createdAt ? review.createdAt|date('d/m/Y') : '' }}</span>
+                        </div>
+                      </div>
+
+                      {% include 'review/_stars.html.twig' with {
+                        rating: review.rating,
+                        class: 'review-stars--sm'
+                      } only %}
+                    </div>
+
+                    <p class="account-review__comment">{{ review.comment }}</p>
+
+                    {% if review.businessReply %}
+                      <div class="review-reply review-reply--business">
+                        <div class="review-reply__head">
+                          <div class="review-reply__author">{{ review.establishment.name }}</div>
+                          {% if review.businessRepliedAt %}
+                            <time class="review-reply__date" datetime="{{ review.businessRepliedAt|date('c') }}">
+                              {{ review.businessRepliedAt|date('d/m/Y') }}
+                            </time>
+                          {% endif %}
+                        </div>
+
+                        <p class="review-reply__comment">{{ review.businessReply }}</p>
+                      </div>
+                    {% endif %}
+
+                    <a class="account-review__link"
+                       href="{{ path('front_establishment_show', {
+                         id: review.establishment.id,
+                         _fragment: 'reviews'
+                       }) }}">
+                      Voir l’établissement
+                    </a>
+                  </article>
+                {% endfor %}
+              </div>
+            {% endif %}
           </div>
         </div>
       {% endif %}

@@ -56,9 +56,18 @@
   cursor: not-allowed;
 }
 
+.btn__icon{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  line-height: 1;
+}
+
 .btn__icon svg{
   width: 16px;
   height: 16px;
+  display: block;
 }
 
 .btn__spinner{

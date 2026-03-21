@@ -11,7 +11,7 @@
   <header class="mgr-hero">
     <div class="container container--wide mgr-hero__container">
       <a class="mgr-hero__back" href="{{ path('app_home') }}">
-        <span aria-hidden="true">{{ ux_icon('uil:arrow-left') }}</span>
+        <span class="mgr-hero__back-icon" aria-hidden="true">{{ ux_icon('uil:arrow-left') }}</span>
         Retour
       </a>
 
@@ -33,30 +33,31 @@
     <div class="container container--wide mgr-tabs__container">
       <a class="mgr-tabs__link {% if app.request.attributes.get('_route') == 'app_pro_dashboard' %}is-active{% endif %}"
          href="{{ path('app_pro_dashboard') }}">
-        <span aria-hidden="true">{{ ux_icon('uil:apps') }}</span>
+        <span class="mgr-tabs__icon" aria-hidden="true">{{ ux_icon('uil:apps') }}</span>
         Tableau de bord
       </a>
 
       <a class="mgr-tabs__link {% if app.request.attributes.get('_route') == 'app_pro_reservations' %}is-active{% endif %}"
          href="{{ path('app_pro_reservations') }}">
-        <span aria-hidden="true">{{ ux_icon('uil:calendar-alt') }}</span>
+        <span class="mgr-tabs__icon" aria-hidden="true">{{ ux_icon('uil:calendar-alt') }}</span>
         Réservations
       </a>
 
-      <span class="mgr-tabs__link is-disabled">
-        <span aria-hidden="true">{{ ux_icon('uil:star') }}</span>
+      <a class="mgr-tabs__link {% if app.request.attributes.get('_route') == 'app_pro_reviews' %}is-active{% endif %}"
+         href="{{ path('app_pro_reviews') }}">
+        <span class="mgr-tabs__icon" aria-hidden="true">{{ ux_icon('uil:star') }}</span>
         Avis clients
-      </span>
+      </a>
 
       <a class="mgr-tabs__link {% if app.request.attributes.get('_route') == 'app_pro_calendar' %}is-active{% endif %}"
          href="{{ path('app_pro_calendar') }}">
-        <span aria-hidden="true">{{ ux_icon('uil:calendar-alt') }}</span>
+        <span class="mgr-tabs__icon" aria-hidden="true">{{ ux_icon('uil:calendar-alt') }}</span>
         Calendrier
       </a>
 
       <a class="mgr-tabs__link {% if app.request.attributes.get('_route') == 'app_pro_profile' %}is-active{% endif %}"
          href="{{ path('app_pro_profile') }}">
-        <span aria-hidden="true">{{ ux_icon('uil:user-circle') }}</span>
+        <span class="mgr-tabs__icon" aria-hidden="true">{{ ux_icon('uil:user-circle') }}</span>
         Profil
       </a>
     </div>

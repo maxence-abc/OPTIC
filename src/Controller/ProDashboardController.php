@@ -6,11 +6,13 @@ use App\Entity\Appointment;
 use App\Entity\EmployeeScheduleEvent;
 use App\Entity\EmployeeWeeklySchedule;
 use App\Entity\Establishment;
+use App\Entity\Review;
 use App\Entity\User;
 use App\Repository\AppointmentRepository;
 use App\Repository\EmployeeScheduleEventRepository;
 use App\Repository\EmployeeWeeklyScheduleRepository;
 use App\Repository\EstablishmentRepository;
+use App\Repository\ReviewRepository;
 use App\Repository\UserRepository;
 use App\Service\EmployeeWeeklyScheduleService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -150,6 +152,70 @@ final class ProDashboardController extends AbstractController
                 'weeklyPlanningDays' => $this->buildProfessionalPlanningDays($weekStart, $weeklySchedules, $weeklyScheduleEvents, $weeklyAppointments, $weeklyScheduleService),
             ]
         ));
+    }
+
+    #[Route('/reviews', name: 'app_pro_reviews', methods: ['GET'])]
+    public function reviews(
+        Request $request,
+        AppointmentRepository $appointmentRepository,
+        UserRepository $userRepository,
+        ReviewRepository $reviewRepository
+    ): Response {
+        $establishment = $this->resolveCurrentEstablishment($request);
+        if (!$establishment instanceof Establishment) {
+            $this->addFlash('warning', 'Aucun établissement n’est associé à votre compte.');
+
+            return $this->redirectToRoute('app_home');
+        }
+
+        return $this->render('pro_dashboard/reviews.html.twig', array_merge(
+            $this->buildDashboardContext($appointmentRepository, $userRepository, $establishment),
+            [
+                'reviews' => $reviewRepository->findByEstablishment($establishment, 50),
+                'reviewSummary' => $reviewRepository->getSummaryForEstablishment($establishment),
+            ]
+        ));
+    }
+
+    #[Route('/reviews/{id}/reply', name: 'app_pro_review_reply', methods: ['POST'])]
+    public function replyToReview(
+        Request $request,
+        Review $review,
+        EntityManagerInterface $entityManager
+    ): RedirectResponse {
+        $establishment = $this->resolveCurrentEstablishment($request);
+        if (!$establishment instanceof Establishment || $review->getEstablishment()?->getId() !== $establishment->getId()) {
+            throw $this->createAccessDeniedException('Vous ne pouvez pas répondre à cet avis.');
+        }
+
+        if (!$this->isCsrfTokenValid('pro_review_reply_'.$review->getId(), (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'Token invalide.');
+
+            return $this->redirectToRoute('app_pro_reviews');
+        }
+
+        $reply = trim((string) $request->request->get('business_reply', ''));
+        if ($reply === '') {
+            $this->addFlash('error', 'Merci de saisir une réponse avant de publier.');
+
+            return new RedirectResponse($this->buildReviewRedirectUrl($review));
+        }
+
+        if (mb_strlen($reply) > 1500) {
+            $this->addFlash('error', 'La réponse de l’établissement est trop longue.');
+
+            return new RedirectResponse($this->buildReviewRedirectUrl($review));
+        }
+
+        $review
+            ->setBusinessReply($reply)
+            ->setBusinessRepliedAt(new \DateTimeImmutable());
+
+        $entityManager->flush();
+
+        $this->addFlash('success', 'La réponse a été publiée.');
+
+        return $this->redirectToRoute('app_pro_reviews');
     }
 
     #[Route('/appointment/{id}/accept', name: 'app_pro_appointment_accept', methods: ['POST'])]
@@ -408,7 +474,7 @@ final class ProDashboardController extends AbstractController
     private function redirectToProSpace(Request $request): RedirectResponse
     {
         $redirectRoute = (string) $request->request->get('_redirect_route', '');
-        if (in_array($redirectRoute, ['app_pro_dashboard', 'app_pro_reservations', 'app_pro_profile', 'app_pro_calendar'], true)) {
+        if (in_array($redirectRoute, ['app_pro_dashboard', 'app_pro_reservations', 'app_pro_profile', 'app_pro_calendar', 'app_pro_reviews'], true)) {
             return $this->redirectToRoute($redirectRoute);
         }
 
@@ -422,6 +488,11 @@ final class ProDashboardController extends AbstractController
         }
 
         return $this->redirectToRoute('app_pro_dashboard');
+    }
+
+    private function buildReviewRedirectUrl(Review $review): string
+    {
+        return $this->generateUrl('app_pro_reviews', ['reply' => $review->getId()]).'#reply-form-'.$review->getId();
     }
 
     private function resolveCurrentEstablishment(?Request $request = null): ?Establishment
