@@ -5,6 +5,8 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Form\AccountProfileType;
 use App\Repository\AppointmentRepository;
+use App\Repository\ReviewRepository;
+use App\Service\ReviewEligibilityService;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -21,6 +23,8 @@ final class AccountController extends AbstractController
     public function index(
         Request $request,
         AppointmentRepository $appointmentRepository,
+        ReviewRepository $reviewRepository,
+        ReviewEligibilityService $reviewEligibilityService,
         EntityManagerInterface $entityManager
     ): Response
     {
@@ -34,6 +38,8 @@ final class AccountController extends AbstractController
 
         $upcoming = [];
         $past = [];
+        $reviewableAppointments = [];
+        $clientReviews = [];
         $profileForm = null;
 
         if ($activeTab === 'profile') {
@@ -51,6 +57,8 @@ final class AccountController extends AbstractController
                         'activeTab' => $activeTab,
                         'upcomingAppointments' => $upcoming,
                         'pastAppointments' => $past,
+                        'reviewableAppointments' => $reviewableAppointments,
+                        'clientReviews' => $clientReviews,
                         'profileForm' => $profileForm->createView(),
                         'editProfile' => $editProfile,
                     ]);
@@ -73,10 +81,28 @@ final class AccountController extends AbstractController
             $past = $appointmentRepository->findPastForClient($user, 20);
         }
 
+        if ($activeTab === 'reviews') {
+            foreach ($appointmentRepository->findPastForClient($user, 100) as $appointment) {
+                if (!$reviewEligibilityService->canReviewAppointment($user, $appointment)) {
+                    continue;
+                }
+
+                $reviewableAppointments[] = $appointment;
+
+                if (\count($reviewableAppointments) >= 6) {
+                    break;
+                }
+            }
+
+            $clientReviews = $reviewRepository->findByClient($user, 50);
+        }
+
         return $this->render('account/index.html.twig', [
             'activeTab' => $activeTab,
             'upcomingAppointments' => $upcoming,
             'pastAppointments' => $past,
+            'reviewableAppointments' => $reviewableAppointments,
+            'clientReviews' => $clientReviews,
             'profileForm' => $profileForm?->createView(),
             'editProfile' => $editProfile,
         ]);

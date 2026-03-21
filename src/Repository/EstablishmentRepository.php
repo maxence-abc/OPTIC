@@ -69,6 +69,7 @@ final class EstablishmentRepository extends ServiceEntityRepository
         $qb = $this->createQueryBuilder('e')
             ->leftJoin('e.establishmentImages', 'ei')->addSelect('ei')
             ->leftJoin('e.services', 's')->addSelect('s')
+            ->leftJoin('e.reviews', 'r')->addSelect('r')
             ->orderBy('e.id', 'DESC')
             ->addOrderBy('ei.position', 'ASC')
             ->addOrderBy('ei.id', 'ASC')

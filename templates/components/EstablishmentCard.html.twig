@@ -7,6 +7,8 @@
 {% if e.establishmentImages is defined and e.establishmentImages|length > 0 %}
   {% set cover = e.establishmentImages|first %}
 {% endif %}
+{% set reviewCount = this.reviewCount %}
+{% set averageRating = this.averageRating %}
 
 <article class="est-card">
   <div class="est-card__media">
@@ -24,7 +26,22 @@
         <span class="est-card__pin" aria-hidden="true">{{ ux_icon('uil:map-marker') }}</span>
         {{ e.address }}, {{ e.postalCode }} {{ e.city }}
       </p>
-      <p 
+    </div>
+
+    <div class="est-card__rating">
+      {% if reviewCount > 0 %}
+        {% include 'review/_stars.html.twig' with {
+          rating: averageRating,
+          class: 'review-stars--sm'
+        } only %}
+        <span class="est-card__rating-score">{{ averageRating|number_format(1, ',', ' ') }}</span>
+        <span class="est-card__rating-separator" aria-hidden="true">&bull;</span>
+        <span class="est-card__rating-count">
+          {{ reviewCount }} avis
+        </span>
+      {% else %}
+        <span class="est-card__rating-empty">Aucun avis</span>
+      {% endif %}
     </div>
 
     <div class="est-card__chips">

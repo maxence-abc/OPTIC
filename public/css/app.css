@@ -64,9 +64,70 @@ textarea::selection{
   color: var(--muted);
 }
 
+.icon{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  line-height: 1;
+}
+
 .icon svg{
   width: 1em;
   height: 1em;
+  display: block;
+  flex: 0 0 auto;
+}
+
+:where(
+  .btn__icon,
+  .navbar__icon,
+  .navbar__burger-icon,
+  .navbar__account-trigger-icon,
+  .navbar__account-link-icon,
+  .account-tabs__icon,
+  .account-hero__back-icon,
+  .account-hero__avatar-icon,
+  .account-logout__icon,
+  .reservation-info__icon,
+  .est-back__icon,
+  .est-field__icon,
+  .est-card__pin,
+  .mgr-hero__back-icon,
+  .mgr-tabs__icon,
+  .mgr-switch__icon,
+  .mgr-switch__chev,
+  .mgr-switch__check
+){
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  line-height: 1;
+}
+
+:where(
+  .btn__icon,
+  .navbar__icon,
+  .navbar__burger-icon,
+  .navbar__account-trigger-icon,
+  .navbar__account-link-icon,
+  .account-tabs__icon,
+  .account-hero__back-icon,
+  .account-hero__avatar-icon,
+  .account-logout__icon,
+  .reservation-info__icon,
+  .est-back__icon,
+  .est-field__icon,
+  .est-card__pin,
+  .mgr-hero__back-icon,
+  .mgr-tabs__icon,
+  .mgr-switch__icon,
+  .mgr-switch__chev,
+  .mgr-switch__check
+) svg{
+  display: block;
+  flex: 0 0 auto;
 }
 
 .alert{
@@ -252,7 +313,74 @@ textarea::selection{
   font-size: 12px;
 }
 
+.review-stars{
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #f4b400;
+}
+
+.review-stars__item{
+  color: rgba(0,0,0,.16);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.review-stars__item.is-filled{
+  color: #f4b400;
+}
+
+.review-stars__value{
+  margin-left: 6px;
+  color: rgba(0,0,0,.68);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.review-stars--sm .review-stars__item{
+  font-size: 16px;
+}
+
+.review-reply{
+  margin-top: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(15,23,42,.04);
+  border: 1px solid rgba(15,23,42,.08);
+  display: grid;
+  gap: 8px;
+}
+
+.review-reply__head{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.review-reply__author{
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(0,0,0,.82);
+}
+
+.review-reply__date{
+  color: rgba(0,0,0,.48);
+  font-size: 12px;
+}
+
+.review-reply__comment{
+  margin: 0;
+  color: rgba(0,0,0,.76);
+  line-height: 1.55;
+}
+
 /* Responsive padding */
 @media (max-width: 600px){
   :root{ --container-pad: 16px; }
+
+  .review-reply__head{
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }

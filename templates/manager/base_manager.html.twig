@@ -11,7 +11,7 @@
   <header class="mgr-hero">
     <div class="container container--wide mgr-hero__container">
       <a class="mgr-hero__back" href="{{ path('app_home') }}">
-        <span aria-hidden="true">{{ ux_icon('uil:arrow-left') }}</span>
+        <span class="mgr-hero__back-icon" aria-hidden="true">{{ ux_icon('uil:arrow-left') }}</span>
         Retour à l'accueil
       </a>
 
@@ -87,54 +87,54 @@
 
         <a class="mgr-tabs__link {% if app.request.attributes.get('_route') == 'manager_dashboard' %}is-active{% endif %}"
            href="{{ path('manager_dashboard', {id: establishment.id}) }}">
-          <span aria-hidden="true">{{ ux_icon('uil:apps') }}</span>
+          <span class="mgr-tabs__icon" aria-hidden="true">{{ ux_icon('uil:apps') }}</span>
           Vue d'ensemble
         </a>
 
         <a class="mgr-tabs__link {% if app.request.attributes.get('_route') starts with 'manager_service' or app.request.attributes.get('_route') == 'manager_services' %}is-active{% endif %}"
            href="{{ path('manager_services', {id: establishment.id}) }}">
-          <span aria-hidden="true">{{ ux_icon('uil:briefcase') }}</span>
+          <span class="mgr-tabs__icon" aria-hidden="true">{{ ux_icon('uil:briefcase') }}</span>
           Services
         </a>
 
         <a class="mgr-tabs__link {% if app.request.attributes.get('_route') starts with 'manager_employee' or app.request.attributes.get('_route') == 'manager_employees' %}is-active{% endif %}"
            href="{{ path('manager_employees', {id: establishment.id}) }}">
-          <span aria-hidden="true">{{ ux_icon('uil:users-alt') }}</span>
+          <span class="mgr-tabs__icon" aria-hidden="true">{{ ux_icon('uil:users-alt') }}</span>
           Employés
         </a>
 
         <a class="mgr-tabs__link {% if app.request.attributes.get('_route') == 'manager_planning' %}is-active{% endif %}"
            href="{{ path('manager_planning', {id: establishment.id}) }}">
-          <span aria-hidden="true">{{ ux_icon('uil:calendar-alt') }}</span>
+          <span class="mgr-tabs__icon" aria-hidden="true">{{ ux_icon('uil:calendar-alt') }}</span>
           Planning
         </a>
 
         <a class="mgr-tabs__link {% if app.request.attributes.get('_route') == 'manager_history' %}is-active{% endif %}"
            href="{{ path('manager_history', {id: establishment.id}) }}">
-          <span aria-hidden="true">{{ ux_icon('uil:history') }}</span>
+          <span class="mgr-tabs__icon" aria-hidden="true">{{ ux_icon('uil:history') }}</span>
           Historique
         </a>
 
         <a class="mgr-tabs__link {% if app.request.attributes.get('_route') == 'manager_stats' %}is-active{% endif %}"
            href="{{ path('manager_stats', {id: establishment.id}) }}">
-          <span aria-hidden="true">{{ ux_icon('uil:chart-line') }}</span>
+          <span class="mgr-tabs__icon" aria-hidden="true">{{ ux_icon('uil:chart-line') }}</span>
           Statistiques
         </a>
 
         <span class="mgr-tabs__link is-disabled">
-          <span aria-hidden="true">{{ ux_icon('uil:file-alt') }}</span>
+          <span class="mgr-tabs__icon" aria-hidden="true">{{ ux_icon('uil:file-alt') }}</span>
           Demandes
         </span>
 
         <a class="mgr-tabs__link {% if app.request.attributes.get('_route') starts with 'manager_opening_hour' or app.request.attributes.get('_route') == 'manager_opening_hours' %}is-active{% endif %}"
            href="{{ path('manager_opening_hours', {id: establishment.id}) }}">
-          <span aria-hidden="true">{{ ux_icon('uil:clock') }}</span>
+          <span class="mgr-tabs__icon" aria-hidden="true">{{ ux_icon('uil:clock') }}</span>
           Horaires
         </a>
 
         <a class="mgr-tabs__link {% if app.request.attributes.get('_route') == 'manager_settings' %}is-active{% endif %}"
            href="{{ path('manager_settings', {id: establishment.id}) }}">
-          <span aria-hidden="true">{{ ux_icon('uil:setting') }}</span>
+          <span class="mgr-tabs__icon" aria-hidden="true">{{ ux_icon('uil:setting') }}</span>
           Établissement
         </a>
       </div>

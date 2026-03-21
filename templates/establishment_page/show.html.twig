@@ -25,6 +25,7 @@
   } %}
   {% set serviceSelectionBaseParams = bookingBaseParams|merge({ _fragment: 'booking-schedule' }) %}
   {% set serviceListBaseParams = bookingBaseParams|merge({ _fragment: 'services' }) %}
+  {% set reviewOpenParams = reviewableAppointment ? reviewBaseParams|merge({ review: reviewableAppointment.id }) : null %}
   {% if q or city or category %}
     {% set backUrl = path('app_store_search', { q: q, city: city, category: category }) %}
   {% endif %}
@@ -33,7 +34,7 @@
   <div class="container container--wide est-show">
 
     <a class="est-back" href="{{ backUrl }}">
-      {{ ux_icon('uil:arrow-left') }}
+      <span class="est-back__icon" aria-hidden="true">{{ ux_icon('uil:arrow-left') }}</span>
       Retour aux résultats
     </a>
 
@@ -179,6 +180,87 @@
           </div>
         {% endfor %}
       </div>
+    </section>
+
+    <section class="account-card" id="reviews">
+      <div class="account-card__header account-card__header--withAction">
+        <div>
+          <h2 class="account-card__title">Avis clients</h2>
+
+          {% if reviewStats.count > 0 %}
+            <div class="est-reviews__summary">
+              {% include 'review/_stars.html.twig' with {
+                rating: reviewStats.average,
+                showValue: true
+              } only %}
+              <span class="est-reviews__summary-text">
+                {{ reviewStats.count }} avis
+              </span>
+            </div>
+          {% else %}
+            <p class="est-muted">Aucun avis pour le moment.</p>
+          {% endif %}
+        </div>
+
+        {% if reviewOpenParams %}
+          <a class="btn btn--outline btn--md"
+             href="{{ path('front_establishment_show', reviewOpenParams) }}">
+            {{ ux_icon('uil:star') }}
+            Laisser un avis
+          </a>
+        {% endif %}
+      </div>
+
+      {% if not reviewOpenParams and app.user %}
+        <p class="est-hint">Tu pourras laisser un avis ici après une réservation passée dans cet établissement.</p>
+      {% endif %}
+
+      {% if establishmentReviews is empty %}
+        <p class="est-muted">Cet établissement n’a pas encore reçu d’avis.</p>
+      {% else %}
+        <div class="est-review-list">
+          {% for review in establishmentReviews %}
+            <article class="est-review">
+              <div class="est-review__head">
+                <div>
+                  <div class="est-review__author">
+                    {{ review.client.firstName }}
+                    {% if review.client.lastName %}
+                      {{ review.client.lastName|first }}.
+                    {% endif %}
+                  </div>
+
+                  {% include 'review/_stars.html.twig' with {
+                    rating: review.rating,
+                    class: 'review-stars--sm'
+                  } only %}
+                </div>
+
+                <time class="est-review__date" datetime="{{ review.createdAt ? review.createdAt|date('c') : '' }}">
+                  {{ review.createdAt ? review.createdAt|date('d/m/Y') : '' }}
+                </time>
+              </div>
+
+              <p class="est-review__comment">{{ review.comment }}</p>
+
+              {% if review.businessReply %}
+                <div class="review-reply review-reply--business">
+                  <div class="review-reply__head">
+                    <div class="review-reply__author">{{ establishment.name }}</div>
+                    {% if review.businessRepliedAt %}
+                      <time class="review-reply__date" datetime="{{ review.businessRepliedAt|date('c') }}">
+                        {{ review.businessRepliedAt|date('d/m/Y') }}
+                      </time>
+                    {% endif %}
+                  </div>
+
+                  <p class="review-reply__comment">{{ review.businessReply }}</p>
+                </div>
+              {% endif %}
+            </article>
+          {% endfor %}
+        </div>
+      {% endif %}
     </section>
 
     {# =========================
@@ -344,6 +426,73 @@
 
       {% endif %}
     </section>
+
+    {% if reviewForm is not null and reviewModalAppointment is not null %}
+      <div class="est-review-modal" role="dialog" aria-modal="true" aria-labelledby="review-modal-title">
+        <div class="est-review-modal__backdrop">
+          <a class="est-review-modal__scrim"
+             href="{{ path('front_establishment_show', reviewBaseParams) }}"
+             aria-label="Fermer"></a>
+
+          <section class="est-review-modal__panel">
+            <div class="est-review-modal__head">
+              <h3 id="review-modal-title" class="est-review-modal__title">Laisser un avis</h3>
+
+              <a class="est-review-modal__icon"
+                 href="{{ path('front_establishment_show', reviewBaseParams) }}"
+                 aria-label="Fermer">
+                {{ ux_icon('uil:times') }}
+              </a>
+            </div>
+
+            <div class="est-review-modal__meta">
+              <div class="est-review-modal__establishment">{{ establishment.name }}</div>
+              <div class="est-review-modal__address">{{ establishment.address }}, {{ establishment.postalCode }} {{ establishment.city }}</div>
+              <div class="est-review-modal__service">
+                {{ reviewModalAppointment.service ? reviewModalAppointment.service.name : 'Service réservé' }}
+              </div>
+            </div>
+
+            {{ form_start(reviewForm, {
+              action: path('app_review_create', { appointment: reviewModalAppointment.id }),
+              attr: { class: 'review-form' }
+            }) }}
+              <input type="hidden" name="redirect_to" value="{{ path('front_establishment_show', reviewBaseParams) }}">
+
+              <div class="review-form__field">
+                <div class="review-form__label">{{ form_label(reviewForm.rating) }}</div>
+                <div class="review-form__rating">
+                  {% for choice in reviewForm.rating %}
+                    {{ form_widget(choice, { attr: { class: 'review-form__star-input' } }) }}
+                    <label class="review-form__star-label"
+                           for="{{ choice.vars.id }}"
+                           aria-label="{{ choice.vars.value }} étoiles">
+                      &#9733;
+                    </label>
+                  {% endfor %}
+                </div>
+                {{ form_errors(reviewForm.rating) }}
+              </div>
+
+              <div class="review-form__field">
+                {{ form_label(reviewForm.comment, null, { label_attr: { class: 'review-form__label' } }) }}
+                {{ form_widget(reviewForm.comment) }}
+                {{ form_errors(reviewForm.comment) }}
+              </div>
+
+              <div class="review-form__actions">
+                <a class="btn btn--outline btn--md"
+                   href="{{ path('front_establishment_show', reviewBaseParams) }}">
+                  Annuler
+                </a>
+
+                <button class="btn btn--primary btn--md" type="submit">Soumettre</button>
+              </div>
+            {{ form_end(reviewForm) }}
+          </section>
+        </div>
+      </div>
+    {% endif %}
 
   </div>
 {% endblock %}

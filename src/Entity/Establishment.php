@@ -109,6 +109,13 @@ class Establishment
     #[ORM\Column(length: 40, nullable: true)]
     private ?string $category = null;
 
+    /**
+     * @var Collection<int, Review>
+     */
+    #[ORM\OneToMany(targetEntity: Review::class, mappedBy: 'establishment', orphanRemoval: true)]
+    #[ORM\OrderBy(['createdAt' => 'DESC', 'id' => 'DESC'])]
+    private Collection $reviews;
+
     public function __construct()
     {
         // $this->users = new ArrayCollection();
@@ -121,6 +128,7 @@ class Establishment
         $this->users = new ArrayCollection();
         $this->scheduleEvents = new ArrayCollection();
         $this->weeklySchedules = new ArrayCollection();
+        $this->reviews = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -549,6 +557,35 @@ class Establishment
     public function setCategory(?string $category): static
     {
         $this->category = $category;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Review>
+     */
+    public function getReviews(): Collection
+    {
+        return $this->reviews;
+    }
+
+    public function addReview(Review $review): static
+    {
+        if (!$this->reviews->contains($review)) {
+            $this->reviews->add($review);
+            $review->setEstablishment($this);
+        }
+
+        return $this;
+    }
+
+    public function removeReview(Review $review): static
+    {
+        if ($this->reviews->removeElement($review)) {
+            if ($review->getEstablishment() === $this) {
+                $review->setEstablishment(null);
+            }
+        }
 
         return $this;
     }

@@ -1,0 +1,10 @@
+{% set roundedRating = rating|default(0)|round(0, 'common') %}
+
+<span class="review-stars {{ class|default('') }}" aria-label="{{ roundedRating }} sur 5">
+  {% for star in 1..5 %}
+    <span class="review-stars__item {{ star <= roundedRating ? 'is-filled' : '' }}" aria-hidden="true">&#9733;</span>
+  {% endfor %}
+  {% if showValue|default(false) %}
+    <span class="review-stars__value">{{ rating|number_format(1, ',', ' ') }}</span>
+  {% endif %}
+</span>

@@ -53,6 +53,9 @@ class Appointment
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $transferredAt = null;
 
+    #[ORM\OneToOne(mappedBy: 'appointment', cascade: ['persist', 'remove'])]
+    private ?Review $review = null;
+
     // #[ORM\ManyToOne(inversedBy: 'appointments')]
     // #[ORM\JoinColumn(nullable: false)]
     // private ?User $professional = null;
@@ -206,6 +209,22 @@ class Appointment
     public function setTransferredAt(?\DateTimeImmutable $transferredAt): static
     {
         $this->transferredAt = $transferredAt;
+
+        return $this;
+    }
+
+    public function getReview(): ?Review
+    {
+        return $this->review;
+    }
+
+    public function setReview(?Review $review): static
+    {
+        $this->review = $review;
+
+        if ($review !== null && $review->getAppointment() !== $this) {
+            $review->setAppointment($this);
+        }
 
         return $this;
     }

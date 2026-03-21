@@ -44,10 +44,19 @@
   line-height: 1;
 }
 
+.navbar__icon,
+.navbar__burger-icon{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  line-height: 1;
+}
+
 .navbar__icon svg {
   width: 18px;
   height: 18px;
-  display: block;      
+  display: block;
 }
 
 .navbar__name {
@@ -69,6 +78,7 @@
   color:#111;
   font-weight: 500;
   opacity: .85;
+  line-height: 1.1;
 }
 
 .navbar__link:hover{ opacity: 1; }
