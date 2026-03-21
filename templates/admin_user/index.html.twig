@@ -1,64 +1,160 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}User index{% endblock %}
+{% block title %}Administration des comptes{% endblock %}
+
+{% block stylesheets %}
+  <link rel="stylesheet" href="/css/pages/admin.css">
+{% endblock %}
 
 {% block body %}
-    <h1>User index</h1>
+  <section class="admin-users">
+    <div class="container container--wide admin-users__container">
+      <header class="admin-users__hero">
+        <div>
+          <p class="admin-users__eyebrow">Administration plateforme</p>
+          <h1>Comptes utilisateurs</h1>
+          <p>Activez, désactivez et contrôlez rapidement les accès de toute la plateforme.</p>
+        </div>
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Id</th>
-                <th>FirstName</th>
-                <th>LastName</th>
-                <th>Email</th>
-                <th>Password</th>
-                <th>Phone</th>
-                <th>Role</th>
-                <th>Specialization</th>
-                <th>IsActive</th>
-                <th>CreatedAt</th>
-                <th>UpdateAt</th>
-                <th>actions</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for user in users %}
-            <tr>
-                <td>{{ user.id }}</td>
-                <td>{{ user.firstName }}</td>
-                <td>{{ user.lastName }}</td>
-                <td>{{ user.email }}</td>
-                <td>{{ user.password }}</td>
-                <td>{{ user.phone }}</td>
-                <td>{{ user.role }}</td>
-                <td>{{ user.specialization }}</td>
-                <td>
-                    <form method="post" action="{{ path('app_admin_user_toggle_active', {'id': user.id}) }}" style="display:inline;">
-                        <input type="hidden" name="_token" value="{{ csrf_token('toggle' ~ user.id) }}">
-                        <button class="btn btn-sm {{ user.isActive ? 'btn-success' : 'btn-danger' }}">
-                            {{ user.isActive ? 'Active' : 'Inactive' }}
-                        </button>
-                    </form>
-                </td>
-                <td>{{ user.createdAt ? user.createdAt|date('Y-m-d H:i:s') : '' }}</td>
-                <td>{{ user.updateAt ? user.updateAt|date('Y-m-d H:i:s') : '' }}</td>
-                <td>
-                    <a href="{{ path('app_admin_user_show', {'id': user.id}) }}" class="btn btn-info btn-sm">Show</a>
-                    <a href="{{ path('app_admin_user_edit', {'id': user.id}) }}" class="btn btn-warning btn-sm">Edit</a>
-                    <form method="post" action="{{ path('app_admin_user_delete', {'id': user.id}) }}" style="display:inline;" onsubmit="return confirm('Are you sure?');">
-                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ user.id) }}">
-                        <button class="btn btn-danger btn-sm">Delete</button>
-                    </form>
-                </td>
-            </tr>
-        {% else %}
-            <tr>
-                <td colspan="12">no records found</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+        <a href="{{ path('app_home') }}" class="btn btn--outline btn--md">Retour au site</a>
+      </header>
 
-    <a href="{{ path('app_admin_user_new') }}" class="btn btn-primary">Create new</a>
+      <section class="admin-users__stats" aria-label="Résumé des comptes">
+        <article class="admin-users__stat">
+          <p class="admin-users__stat-label">Comptes totaux</p>
+          <p class="admin-users__stat-value">{{ stats.total }}</p>
+        </article>
+        <article class="admin-users__stat">
+          <p class="admin-users__stat-label">Comptes actifs</p>
+          <p class="admin-users__stat-value">{{ stats.active }}</p>
+        </article>
+        <article class="admin-users__stat">
+          <p class="admin-users__stat-label">Comptes désactivés</p>
+          <p class="admin-users__stat-value">{{ stats.inactive }}</p>
+        </article>
+        <article class="admin-users__stat">
+          <p class="admin-users__stat-label">Admins plateforme</p>
+          <p class="admin-users__stat-value">{{ stats.admins }}</p>
+        </article>
+      </section>
+
+      <section class="admin-users__panel">
+        <div class="admin-users__panel-header">
+          <div>
+            <h2 class="admin-users__panel-title">Filtres de modération</h2>
+            <p class="admin-users__panel-text">Recherche rapide par nom, email, téléphone, rôle ou établissement.</p>
+          </div>
+        </div>
+
+        <form method="get" class="admin-users__filters-grid">
+          <div class="admin-users__field">
+            <label for="admin-q">Recherche</label>
+            <input id="admin-q" class="admin-users__input" type="search" name="q" value="{{ filters.q }}" placeholder="Nom, email, téléphone, établissement...">
+          </div>
+
+          <div class="admin-users__field">
+            <label for="admin-status">Statut</label>
+            <select id="admin-status" class="admin-users__select" name="status">
+              <option value="all" {{ filters.status == 'all' ? 'selected' : '' }}>Tous</option>
+              <option value="active" {{ filters.status == 'active' ? 'selected' : '' }}>Actifs</option>
+              <option value="inactive" {{ filters.status == 'inactive' ? 'selected' : '' }}>Désactivés</option>
+            </select>
+          </div>
+
+          <div class="admin-users__field">
+            <label for="admin-role">Rôle</label>
+            <select id="admin-role" class="admin-users__select" name="role">
+              <option value="all" {{ filters.role == 'all' ? 'selected' : '' }}>Tous les rôles</option>
+              <option value="client" {{ filters.role == 'client' ? 'selected' : '' }}>Clients</option>
+              <option value="pro" {{ filters.role == 'pro' ? 'selected' : '' }}>Professionnels</option>
+              <option value="admin_pro" {{ filters.role == 'admin_pro' ? 'selected' : '' }}>Admins établissement</option>
+              <option value="admin" {{ filters.role == 'admin' ? 'selected' : '' }}>Admins plateforme</option>
+            </select>
+          </div>
+
+          <button class="btn btn--primary btn--md" type="submit">Filtrer</button>
+          <a class="btn btn--outline btn--md" href="{{ path('app_admin_user_index') }}">Réinitialiser</a>
+        </form>
+      </section>
+
+      <section class="admin-users__panel">
+        <div class="admin-users__panel-header">
+          <div>
+            <h2 class="admin-users__panel-title">Comptes modérables</h2>
+            <p class="admin-users__panel-text">{{ users|length }} résultat{{ users|length > 1 ? 's' : '' }} affiché{{ users|length > 1 ? 's' : '' }}.</p>
+          </div>
+        </div>
+
+        <div class="admin-users__results">
+          {% for account in users %}
+            <article class="admin-users__card">
+              <div class="admin-users__card-main">
+                <div class="admin-users__identity">
+                  <h3 class="admin-users__name">{{ account.fullName }}</h3>
+                  <p class="admin-users__email">{{ account.email }}</p>
+
+                  <div class="admin-users__badges">
+                    <span class="admin-users__badge admin-users__badge--{{ account.roleKey }}">{{ account.roleLabel }}</span>
+                    <span class="admin-users__badge {{ account.isActive ? 'admin-users__badge--active' : 'admin-users__badge--inactive' }}">
+                      {{ account.isActive ? 'Actif' : 'Désactivé' }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="admin-users__actions">
+                  <a class="btn btn--outline btn--md" href="{{ path('app_admin_user_show', {'id': account.id}) }}">Voir le compte</a>
+
+                  <form method="post" action="{{ path('app_admin_user_toggle_active', {'id': account.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('toggle' ~ account.id) }}">
+                    <input type="hidden" name="q" value="{{ filters.q }}">
+                    <input type="hidden" name="status" value="{{ filters.status }}">
+                    <input type="hidden" name="role" value="{{ filters.role }}">
+                    <button class="btn btn--md {{ account.isActive ? 'admin-btn--danger' : 'admin-btn--success' }}" type="submit">
+                      {{ account.isActive ? 'Désactiver' : 'Réactiver' }}
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              <div class="admin-users__meta">
+                <div>
+                  <span class="admin-users__meta-label">Téléphone</span>
+                  <p class="admin-users__meta-value">{{ account.phone ?: 'Non renseigné' }}</p>
+                </div>
+                <div>
+                  <span class="admin-users__meta-label">Établissement assigné</span>
+                  <p class="admin-users__meta-value">{{ account.assignedEstablishment ?: 'Aucun' }}</p>
+                </div>
+                <div>
+                  <span class="admin-users__meta-label">Établissements gérés</span>
+                  <p class="admin-users__meta-value">
+                    {% if account.ownedEstablishments is not empty %}
+                      {{ account.ownedEstablishments|join(', ') }}
+                    {% else %}
+                      Aucun
+                    {% endif %}
+                  </p>
+                </div>
+                <div>
+                  <span class="admin-users__meta-label">Dernière modération</span>
+                  <p class="admin-users__meta-value">
+                    {% if account.latestSuspension %}
+                      {{ account.latestSuspension.createdAt ? account.latestSuspension.createdAt|date('d/m/Y H:i') : 'Historique incomplet' }}
+                      {% if account.latestSuspension.liftedAt %}
+                        <br>Levée le {{ account.latestSuspension.liftedAt|date('d/m/Y H:i') }}
+                      {% endif %}
+                    {% else %}
+                      Aucune action
+                    {% endif %}
+                  </p>
+                </div>
+              </div>
+            </article>
+          {% else %}
+            <p class="admin-users__empty">Aucun compte ne correspond aux filtres actuels.</p>
+          {% endfor %}
+        </div>
+      </section>
+    </div>
+  </section>
 {% endblock %}

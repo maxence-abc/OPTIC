@@ -53,6 +53,13 @@ class Review
         return $this->id;
     }
 
+    public function __toString(): string
+    {
+        $establishment = $this->establishment?->getName() ?? 'Avis';
+
+        return sprintf('%s - %s/5', $establishment, $this->rating ?? 0);
+    }
+
     public function getAppointment(): ?Appointment
     {
         return $this->appointment;

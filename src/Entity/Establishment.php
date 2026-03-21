@@ -136,6 +136,11 @@ class Establishment
         return $this->id;
     }
 
+    public function __toString(): string
+    {
+        return $this->name ?? sprintf('Etablissement #%d', $this->id ?? 0);
+    }
+
     public function getName(): ?string
     {
         return $this->name;
@@ -567,6 +572,16 @@ class Establishment
     public function getReviews(): Collection
     {
         return $this->reviews;
+    }
+
+    public function getServicesCount(): int
+    {
+        return $this->services->count();
+    }
+
+    public function getReviewsCount(): int
+    {
+        return $this->reviews->count();
     }
 
     public function addReview(Review $review): static

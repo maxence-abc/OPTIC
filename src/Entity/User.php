@@ -143,6 +143,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->id;
     }
 
+    public function __toString(): string
+    {
+        $fullName = trim(implode(' ', array_filter([$this->first_name, $this->lastName])));
+
+        return $fullName !== '' ? $fullName : (string) ($this->email ?? sprintf('Utilisateur #%d', $this->id ?? 0));
+    }
+
     public function getEmail(): ?string
     {
         return $this->email;

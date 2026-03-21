@@ -65,6 +65,17 @@ class Appointment
         return $this->id;
     }
 
+    public function __toString(): string
+    {
+        $service = $this->service?->getName() ?? 'Réservation';
+        $date = $this->date?->format('d/m/Y') ?? 'sans date';
+        $start = $this->startTime?->format('H:i');
+
+        return $start !== null
+            ? sprintf('%s - %s %s', $service, $date, $start)
+            : sprintf('%s - %s', $service, $date);
+    }
+
     public function getDate(): ?\DateTime
     {
         return $this->date;
