@@ -1,6 +1,29 @@
 #!/bin/sh
 set -e
 
+install_dependencies() {
+	echo 'Installing PHP dependencies...'
+	if composer install --prefer-dist --no-progress --no-interaction; then
+		return 0
+	fi
+
+	echo 'Composer install failed. Cleaning vendor/ and retrying once...'
+	rm -rf vendor/*
+	if composer install --prefer-dist --no-progress --no-interaction; then
+		return 0
+	fi
+
+	echo 'Composer install with dev dependencies still fails. Trying without dev dependencies so the app can boot...'
+	rm -rf vendor/*
+	if composer install --prefer-dist --no-progress --no-interaction --no-dev; then
+		echo 'App booted without dev dependencies. Run "composer install" manually later if you need PHPUnit, Codeception or Maker in the container.'
+		return 0
+	fi
+
+	echo 'Composer install failed repeatedly. Keeping the container alive for inspection instead of restarting in a loop.'
+	sleep infinity
+}
+
 if [ "$1" = 'frankenphp' ] || [ "$1" = 'php' ] || [ "$1" = 'bin/console' ]; then
 	# Install the project the first time PHP is started
 	# After the installation, the following block can be deleted
@@ -22,8 +45,9 @@ if [ "$1" = 'frankenphp' ] || [ "$1" = 'php' ] || [ "$1" = 'bin/console' ]; then
 		fi
 	fi
 
-	if [ -z "$(ls -A 'vendor/' 2>/dev/null)" ]; then
-		composer install --prefer-dist --no-progress --no-interaction
+	if [ ! -f vendor/autoload.php ] || [ ! -f vendor/autoload_runtime.php ] || [ ! -d vendor/symfony/runtime ]; then
+		rm -rf vendor/*
+		install_dependencies
 	fi
 
 	# Display information about the current project

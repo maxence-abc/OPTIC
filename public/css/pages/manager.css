@@ -1028,6 +1028,7 @@
 .mgr-card input[type="number"],
 .mgr-card input[type="date"],
 .mgr-card input[type="time"],
+.mgr-card input[type="file"],
 .mgr-card textarea,
 .mgr-card select{
   width: 100%;
@@ -1042,6 +1043,11 @@
 .mgr-card textarea{
   min-height: 92px;
   resize: vertical;
+}
+
+.mgr-card input[type="file"]{
+  padding: 12px;
+  background: #f8fafc;
 }
 
 .mgr-card input:focus,
@@ -1064,6 +1070,105 @@
 .mgr-card .invalid-feedback,
 .mgr-card ul li{
   color: #b91c1c;
+}
+
+.mgr-settings-form{
+  display:flex;
+  flex-direction:column;
+  gap: 18px;
+}
+
+.mgr-settings-grid{
+  gap: 18px 20px;
+}
+
+.mgr-settings-inline-grid{
+  display:grid;
+  grid-template-columns: minmax(0, 180px) minmax(0, 1fr);
+  gap: 14px;
+}
+
+.mgr-settings-stack{
+  display:flex;
+  flex-direction:column;
+  gap: 18px;
+}
+
+.mgr-settings__help{
+  margin-bottom: 8px;
+  color: var(--mgr-muted);
+  font-size: .94rem;
+}
+
+.mgr-settings-actions{
+  display:flex;
+  justify-content:flex-start;
+}
+
+.mgr-settings-gallery{
+  margin-top: 18px;
+}
+
+.mgr-settings-gallery__head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.mgr-settings-gallery__head h2{
+  margin-bottom: 4px;
+}
+
+.mgr-settings-gallery__grid{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.mgr-settings-photo{
+  border:1px solid var(--mgr-border);
+  border-radius: 16px;
+  background:#fff;
+  overflow:hidden;
+}
+
+.mgr-settings-photo__media{
+  aspect-ratio: 4 / 3;
+  background:#e2e8f0;
+}
+
+.mgr-settings-photo__media img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.mgr-settings-photo__body{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  padding: 14px;
+}
+
+.mgr-settings-photo__meta{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+}
+
+@media (max-width: 720px){
+  .mgr-settings-inline-grid{
+    grid-template-columns: 1fr;
+  }
+
+  .mgr-settings-photo__body{
+    flex-direction:column;
+    align-items:flex-start;
+  }
 }
 
 /* checkbox row */

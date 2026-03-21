@@ -4,19 +4,16 @@ namespace App\Controller;
 
 use App\Dto\EstablishmentDraft;
 use App\Entity\Establishment;
-use App\Entity\EstablishmentImage;
 use App\Entity\OpeningHour;
 use App\Entity\Service;
 use App\Form\PartnerStep1Type;
 use App\Form\PartnerStep2Type;
 use App\Form\PartnerStep3Type;
+use App\Service\EstablishmentImageManager;
 use App\Service\OpeningHoursService;
 use Doctrine\ORM\EntityManagerInterface;
-use League\Flysystem\FilesystemOperator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Form\FormError;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -119,8 +116,7 @@ final class PartnerOnboardingController extends AbstractController
         Request $request,
         EntityManagerInterface $em,
         OpeningHoursService $openingHoursService,
-        #[Target('uploads.storage')]
-        FilesystemOperator $uploadsStorage
+        EstablishmentImageManager $establishmentImageManager
     ): Response {
         $user = $this->getUser();
         if (!$user) {
@@ -218,14 +214,12 @@ final class PartnerOnboardingController extends AbstractController
                 $em->persist($oh);
             }
 
-            // Photos (multi) -> Flysystem + DB (EstablishmentImage)
-            // Le champ photos est "mapped=false" dans PartnerStep3Type
             $files = [];
             if ($form->has('photos')) {
                 $files = $form->get('photos')->getData() ?? [];
             }
 
-            $this->saveImagesToEstablishment($uploadsStorage, $establishment, $files, $em);
+            $establishmentImageManager->addUploadedImages($establishment, $files);
 
             // flush final (services + openingHours + images + user.establishment)
             $em->flush();
@@ -279,54 +273,5 @@ final class PartnerOnboardingController extends AbstractController
         }
 
         return null;
-    }
-
-    /**
-     * @param array<int, mixed> $files
-     */
-    private function saveImagesToEstablishment(
-        FilesystemOperator $uploadsStorage,
-        Establishment $establishment,
-        array $files,
-        EntityManagerInterface $em
-    ): void {
-        foreach ($files as $i => $file) {
-            if (!$file instanceof UploadedFile) {
-                continue;
-            }
-
-            // Sécurité simple : on refuse si upload KO
-            if (!$file->isValid()) {
-                continue;
-            }
-
-            $ext = $file->guessExtension() ?: 'bin';
-            $name = bin2hex(random_bytes(10)) . '.' . $ext;
-
-            // Stockage dans public/uploads via Flysystem
-            // -> URL finale : /uploads/establishments/{id}/{file}
-            $path = sprintf('establishments/%d/%s', $establishment->getId(), $name);
-
-            $stream = fopen($file->getPathname(), 'r');
-            $uploadsStorage->writeStream($path, $stream);
-            if (is_resource($stream)) {
-                fclose($stream);
-            }
-
-            $img = new EstablishmentImage();
-            $img->setCreatedAt(new \DateTimeImmutable());
-
-            if (method_exists($img, 'setEstablishment')) {
-                $img->setEstablishment($establishment);
-            }
-            if (method_exists($img, 'setPath')) {
-                $img->setPath($path);
-            }
-            if (method_exists($img, 'setPosition')) {
-                $img->setPosition((int) $i);
-            }
-
-            $em->persist($img);
-        }
     }
 }

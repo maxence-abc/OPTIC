@@ -115,6 +115,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function __construct()
     {
+        $this->initializeCollections();
+    }
+
+    private function initializeCollections(): void
+    {
         $this->appointmentsAsClient = new ArrayCollection();
         $this->establishments = new ArrayCollection();
         $this->loyalties = new ArrayCollection();
@@ -195,10 +200,34 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     public function __serialize(): array
     {
-        $data = (array) $this;
-        $data["\0".self::class."\0password"] = hash('crc32c', $this->password);
+        return [
+            'id' => $this->id,
+            'email' => $this->email,
+            'roles' => $this->roles,
+            'password' => $this->password !== null ? hash('crc32c', $this->password) : null,
+            'first_name' => $this->first_name,
+            'lastName' => $this->lastName,
+            'phone' => $this->phone,
+            'specialization' => $this->specialization,
+            'isActive' => $this->isActive,
+        ];
+    }
 
-        return $data;
+    public function __unserialize(array $data): void
+    {
+        $this->id = $data['id'] ?? null;
+        $this->email = $data['email'] ?? null;
+        $this->roles = $data['roles'] ?? [];
+        $this->password = $data['password'] ?? null;
+        $this->first_name = $data['first_name'] ?? null;
+        $this->lastName = $data['lastName'] ?? null;
+        $this->phone = $data['phone'] ?? null;
+        $this->specialization = $data['specialization'] ?? null;
+        $this->isActive = $data['isActive'] ?? null;
+        $this->createdAt = null;
+        $this->updateAt = null;
+        $this->establishment = null;
+        $this->initializeCollections();
     }
 
     #[\Deprecated]

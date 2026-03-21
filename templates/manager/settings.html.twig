@@ -6,43 +6,122 @@
   <div class="mgr-pagehead">
     <div>
       <h1>Informations de l'établissement</h1>
-      <p class="muted">Consultez les informations de votre établissement</p>
+      <p class="muted">Modifiez les informations de votre établissement et gérez sa galerie photo.</p>
     </div>
   </div>
 
   <section class="mgr-card">
-    <div class="mgr-grid-2">
-      <div>
-        <label>Nom</label>
-        <div style="font-weight:900; color:var(--mgr-text)">{{ establishment.name }}</div>
-      </div>
+    {{ form_start(form, { attr: { class: 'mgr-settings-form' } }) }}
+      {{ form_errors(form) }}
 
-      <div>
-        <label>Catégorie</label>
+      <div class="mgr-grid-2 mgr-settings-grid">
         <div>
-          <span class="mgr-badge">{{ establishment.category ?: '-' }}</span>
+          {{ form_label(form.name) }}
+          {{ form_widget(form.name) }}
+          {{ form_errors(form.name) }}
+        </div>
+
+        <div>
+          {{ form_label(form.category) }}
+          {{ form_widget(form.category) }}
+          {{ form_errors(form.category) }}
+        </div>
+
+        <div>
+          {{ form_label(form.address) }}
+          {{ form_widget(form.address) }}
+          {{ form_errors(form.address) }}
+        </div>
+
+        <div class="mgr-settings-inline-grid">
+          <div>
+            {{ form_label(form.postalCode) }}
+            {{ form_widget(form.postalCode) }}
+            {{ form_errors(form.postalCode) }}
+          </div>
+
+          <div>
+            {{ form_label(form.city) }}
+            {{ form_widget(form.city) }}
+            {{ form_errors(form.city) }}
+          </div>
+        </div>
+
+        <div>
+          {{ form_label(form.professionalEmail) }}
+          {{ form_widget(form.professionalEmail) }}
+          {{ form_errors(form.professionalEmail) }}
+        </div>
+
+        <div>
+          {{ form_label(form.professionalPhone) }}
+          {{ form_widget(form.professionalPhone) }}
+          {{ form_errors(form.professionalPhone) }}
         </div>
       </div>
 
-      <div>
-        <label>Adresse</label>
-        <div style="color:#334155;">
-          {{ establishment.address }}, {{ establishment.postalCode }} {{ establishment.city }}
+      <div class="mgr-settings-stack">
+        <div>
+          {{ form_label(form.description) }}
+          {{ form_widget(form.description) }}
+          {{ form_errors(form.description) }}
+        </div>
+
+        <div class="file-preview" data-controller="file-preview">
+          {{ form_label(form.photos) }}
+          <div class="mgr-settings__help">Ajoutez plusieurs photos de la vitrine, du salon ou de vos prestations.</div>
+          {{ form_widget(form.photos, { attr: {
+            class: 'mgr-settings__file-input',
+            'data-file-preview-target': 'input',
+            'data-action': 'change->file-preview#update'
+          } }) }}
+          {{ form_help(form.photos) }}
+          {{ form_errors(form.photos) }}
+          <p class="file-preview__summary" data-file-preview-target="empty">Aucune nouvelle photo sélectionnée.</p>
+          <p class="file-preview__summary" data-file-preview-target="count" hidden></p>
+          <div class="file-preview__grid" data-file-preview-target="list" hidden></div>
         </div>
       </div>
 
+      <div class="mgr-settings-actions">
+        <button class="btn btn--dark" type="submit">Enregistrer</button>
+      </div>
+    {{ form_end(form) }}
+  </section>
+
+  <section class="mgr-card mgr-settings-gallery">
+    <div class="mgr-settings-gallery__head">
       <div>
-        <label>Contact pro</label>
-        <div style="color:#334155;">
-          {{ establishment.professionalEmail ?: '-' }}<br>
-          {{ establishment.professionalPhone ?: '-' }}
-        </div>
+        <h2>Photos actuelles</h2>
+        <p class="muted">
+          {{ establishment.establishmentImages|length }} photo{{ establishment.establishmentImages|length > 1 ? 's' : '' }}
+        </p>
       </div>
     </div>
 
-    <div style="margin-top:14px;">
-      <label>Description</label>
-      <div style="color:#334155;">{{ establishment.description ?: '-' }}</div>
-    </div>
+    {% if establishment.establishmentImages|length > 0 %}
+      <div class="mgr-settings-gallery__grid">
+        {% for image in establishment.establishmentImages %}
+          <article class="mgr-settings-photo">
+            <div class="mgr-settings-photo__media">
+              <img src="{{ image.publicPath }}" alt="Photo de {{ establishment.name }}" loading="lazy">
+            </div>
+
+            <div class="mgr-settings-photo__body">
+              <div class="mgr-settings-photo__meta">
+                <span class="mgr-badge">Photo {{ loop.index }}</span>
+              </div>
+
+              <form method="post" action="{{ path('manager_establishment_image_delete', { id: image.id }) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete_establishment_image_' ~ image.id) }}">
+                <button class="btn btn--outline" type="submit">Supprimer</button>
+              </form>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">Aucune photo pour le moment. Ajoutez-en plusieurs pour enrichir la fiche établissement.</p>
+    {% endif %}
   </section>
 {% endblock %}

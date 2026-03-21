@@ -57,6 +57,7 @@ class PartnerStep3Type extends AbstractType
                 'required' => false,
                 'multiple' => true,
                 'label' => false,
+                'help' => 'Vous pouvez ajouter plusieurs photos.',
 
                 // important: refléter multiple + accept dans l’HTML aussi
                 'attr' => [
@@ -67,7 +68,7 @@ class PartnerStep3Type extends AbstractType
                 'constraints' => [
                     new Assert\All([
                         new Assert\Image([
-                            'maxSize' => '10M',
+                            'maxSize' => '12M',
                             'maxSizeMessage' => 'Chaque image doit faire moins de {{ limit }}.',
                             // Optionnel mais utile : éviter les fichiers chelous
                             'mimeTypes' => [
