@@ -76,15 +76,47 @@
 }
 
 .stat__value{
+  display: inline-block;
   font-weight: 800;
   font-size: 18px;
   letter-spacing: .2px;
+  transform-origin: center;
+  min-width: 6ch;
+  will-change: transform, opacity, filter;
+  transition: filter .16s ease, opacity .16s ease;
 }
 
 .stat__label{
   margin-top: 10px;
   font-size: 14px;
   color: rgba(0,0,0,.65);
+}
+
+.stat__value.is-counting{
+  filter: blur(.45px);
+  opacity: .92;
+  animation: home-stat-roulette .22s ease-in-out infinite alternate;
+}
+
+@keyframes home-stat-roulette{
+  from{
+    transform: translateY(2px) scale(.96);
+  }
+  to{
+    transform: translateY(-2px) scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .stat__value{
+    transition: none;
+  }
+
+  .stat__value.is-counting{
+    animation: none;
+    filter: none;
+    opacity: 1;
+  }
 }
 
 /* =========================

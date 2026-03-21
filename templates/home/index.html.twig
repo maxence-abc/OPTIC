@@ -39,21 +39,35 @@
 </section>
 
 <section class="home-stats">
-  <div class="container container--wide home-stats__inner">
+  <div class="container container--wide home-stats__inner"
+       data-controller="countup"
+       data-countup-duration-value="1900">
     <div class="stat">
-      <div class="stat__value">10 000 +</div>
+      <div class="stat__value"
+           data-countup-target="value"
+           data-countup-end="10000"
+           data-countup-suffix=" +">10 000 +</div>
       <div class="stat__label">Partenaires professionnels</div>
     </div>
     <div class="stat">
-      <div class="stat__value">500 000 +</div>
+      <div class="stat__value"
+           data-countup-target="value"
+           data-countup-end="500000"
+           data-countup-suffix=" +">500 000 +</div>
       <div class="stat__label">Réservations effectuées</div>
     </div>
     <div class="stat">
-      <div class="stat__value">98%</div>
+      <div class="stat__value"
+           data-countup-target="value"
+           data-countup-end="98"
+           data-countup-suffix="%">98%</div>
       <div class="stat__label">Clients satisfaits</div>
     </div>
     <div class="stat">
-      <div class="stat__value">50+</div>
+      <div class="stat__value"
+           data-countup-target="value"
+           data-countup-end="50"
+           data-countup-suffix="+">50+</div>
       <div class="stat__label">Villes couvertes</div>
     </div>
   </div>
