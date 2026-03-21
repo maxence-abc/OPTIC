@@ -13,7 +13,7 @@ final class UserControllerTest extends WebTestCase
     private KernelBrowser $client;
     private EntityManagerInterface $manager;
     private EntityRepository $userRepository;
-    private string $path = '/admin/user/';
+    private string $path = '/admin/moderation/users/';
 
     protected function setUp(): void
     {
@@ -128,7 +128,7 @@ final class UserControllerTest extends WebTestCase
             'user[establishment]' => 'Something New',
         ]);
 
-        self::assertResponseRedirects('/admin/user/');
+        self::assertResponseRedirects('/admin/moderation/users/');
 
         $fixture = $this->userRepository->findAll();
 
@@ -167,7 +167,7 @@ final class UserControllerTest extends WebTestCase
         $this->client->request('GET', sprintf('%s%s', $this->path, $fixture->getId()));
         $this->client->submitForm('Delete');
 
-        self::assertResponseRedirects('/admin/user/');
+        self::assertResponseRedirects('/admin/moderation/users/');
         self::assertSame(0, $this->userRepository->count([]));
     }
 }

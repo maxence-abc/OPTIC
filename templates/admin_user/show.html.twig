@@ -1,62 +1,111 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}User{% endblock %}
+{% block title %}Détail du compte{% endblock %}
+
+{% block stylesheets %}
+  <link rel="stylesheet" href="/css/pages/admin.css">
+{% endblock %}
 
 {% block body %}
-    <h1>User</h1>
+  <section class="admin-user-show">
+    <div class="container container--wide admin-user-show__container">
+      <header class="admin-user-show__hero">
+        <div>
+          <p class="admin-user-show__eyebrow">Compte utilisateur</p>
+          <h1>{{ account.fullName }}</h1>
+          <p>{{ account.email }}</p>
+        </div>
 
-    <table class="table">
-        <tbody>
-            <tr>
-                <th>Id</th>
-                <td>{{ user.id }}</td>
-            </tr>
-            <tr>
-                <th>FirstName</th>
-                <td>{{ user.firstName }}</td>
-            </tr>
-            <tr>
-                <th>LastName</th>
-                <td>{{ user.lastName }}</td>
-            </tr>
-            <tr>
-                <th>Email</th>
-                <td>{{ user.email }}</td>
-            </tr>
-            <tr>
-                <th>Password</th>
-                <td>{{ user.password }}</td>
-            </tr>
-            <tr>
-                <th>Phone</th>
-                <td>{{ user.phone }}</td>
-            </tr>
-            <tr>
-                <th>Role</th>
-                <td>{{ user.role }}</td>
-            </tr>
-            <tr>
-                <th>Specialization</th>
-                <td>{{ user.specialization }}</td>
-            </tr>
-            <tr>
-                <th>IsActive</th>
-                <td>{{ user.isActive ? 'Yes' : 'No' }}</td>
-            </tr>
-            <tr>
-                <th>CreatedAt</th>
-                <td>{{ user.createdAt ? user.createdAt|date('Y-m-d H:i:s') : '' }}</td>
-            </tr>
-            <tr>
-                <th>UpdateAt</th>
-                <td>{{ user.updateAt ? user.updateAt|date('Y-m-d H:i:s') : '' }}</td>
-            </tr>
-        </tbody>
-    </table>
+        <div class="admin-user-show__actions">
+          <a class="btn btn--outline btn--md" href="{{ path('app_admin_user_index') }}">Retour à la modération</a>
 
-    <a href="{{ path('app_admin_user_index') }}">back to list</a>
+          <form method="post" action="{{ path('app_admin_user_toggle_active', {'id': account.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('toggle' ~ account.id) }}">
+            <button class="btn btn--md {{ account.isActive ? 'admin-btn--danger' : 'admin-btn--success' }}" type="submit">
+              {{ account.isActive ? 'Désactiver le compte' : 'Réactiver le compte' }}
+            </button>
+          </form>
+        </div>
+      </header>
 
-    <a href="{{ path('app_admin_user_edit', {'id': user.id}) }}">edit</a>
+      <div class="admin-user-show__grid">
+        <section class="admin-user-show__panel">
+          <div class="admin-user-show__panel-header">
+            <div>
+              <h2 class="admin-user-show__panel-title">Informations générales</h2>
+              <p class="admin-user-show__panel-text">Vue détaillée du compte et de son état d’accès.</p>
+            </div>
+          </div>
 
-    {{ include('admin_user/_delete_form.html.twig') }}
+          <div class="admin-user-show__kv">
+            <div class="admin-user-show__row">
+              <span class="admin-user-show__key">Rôle principal</span>
+              <div class="admin-user-show__value">
+                <span class="admin-users__badge admin-users__badge--{{ account.roleKey }}">{{ account.roleLabel }}</span>
+              </div>
+            </div>
+            <div class="admin-user-show__row">
+              <span class="admin-user-show__key">Statut</span>
+              <div class="admin-user-show__value">
+                <span class="admin-users__badge {{ account.isActive ? 'admin-users__badge--active' : 'admin-users__badge--inactive' }}">
+                  {{ account.isActive ? 'Actif' : 'Désactivé' }}
+                </span>
+              </div>
+            </div>
+            <div class="admin-user-show__row">
+              <span class="admin-user-show__key">Téléphone</span>
+              <span class="admin-user-show__value">{{ account.phone ?: 'Non renseigné' }}</span>
+            </div>
+            <div class="admin-user-show__row">
+              <span class="admin-user-show__key">Établissement assigné</span>
+              <span class="admin-user-show__value">{{ account.assignedEstablishment ?: 'Aucun' }}</span>
+            </div>
+            <div class="admin-user-show__row">
+              <span class="admin-user-show__key">Établissements gérés</span>
+              <span class="admin-user-show__value">
+                {% if account.ownedEstablishments is not empty %}
+                  {{ account.ownedEstablishments|join(', ') }}
+                {% else %}
+                  Aucun
+                {% endif %}
+              </span>
+            </div>
+            <div class="admin-user-show__row">
+              <span class="admin-user-show__key">Créé le</span>
+              <span class="admin-user-show__value">{{ account.createdAt ? account.createdAt|date('d/m/Y H:i') : 'Inconnu' }}</span>
+            </div>
+            <div class="admin-user-show__row">
+              <span class="admin-user-show__key">Mis à jour le</span>
+              <span class="admin-user-show__value">{{ account.updatedAt ? account.updatedAt|date('d/m/Y H:i') : 'Jamais' }}</span>
+            </div>
+          </div>
+        </section>
+
+        <aside class="admin-user-show__panel">
+          <div class="admin-user-show__panel-header">
+            <div>
+              <h2 class="admin-user-show__panel-title">Dernière action admin</h2>
+              <p class="admin-user-show__panel-text">Historique rapide pour comprendre l’état du compte.</p>
+            </div>
+          </div>
+
+          {% if account.latestSuspension %}
+            <p class="admin-user-show__note">
+              {{ account.latestSuspension.reason }}
+              <br><br>
+              Début: {{ account.latestSuspension.createdAt ? account.latestSuspension.createdAt|date('d/m/Y H:i') : 'inconnu' }}
+              <br>
+              {% if account.latestSuspension.liftedAt %}
+                Levée: {{ account.latestSuspension.liftedAt|date('d/m/Y H:i') }}
+              {% else %}
+                Toujours active.
+              {% endif %}
+            </p>
+          {% else %}
+            <p class="admin-user-show__note">Aucune suspension ni réactivation enregistrée sur ce compte.</p>
+          {% endif %}
+        </aside>
+      </div>
+    </div>
+  </section>
 {% endblock %}

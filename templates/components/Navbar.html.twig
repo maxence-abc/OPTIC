@@ -45,7 +45,9 @@
       <a href="{{ this.homeHref ?? path('app_home') }}" class="navbar__link">Accueil</a>
       <a href="{{ this.searchHref ?? path('app_store_search') }}" class="navbar__link">Rechercher un service</a>
 
-      {% if app.user and is_granted('ROLE_ADMIN_PRO') %}
+      {% if app.user and is_granted('ROLE_ADMIN') %}
+        <a href="{{ path('admin') }}" class="navbar__link">Admin</a>
+      {% elseif app.user and is_granted('ROLE_ADMIN_PRO') %}
         <a href="{{ path('app_manager_home') }}" class="navbar__link">Gestion</a>
       {% endif %}
 
