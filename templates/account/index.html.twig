@@ -81,7 +81,7 @@
 
       {# ===================== RÉSERVATIONS ===================== #}
       {% if activeTab == 'reservations' %}
-        <div class="account-panel is-active" role="tabpanel" id="account-profile">
+        <div class="account-panel is-active" role="tabpanel" id="account-reservations">
 
           {# RÉSERVATIONS À VENIR (cards à l'intérieur de la même account-card) #}
           <div class="account-card">
@@ -136,42 +136,88 @@
 
       {# ===================== PROFIL ===================== #}
       {% if activeTab == 'profile' %}
-        <div class="account-panel is-active" role="tabpanel">
+        <div class="account-panel is-active" role="tabpanel" id="account-profile">
 
           <div class="account-card">
             <div class="account-card__header account-card__header--withAction">
               <h2 class="account-card__title">Informations personnelles</h2>
 
-              <twig:Button
-                label="Modifier"
-                href="#"
-                variant="outline"
-                size="sm"
-                iconLeft="uil:edit"
-              />
+              {% if not editProfile %}
+                <twig:Button
+                  label="Modifier"
+                  href="{{ path('app_account', { tab: 'profile', edit: 1 }) }}#account-profile"
+                  variant="outline"
+                  size="sm"
+                  iconLeft="uil:edit"
+                />
+              {% endif %}
             </div>
 
-            <div class="account-kv">
-              <div class="account-kv__row">
-                <div class="account-kv__key">Nom complet</div>
-                <div class="account-kv__value">{{ app.user.firstName }} {{ app.user.lastName }}</div>
-              </div>
+            {% if editProfile and profileForm is not null %}
+              {{ form_start(profileForm, {
+                action: path('app_account', { tab: 'profile', edit: 1 }) ~ '#account-profile',
+                attr: { class: 'account-profile-form' }
+              }) }}
+                <div class="account-form-grid">
+                  <div class="account-form-field">
+                    {{ form_label(profileForm.firstName) }}
+                    {{ form_widget(profileForm.firstName, { attr: { class: 'account-input' } }) }}
+                    {{ form_errors(profileForm.firstName) }}
+                  </div>
 
-              <div class="account-kv__row">
-                <div class="account-kv__key">Email</div>
-                <div class="account-kv__value">{{ app.user.email }}</div>
-              </div>
+                  <div class="account-form-field">
+                    {{ form_label(profileForm.lastName) }}
+                    {{ form_widget(profileForm.lastName, { attr: { class: 'account-input' } }) }}
+                    {{ form_errors(profileForm.lastName) }}
+                  </div>
 
-              <div class="account-kv__row">
-                <div class="account-kv__key">Téléphone</div>
-                <div class="account-kv__value">{{ app.user.phone ?: '—' }}</div>
-              </div>
+                  <div class="account-form-field">
+                    {{ form_label(profileForm.email) }}
+                    {{ form_widget(profileForm.email, { attr: { class: 'account-input' } }) }}
+                    {{ form_errors(profileForm.email) }}
+                  </div>
 
-              <div class="account-kv__row">
-                <div class="account-kv__key">Adresse</div>
-                <div class="account-kv__value">—</div>
+                  <div class="account-form-field">
+                    {{ form_label(profileForm.phone) }}
+                    {{ form_widget(profileForm.phone, { attr: { class: 'account-input' } }) }}
+                    {{ form_errors(profileForm.phone) }}
+                  </div>
+                </div>
+
+                <div class="account-form-actions">
+                  <twig:Button
+                    label="Enregistrer"
+                    type="submit"
+                    variant="primary"
+                    size="sm"
+                  />
+
+                  <twig:Button
+                    label="Annuler"
+                    href="{{ path('app_account', { tab: 'profile' }) }}#account-profile"
+                    variant="outline"
+                    size="sm"
+                  />
+                </div>
+              {{ form_end(profileForm) }}
+            {% else %}
+              <div class="account-kv">
+                <div class="account-kv__row">
+                  <div class="account-kv__key">Nom complet</div>
+                  <div class="account-kv__value">{{ app.user.firstName }} {{ app.user.lastName }}</div>
+                </div>
+
+                <div class="account-kv__row">
+                  <div class="account-kv__key">Email</div>
+                  <div class="account-kv__value">{{ app.user.email }}</div>
+                </div>
+
+                <div class="account-kv__row">
+                  <div class="account-kv__key">Téléphone</div>
+                  <div class="account-kv__value">{{ app.user.phone ?: '—' }}</div>
+                </div>
               </div>
-            </div>
+            {% endif %}
           </div>
 
           <div class="account-card" id="account-settings">
