@@ -28,9 +28,11 @@ class EmployeeScheduleEventRepository extends ServiceEntityRepository
 
         return $this->createQueryBuilder('e')
             ->andWhere('e.employee = :employee')
+            ->andWhere('e.status = :status')
             ->andWhere('e.startDate <= :end')
             ->andWhere('e.endDate >= :start')
             ->setParameter('employee', $employee)
+            ->setParameter('status', EmployeeScheduleEvent::STATUS_APPROVED)
             ->setParameter('start', $start)
             ->setParameter('end', $end)
             ->addOrderBy('e.startDate', 'ASC')
@@ -55,9 +57,11 @@ class EmployeeScheduleEventRepository extends ServiceEntityRepository
             ->leftJoin('e.employee', 'employee')
             ->addSelect('employee')
             ->andWhere('e.establishment = :establishment')
+            ->andWhere('e.status = :status')
             ->andWhere('e.startDate <= :end')
             ->andWhere('e.endDate >= :start')
             ->setParameter('establishment', $establishment)
+            ->setParameter('status', EmployeeScheduleEvent::STATUS_APPROVED)
             ->setParameter('start', $start)
             ->setParameter('end', $end)
             ->addOrderBy('e.startDate', 'ASC')
@@ -85,11 +89,62 @@ class EmployeeScheduleEventRepository extends ServiceEntityRepository
             ->leftJoin('e.employee', 'employee')
             ->addSelect('employee')
             ->andWhere('e.establishment = :establishment')
+            ->andWhere('e.status = :status')
             ->andWhere('e.endDate >= :today')
             ->setParameter('establishment', $establishment)
+            ->setParameter('status', EmployeeScheduleEvent::STATUS_APPROVED)
             ->setParameter('today', $today)
             ->addOrderBy('e.startDate', 'ASC')
             ->addOrderBy('e.startTime', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return EmployeeScheduleEvent[]
+     */
+    public function findPendingRequestsByEstablishment(Establishment $establishment, int $limit = 25): array
+    {
+        return $this->createQueryBuilder('e')
+            ->leftJoin('e.employee', 'employee')
+            ->addSelect('employee')
+            ->leftJoin('e.requestedBy', 'requestedBy')
+            ->addSelect('requestedBy')
+            ->andWhere('e.establishment = :establishment')
+            ->andWhere('e.status = :status')
+            ->andWhere('e.requestedBy IS NOT NULL')
+            ->setParameter('establishment', $establishment)
+            ->setParameter('status', EmployeeScheduleEvent::STATUS_PENDING)
+            ->addOrderBy('e.createdAt', 'ASC')
+            ->addOrderBy('e.startDate', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return EmployeeScheduleEvent[]
+     */
+    public function findRequestsByRequester(User $requester, ?Establishment $establishment = null, int $limit = 25): array
+    {
+        $qb = $this->createQueryBuilder('e')
+            ->leftJoin('e.employee', 'employee')
+            ->addSelect('employee')
+            ->leftJoin('e.reviewedBy', 'reviewedBy')
+            ->addSelect('reviewedBy')
+            ->andWhere('e.requestedBy = :requester')
+            ->setParameter('requester', $requester)
+            ->addOrderBy('e.createdAt', 'DESC')
+            ->addOrderBy('e.startDate', 'DESC');
+
+        if ($establishment instanceof Establishment) {
+            $qb
+                ->andWhere('e.establishment = :establishment')
+                ->setParameter('establishment', $establishment);
+        }
+
+        return $qb
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();

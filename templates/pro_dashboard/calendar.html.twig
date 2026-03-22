@@ -91,6 +91,81 @@
           </div>
         </section>
 
+        <div class="mgr-planning-config-grid">
+          <section class="mgr-card mgr-planning-sidecard">
+            <div class="pro-planning-section__head">
+              <div>
+                <h2>Demander une exception</h2>
+                <p class="muted">Soumettez un repos, un congé, une formation ou un horaire personnalisé au manager.</p>
+              </div>
+            </div>
+
+            <div class="mgr-planning-sidecard__body">
+              <p class="muted">Votre demande restera en attente tant qu’elle n’aura pas été acceptée. Une fois validée, elle sera intégrée à votre planning.</p>
+              <a class="btn btn--dark" href="{{ path('app_pro_calendar', {
+                view: 'planning',
+                date: anchorDate|date('Y-m-d'),
+                open_request: 1
+              }) }}#pro-exception-request-modal">
+                Faire une demande
+              </a>
+            </div>
+          </section>
+
+          <section class="mgr-card mgr-planning-sidecard">
+            <div class="pro-planning-section__head">
+              <div>
+                <h2>Mes demandes</h2>
+                <p class="muted">Suivez les demandes envoyées au manager et les motifs de décision.</p>
+              </div>
+            </div>
+
+            <div class="mgr-planning-sidecard__body">
+              {% if exceptionRequests is empty %}
+                <div class="mgr-planning-sidecard__empty">
+                  <strong>Aucune demande envoyée</strong>
+                  <span>Vos prochaines demandes d’exception apparaîtront ici avec leur statut.</span>
+                </div>
+              {% else %}
+                <div class="mgr-planning-sidecard__list">
+                  {% for requestEvent in exceptionRequests %}
+                    {% set statusClass = requestEvent.isApproved ? 'mgr-badge--ok' : (requestEvent.isRejected ? 'mgr-badge--danger' : 'mgr-badge--muted') %}
+                    <article class="mgr-planning-sidecard__item">
+                      <div class="mgr-planning-sidecard__item-top">
+                        <span class="mgr-planning-pill is-{{ requestEvent.type }}">{{ requestEvent.type == 'work' ? 'Horaire personnalisé' : requestEvent.typeLabel }}</span>
+                        <span class="mgr-badge {{ statusClass }}">{{ requestEvent.statusLabel }}</span>
+                      </div>
+                      <div class="mgr-planning-sidecard__item-meta">
+                        <span>
+                          Du {{ requestEvent.startDate ? requestEvent.startDate|date('d/m/Y') : '' }}
+                          {% if requestEvent.endDate and requestEvent.endDate|date('Y-m-d') != requestEvent.startDate|date('Y-m-d') %}
+                            au {{ requestEvent.endDate|date('d/m/Y') }}
+                          {% endif %}
+                        </span>
+                        {% if not requestEvent.isAllDay() %}
+                          <span>{{ requestEvent.startTime ? requestEvent.startTime|date('H:i') : '' }} - {{ requestEvent.endTime ? requestEvent.endTime|date('H:i') : '' }}</span>
+                        {% endif %}
+                        {% if requestEvent.notes %}
+                          <span>Motif demandé : {{ requestEvent.notes }}</span>
+                        {% endif %}
+                        <span>Envoyée le {{ requestEvent.createdAt ? requestEvent.createdAt|date('d/m/Y H:i') : '' }}</span>
+                        {% if requestEvent.reviewedAt %}
+                          <span>Décision le {{ requestEvent.reviewedAt|date('d/m/Y H:i') }}</span>
+                        {% endif %}
+                        {% if requestEvent.decisionReason %}
+                          <span>
+                            {{ requestEvent.isRejected ? 'Motif du refus' : 'Motif de décision' }} : {{ requestEvent.decisionReason }}
+                          </span>
+                        {% endif %}
+                      </div>
+                    </article>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </section>
+        </div>
+
         <section class="mgr-card pro-week-shell" id="pro-week-shell">
           <div class="pro-planning-section__head">
             <div>
@@ -188,4 +263,80 @@
       </div>
     {% endif %}
   </section>
+
+  {% if openRequestModal %}
+    <div class="mgr-planning-modal" id="pro-exception-request-modal">
+      <div class="mgr-planning-modal__backdrop">
+        <a class="mgr-planning-modal__close" href="{{ path('app_pro_calendar', {
+          view: 'planning',
+          date: anchorDate|date('Y-m-d')
+        }) }}"></a>
+
+        <section class="mgr-planning-modal__panel">
+          <div class="mgr-planning-modal__head">
+            <div>
+              <h2>Demander une exception</h2>
+              <p class="muted">Décrivez votre besoin. Le manager devra accepter ou refuser la demande avec un motif.</p>
+            </div>
+          </div>
+
+          {{ form_start(requestForm, {
+            action: path('app_pro_calendar', {
+              view: 'planning',
+              date: anchorDate|date('Y-m-d'),
+              open_request: 1
+            })
+          }) }}
+            {{ form_errors(requestForm) }}
+
+            <div class="mgr-planning-modal__grid">
+              <div class="mgr-planning-modal__field mgr-planning-modal__field--full">
+                {{ form_label(requestForm.type) }}
+                {{ form_widget(requestForm.type) }}
+                {{ form_errors(requestForm.type) }}
+              </div>
+
+              <div class="mgr-planning-modal__field">
+                {{ form_label(requestForm.startDate) }}
+                {{ form_widget(requestForm.startDate) }}
+                {{ form_errors(requestForm.startDate) }}
+              </div>
+
+              <div class="mgr-planning-modal__field">
+                {{ form_label(requestForm.endDate) }}
+                {{ form_widget(requestForm.endDate) }}
+                {{ form_errors(requestForm.endDate) }}
+              </div>
+
+              <div class="mgr-planning-modal__field">
+                {{ form_label(requestForm.startTime) }}
+                {{ form_widget(requestForm.startTime) }}
+                {{ form_errors(requestForm.startTime) }}
+              </div>
+
+              <div class="mgr-planning-modal__field">
+                {{ form_label(requestForm.endTime) }}
+                {{ form_widget(requestForm.endTime) }}
+                {{ form_errors(requestForm.endTime) }}
+              </div>
+
+              <div class="mgr-planning-modal__field mgr-planning-modal__field--full">
+                {{ form_label(requestForm.notes) }}
+                {{ form_widget(requestForm.notes) }}
+                {{ form_errors(requestForm.notes) }}
+              </div>
+            </div>
+
+            <div class="mgr-planning-modal__actions">
+              <a class="btn btn--outline" href="{{ path('app_pro_calendar', {
+                view: 'planning',
+                date: anchorDate|date('Y-m-d')
+              }) }}">Annuler</a>
+              <button class="btn btn--dark" type="submit">Envoyer la demande</button>
+            </div>
+          {{ form_end(requestForm) }}
+        </section>
+      </div>
+    </div>
+  {% endif %}
 {% endblock %}

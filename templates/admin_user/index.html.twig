@@ -46,7 +46,7 @@
           </div>
         </div>
 
-        <form method="get" class="admin-users__filters-grid">
+        <form method="get" action="{{ path('app_admin_user_index') }}" class="admin-users__filters-grid">
           <div class="admin-users__field">
             <label for="admin-q">Recherche</label>
             <input id="admin-q" class="admin-users__input" type="search" name="q" value="{{ filters.q }}" placeholder="Nom, email, téléphone, établissement...">

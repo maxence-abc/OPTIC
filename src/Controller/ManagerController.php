@@ -106,6 +106,10 @@ final class ManagerController extends AbstractController
                 'id' => $establishment->getId(),
             ]),
 
+            'manager_requests' => $this->redirectToRoute('manager_requests', [
+                'id' => $establishment->getId(),
+            ]),
+
             'manager_stats' => $this->redirectToRoute('manager_stats', [
                 'id' => $establishment->getId(),
             ]),
@@ -408,7 +412,9 @@ final class ManagerController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid() && $selectedEmployee instanceof User) {
-            $scheduleEvent->setEmployee($selectedEmployee);
+            $scheduleEvent
+                ->setEmployee($selectedEmployee)
+                ->setStatus(EmployeeScheduleEvent::STATUS_APPROVED);
             $this->validateScheduleEvent($scheduleEvent, $establishment, $form);
 
             if ($form->isValid()) {
@@ -416,7 +422,7 @@ final class ManagerController extends AbstractController
                 $entityManager->persist($scheduleEvent);
                 $entityManager->flush();
 
-                $this->addFlash('success', 'L’événement de planning a été ajouté.');
+                $this->addFlash('success', 'L’exception a été ajoutée.');
 
                 return $this->redirectToRoute('manager_planning', [
                     'id' => $establishment->getId(),
@@ -596,6 +602,92 @@ final class ManagerController extends AbstractController
             'view' => (string) $request->request->get('view', 'week'),
             'date' => (string) $request->request->get('date', (new \DateTimeImmutable())->format('Y-m-d')),
             'employee' => $request->request->getInt('employee'),
+        ]);
+    }
+
+    #[Route('/planning/request/{id}/review', name: 'manager_planning_request_review', methods: ['POST'])]
+    public function planningRequestReview(
+        EmployeeScheduleEvent $event,
+        EntityManagerInterface $entityManager,
+        Request $request
+    ): Response {
+        $establishment = $event->getEstablishment();
+        if (!$establishment instanceof Establishment) {
+            throw $this->createNotFoundException('Demande sans établissement.');
+        }
+
+        $this->denyAccessUnlessGranted(EstablishmentVoter::MANAGE, $establishment);
+
+        if (!$this->isCsrfTokenValid('review_schedule_request_'.$event->getId(), (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'Token invalide.');
+
+            return $this->redirectToRoute('manager_requests', [
+                'id' => $establishment->getId(),
+            ]);
+        }
+
+        if (!$event->isPending() || !$event->isRequest()) {
+            $this->addFlash('error', 'Cette demande ne peut plus être traitée.');
+
+            return $this->redirectToRoute('manager_requests', [
+                'id' => $establishment->getId(),
+            ]);
+        }
+
+        $manager = $this->getUser();
+        if (!$manager instanceof User) {
+            throw $this->createAccessDeniedException('Utilisateur manager invalide.');
+        }
+
+        $decision = (string) $request->request->get('decision', '');
+        $decisionReason = trim((string) $request->request->get('decision_reason', ''));
+
+        if ($decisionReason === '') {
+            $this->addFlash('error', 'Un motif est requis pour accepter ou refuser une demande.');
+
+            return $this->redirectToRoute('manager_requests', [
+                'id' => $establishment->getId(),
+            ]);
+        }
+
+        if ($decision === 'approve') {
+            $event->approve($manager, $decisionReason);
+            $this->addFlash('success', 'La demande a été acceptée.');
+        } elseif ($decision === 'reject') {
+            $event->reject($manager, $decisionReason);
+            $this->addFlash('success', 'La demande a été refusée.');
+        } else {
+            $this->addFlash('error', 'Décision invalide.');
+
+            return $this->redirectToRoute('manager_requests', [
+                'id' => $establishment->getId(),
+            ]);
+        }
+
+        $entityManager->flush();
+
+        return $this->redirectToRoute('manager_requests', [
+            'id' => $establishment->getId(),
+        ]);
+    }
+
+    #[Route('/establishment/{id}/requests', name: 'manager_requests', methods: ['GET'])]
+    public function requests(
+        Establishment $establishment,
+        EstablishmentRepository $establishmentRepository,
+        SessionInterface $session,
+        EmployeeScheduleEventRepository $scheduleEventRepository
+    ): Response {
+        $this->denyAccessUnlessGranted(EstablishmentVoter::MANAGE, $establishment);
+        $session->set(self::SESSION_ACTIVE_ESTABLISHMENT, $establishment->getId());
+
+        $owned = $establishmentRepository->findBy(['owner' => $this->getUser()], ['id' => 'DESC']);
+        $pendingExceptionRequests = $scheduleEventRepository->findPendingRequestsByEstablishment($establishment, 50);
+
+        return $this->render('manager/requests.html.twig', [
+            'establishment' => $establishment,
+            'ownedEstablishments' => $owned,
+            'pendingExceptionRequests' => $pendingExceptionRequests,
         ]);
     }
 
