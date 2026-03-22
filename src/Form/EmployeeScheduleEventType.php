@@ -44,7 +44,7 @@ class EmployeeScheduleEventType extends AbstractType
                     'Congé' => EmployeeScheduleEvent::TYPE_LEAVE,
                     'Formation' => EmployeeScheduleEvent::TYPE_TRAINING,
                 ],
-                'label' => 'Type d’événement',
+                'label' => $options['type_label'],
             ])
             ->add('startDate', DateType::class, [
                 'label' => 'Date de début',
@@ -67,7 +67,7 @@ class EmployeeScheduleEventType extends AbstractType
                 'input' => 'datetime',
             ])
             ->add('notes', TextareaType::class, [
-                'label' => 'Note',
+                'label' => $options['notes_label'],
                 'required' => false,
                 'attr' => ['rows' => 4],
             ]);
@@ -79,9 +79,13 @@ class EmployeeScheduleEventType extends AbstractType
             'data_class' => EmployeeScheduleEvent::class,
             'establishment' => null,
             'show_employee' => true,
+            'type_label' => 'Type d’exception',
+            'notes_label' => 'Motif / détail',
         ]);
 
         $resolver->setAllowedTypes('establishment', ['null', Establishment::class]);
         $resolver->setAllowedTypes('show_employee', 'bool');
+        $resolver->setAllowedTypes('type_label', 'string');
+        $resolver->setAllowedTypes('notes_label', 'string');
     }
 }

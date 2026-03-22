@@ -1,0 +1,73 @@
+{% extends 'manager/base_manager.html.twig' %}
+
+{% block title %}Demandes de gestion{% endblock %}
+
+{% block manager_content %}
+  <section class="mgr-pagehead">
+    <div>
+      <h1>Demandes de gestion</h1>
+      <p class="muted">Traitez ici les demandes d’exceptions envoyées par les professionnels de l’établissement.</p>
+    </div>
+  </section>
+
+  <section class="mgr-card mgr-planning-events-shell">
+    <div class="pro-planning-section__head">
+      <div>
+        <h2>Demandes d’exceptions en attente</h2>
+        <p class="muted">Congé, repos, formation ou horaire personnalisé: chaque demande doit être acceptée ou refusée avec un motif.</p>
+      </div>
+      <span class="mgr-badge">{{ pendingExceptionRequests|length }} en attente</span>
+    </div>
+
+    {% if pendingExceptionRequests is empty %}
+      <p class="muted">Aucune demande en attente pour le moment.</p>
+    {% else %}
+      <div class="mgr-planning-events__list">
+        {% for requestEvent in pendingExceptionRequests %}
+          <article class="mgr-planning-events__item">
+            <div>
+              <strong>{{ requestEvent.employee ? requestEvent.employee.firstName ~ ' ' ~ requestEvent.employee.lastName : 'Employé' }}</strong>
+              <div class="muted">
+                Demandée le {{ requestEvent.createdAt ? requestEvent.createdAt|date('d/m/Y H:i') : '' }}
+                {% if requestEvent.requestedBy %}
+                  par {{ requestEvent.requestedBy.firstName }} {{ requestEvent.requestedBy.lastName }}
+                {% endif %}
+              </div>
+              <div class="muted">
+                {{ requestEvent.type == 'work' ? 'Horaire personnalisé' : requestEvent.typeLabel }}
+                · {{ requestEvent.startDate ? requestEvent.startDate|date('d/m/Y') : '' }}
+                {% if requestEvent.endDate and requestEvent.startDate and requestEvent.endDate|date('Y-m-d') != requestEvent.startDate|date('Y-m-d') %}
+                  → {{ requestEvent.endDate|date('d/m/Y') }}
+                {% endif %}
+              </div>
+              {% if not requestEvent.isAllDay() %}
+                <div class="muted">
+                  Horaires demandés : {{ requestEvent.startTime ? requestEvent.startTime|date('H:i') : '' }} - {{ requestEvent.endTime ? requestEvent.endTime|date('H:i') : '' }}
+                </div>
+              {% endif %}
+              {% if requestEvent.notes %}
+                <div class="muted">Motif : {{ requestEvent.notes }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mgr-planning-request-review">
+              <form class="mgr-planning-request-review__form" method="post" action="{{ path('manager_planning_request_review', { id: requestEvent.id }) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('review_schedule_request_' ~ requestEvent.id) }}">
+
+                <div class="mgr-planning-modal__field">
+                  <label for="decision-reason-{{ requestEvent.id }}">Motif de décision</label>
+                  <textarea id="decision-reason-{{ requestEvent.id }}" name="decision_reason" rows="4" required placeholder="Expliquez votre décision"></textarea>
+                </div>
+
+                <div class="mgr-planning-request-review__actions">
+                  <button class="btn btn--dark btn--sm" type="submit" name="decision" value="approve">Accepter</button>
+                  <button class="btn btn--outline btn--sm" type="submit" name="decision" value="reject">Refuser</button>
+                </div>
+              </form>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

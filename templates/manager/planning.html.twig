@@ -41,7 +41,7 @@
               employee: employee.id,
               open_event: 1
             }) }}#planning-event-modal">
-              + Ajouter un événement
+              + Ajouter une exception
             </a>
           </div>
         </article>
@@ -277,13 +277,13 @@
     <section class="mgr-card mgr-planning-events-shell">
       <div class="pro-planning-section__head">
         <div>
-          <h2>Événements à venir</h2>
+          <h2>Exceptions à venir</h2>
           <p class="muted">Retrouvez ici toutes les exceptions déjà planifiées sur l’équipe.</p>
         </div>
       </div>
 
       {% if upcomingScheduleEvents is empty %}
-        <p class="muted">Aucun événement planifié pour le moment.</p>
+        <p class="muted">Aucune exception planifiée pour le moment.</p>
       {% else %}
         <div class="mgr-planning-events__list">
           {% for event in upcomingScheduleEvents %}
@@ -332,7 +332,7 @@
         <section class="mgr-planning-modal__panel">
           <div class="mgr-planning-modal__head">
             <div>
-              <h2>Ajouter un événement pour {{ selectedEmployee.firstName }} {{ selectedEmployee.lastName }}</h2>
+              <h2>Ajouter une exception pour {{ selectedEmployee.firstName }} {{ selectedEmployee.lastName }}</h2>
               <p class="muted">Utilisez cette fenêtre uniquement pour du cas par cas.</p>
             </div>
           </div>

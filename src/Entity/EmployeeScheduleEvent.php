@@ -14,6 +14,10 @@ class EmployeeScheduleEvent
     public const TYPE_LEAVE = 'leave';
     public const TYPE_TRAINING = 'training';
 
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_APPROVED = 'approved';
+    public const STATUS_REJECTED = 'rejected';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -29,6 +33,9 @@ class EmployeeScheduleEvent
 
     #[ORM\Column(length: 32)]
     private ?string $type = self::TYPE_WORK;
+
+    #[ORM\Column(length: 32)]
+    private ?string $status = self::STATUS_APPROVED;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $title = null;
@@ -47,6 +54,20 @@ class EmployeeScheduleEvent
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $notes = null;
+
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?User $requestedBy = null;
+
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?User $reviewedBy = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $decisionReason = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $reviewedAt = null;
 
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
@@ -69,6 +90,20 @@ class EmployeeScheduleEvent
     public static function getTypeLabels(): array
     {
         return array_flip(self::getTypeChoices());
+    }
+
+    public static function getStatusChoices(): array
+    {
+        return [
+            'En attente' => self::STATUS_PENDING,
+            'Acceptée' => self::STATUS_APPROVED,
+            'Refusée' => self::STATUS_REJECTED,
+        ];
+    }
+
+    public static function getStatusLabels(): array
+    {
+        return array_flip(self::getStatusChoices());
     }
 
     public function getId(): ?int
@@ -108,6 +143,18 @@ class EmployeeScheduleEvent
     public function setType(string $type): static
     {
         $this->type = $type;
+
+        return $this;
+    }
+
+    public function getStatus(): ?string
+    {
+        return $this->status;
+    }
+
+    public function setStatus(string $status): static
+    {
+        $this->status = $status;
 
         return $this;
     }
@@ -184,6 +231,54 @@ class EmployeeScheduleEvent
         return $this;
     }
 
+    public function getRequestedBy(): ?User
+    {
+        return $this->requestedBy;
+    }
+
+    public function setRequestedBy(?User $requestedBy): static
+    {
+        $this->requestedBy = $requestedBy;
+
+        return $this;
+    }
+
+    public function getReviewedBy(): ?User
+    {
+        return $this->reviewedBy;
+    }
+
+    public function setReviewedBy(?User $reviewedBy): static
+    {
+        $this->reviewedBy = $reviewedBy;
+
+        return $this;
+    }
+
+    public function getDecisionReason(): ?string
+    {
+        return $this->decisionReason;
+    }
+
+    public function setDecisionReason(?string $decisionReason): static
+    {
+        $this->decisionReason = $decisionReason;
+
+        return $this;
+    }
+
+    public function getReviewedAt(): ?\DateTimeImmutable
+    {
+        return $this->reviewedAt;
+    }
+
+    public function setReviewedAt(?\DateTimeImmutable $reviewedAt): static
+    {
+        $this->reviewedAt = $reviewedAt;
+
+        return $this;
+    }
+
     public function getCreatedAt(): ?\DateTimeImmutable
     {
         return $this->createdAt;
@@ -198,7 +293,52 @@ class EmployeeScheduleEvent
 
     public function getTypeLabel(): string
     {
-        return self::getTypeLabels()[$this->type ?? ''] ?? 'Événement';
+        return self::getTypeLabels()[$this->type ?? ''] ?? 'Exception';
+    }
+
+    public function getStatusLabel(): string
+    {
+        return self::getStatusLabels()[$this->status ?? ''] ?? 'Statut inconnu';
+    }
+
+    public function isPending(): bool
+    {
+        return $this->status === self::STATUS_PENDING;
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->status === self::STATUS_APPROVED;
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->status === self::STATUS_REJECTED;
+    }
+
+    public function isRequest(): bool
+    {
+        return $this->requestedBy instanceof User;
+    }
+
+    public function approve(User $reviewer, string $reason): static
+    {
+        $this->status = self::STATUS_APPROVED;
+        $this->reviewedBy = $reviewer;
+        $this->reviewedAt = new \DateTimeImmutable();
+        $this->decisionReason = $reason;
+
+        return $this;
+    }
+
+    public function reject(User $reviewer, string $reason): static
+    {
+        $this->status = self::STATUS_REJECTED;
+        $this->reviewedBy = $reviewer;
+        $this->reviewedAt = new \DateTimeImmutable();
+        $this->decisionReason = $reason;
+
+        return $this;
     }
 
     public function isAllDay(): bool

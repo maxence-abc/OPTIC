@@ -38,9 +38,14 @@
       aria-label="Navigation principale"
       data-navbar-target="nav"
     >
-      {% set canAccessProSpace = app.user
-        and is_granted('ROLE_PRO')
-        and (app.user.establishment is not null or app.user.establishments|length > 0) %}
+      {% set hasAssignedEstablishment = app.user and app.user.establishment is not null %}
+      {% set hasOwnedEstablishments = app.user and app.user.establishments|length > 0 %}
+      {% set hasDirectProAccess = app.user and ('ROLE_PRO' in app.user.roles or 'ROLE_ADMIN_PRO' in app.user.roles) %}
+      {% set isPlatformAdmin = app.user and 'ROLE_ADMIN' in app.user.roles %}
+      {% set canAccessProSpace = app.user and (
+        (hasDirectProAccess and (hasAssignedEstablishment or hasOwnedEstablishments))
+        or (isPlatformAdmin and hasAssignedEstablishment)
+      ) %}
 
       <a href="{{ this.homeHref ?? path('app_home') }}" class="navbar__link">Accueil</a>
       <a href="{{ this.searchHref ?? path('app_store_search') }}" class="navbar__link">Rechercher un service</a>

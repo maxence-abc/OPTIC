@@ -8,6 +8,7 @@ use App\Entity\EmployeeWeeklySchedule;
 use App\Entity\Establishment;
 use App\Entity\Review;
 use App\Entity\User;
+use App\Form\EmployeeScheduleEventType;
 use App\Repository\AppointmentRepository;
 use App\Repository\EmployeeScheduleEventRepository;
 use App\Repository\EmployeeWeeklyScheduleRepository;
@@ -17,6 +18,7 @@ use App\Repository\UserRepository;
 use App\Service\EmployeeWeeklyScheduleService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -97,13 +99,14 @@ final class ProDashboardController extends AbstractController
         ));
     }
 
-    #[Route('/calendar', name: 'app_pro_calendar', methods: ['GET'])]
+    #[Route('/calendar', name: 'app_pro_calendar', methods: ['GET', 'POST'])]
     public function calendar(
         Request $request,
         AppointmentRepository $appointmentRepository,
         UserRepository $userRepository,
         EmployeeScheduleEventRepository $scheduleEventRepository,
-        EmployeeWeeklyScheduleRepository $weeklyScheduleRepository
+        EmployeeWeeklyScheduleRepository $weeklyScheduleRepository,
+        EntityManagerInterface $entityManager
     ): Response {
         $establishment = $this->resolveCurrentEstablishment($request);
         if (!$establishment instanceof Establishment) {
@@ -123,11 +126,47 @@ final class ProDashboardController extends AbstractController
         $weekStart = $this->getWeekStart($anchorDate);
         $weekEnd = $weekStart->modify('+6 days');
         $weeklyScheduleService = new EmployeeWeeklyScheduleService();
+        $scheduleRequest = (new EmployeeScheduleEvent())
+            ->setEstablishment($establishment)
+            ->setEmployee($user)
+            ->setRequestedBy($user)
+            ->setStatus(EmployeeScheduleEvent::STATUS_PENDING)
+            ->setStartDate(\DateTime::createFromImmutable($anchorDate))
+            ->setEndDate(\DateTime::createFromImmutable($anchorDate));
+        $requestForm = $this->createForm(EmployeeScheduleEventType::class, $scheduleRequest, [
+            'establishment' => $establishment,
+            'show_employee' => false,
+            'notes_label' => 'Motif de la demande',
+        ]);
+        $requestForm->handleRequest($request);
+
+        if ($requestForm->isSubmitted()) {
+            $scheduleRequest
+                ->setEstablishment($establishment)
+                ->setEmployee($user)
+                ->setRequestedBy($user)
+                ->setStatus(EmployeeScheduleEvent::STATUS_PENDING);
+
+            $this->validateScheduleRequest($scheduleRequest, $establishment, $requestForm, $user);
+
+            if ($requestForm->isValid()) {
+                $entityManager->persist($scheduleRequest);
+                $entityManager->flush();
+
+                $this->addFlash('success', 'La demande d’exception a été envoyée au manager.');
+
+                return $this->redirectToRoute('app_pro_calendar', [
+                    'view' => 'planning',
+                    'date' => $anchorDate->format('Y-m-d'),
+                ]);
+            }
+        }
 
         $weeklySchedules = $weeklyScheduleRepository->findByEmployee($establishment, $user);
         $weeklyScheduleIndex = $this->indexWeeklySchedules($weeklySchedules, $weeklyScheduleService);
         $todayScheduleEvents = $scheduleEventRepository->findByEmployeeBetweenDates($user, $today, $today);
         $weeklyScheduleEvents = $scheduleEventRepository->findByEmployeeBetweenDates($user, $weekStart, $weekEnd);
+        $exceptionRequests = $scheduleEventRepository->findRequestsByRequester($user, $establishment, 12);
         $todayAppointments = array_values(array_filter(
             $appointmentRepository->findByEstablishmentBetweenDates($establishment, $today, $today->modify('+1 day'), $user),
             static fn (Appointment $appointment): bool => $appointment->getStatus() !== 'cancelled'
@@ -150,6 +189,9 @@ final class ProDashboardController extends AbstractController
                 'todayDefaultSchedulesDisplay' => $weeklyScheduleService->formatDisplayRanges($weeklyScheduleIndex[(int) $today->format('N')] ?? []),
                 'todayAppointmentsForProfessional' => $todayAppointments,
                 'weeklyPlanningDays' => $this->buildProfessionalPlanningDays($weekStart, $weeklySchedules, $weeklyScheduleEvents, $weeklyAppointments, $weeklyScheduleService),
+                'exceptionRequests' => $exceptionRequests,
+                'openRequestModal' => $request->query->getBoolean('open_request') || ($requestForm->isSubmitted() && !$requestForm->isValid()),
+                'requestForm' => $requestForm->createView(),
             ]
         ));
     }
@@ -382,6 +424,39 @@ final class ProDashboardController extends AbstractController
         }
 
         return $user;
+    }
+
+    private function validateScheduleRequest(
+        EmployeeScheduleEvent $scheduleRequest,
+        Establishment $establishment,
+        \Symfony\Component\Form\FormInterface $form,
+        User $user
+    ): void {
+        $employeeBelongsToEstablishment = $user->getEstablishment()?->getId() === $establishment->getId()
+            || $establishment->getOwner()?->getId() === $user->getId();
+
+        if (!$employeeBelongsToEstablishment) {
+            $form->addError(new FormError('Vous ne pouvez demander une exception que pour votre établissement actif.'));
+        }
+
+        $startDate = $scheduleRequest->getStartDate();
+        $endDate = $scheduleRequest->getEndDate();
+
+        if ($startDate instanceof \DateTimeInterface && $endDate instanceof \DateTimeInterface && $endDate < $startDate) {
+            $form->get('endDate')->addError(new FormError('La date de fin doit être postérieure ou égale à la date de début.'));
+        }
+
+        if ($scheduleRequest->getType() === EmployeeScheduleEvent::TYPE_WORK) {
+            if (!$scheduleRequest->getStartTime() instanceof \DateTimeInterface || !$scheduleRequest->getEndTime() instanceof \DateTimeInterface) {
+                $form->get('startTime')->addError(new FormError('Les horaires sont requis pour un horaire personnalisé.'));
+            } elseif ($scheduleRequest->getEndTime() <= $scheduleRequest->getStartTime()) {
+                $form->get('endTime')->addError(new FormError('L’heure de fin doit être postérieure à l’heure de début.'));
+            }
+        }
+
+        if (trim((string) $scheduleRequest->getNotes()) === '') {
+            $form->get('notes')->addError(new FormError('Merci de préciser le motif de votre demande.'));
+        }
     }
 
     private function assertAppointmentCanBeManaged(Appointment $appointment, ?Request $request = null): Establishment

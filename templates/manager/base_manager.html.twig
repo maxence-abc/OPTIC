@@ -121,10 +121,11 @@
           Statistiques
         </a>
 
-        <span class="mgr-tabs__link is-disabled">
+        <a class="mgr-tabs__link {% if app.request.attributes.get('_route') == 'manager_requests' %}is-active{% endif %}"
+           href="{{ path('manager_requests', {id: establishment.id}) }}">
           <span class="mgr-tabs__icon" aria-hidden="true">{{ ux_icon('uil:file-alt') }}</span>
           Demandes
-        </span>
+        </a>
 
         <a class="mgr-tabs__link {% if app.request.attributes.get('_route') starts with 'manager_opening_hour' or app.request.attributes.get('_route') == 'manager_opening_hours' %}is-active{% endif %}"
            href="{{ path('manager_opening_hours', {id: establishment.id}) }}">
