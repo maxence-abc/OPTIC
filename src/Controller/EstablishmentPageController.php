@@ -324,7 +324,7 @@ final class EstablishmentPageController extends AbstractController
         $em->persist($appointment);
         $em->flush();
 
-        $this->addFlash('success', 'Réservation confirmée ✅');
+        $this->addFlash('success', 'Réservation confirmée ');
 
         return $this->redirectToRoute('front_establishment_show', [
             'id' => $establishment->getId(),
