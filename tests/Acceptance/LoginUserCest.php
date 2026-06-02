@@ -1,53 +1,33 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Acceptance;
 
 use App\Tests\Support\AcceptanceTester;
 
-
-class LoginUserCest //extends AbstractAcceptanceCest
+final class LoginUserCest extends AbstractAcceptanceCest
 {
-    public function _before(AcceptanceTester $I)
-    {
-        // Exécute la commande pour charger les fixtures dans l'environnement de test
-       // $I->runShellCommand('php bin/console doctrine:fixtures:load --group=CodeceptionFixtures --env=test --no-interaction');
-    }
-
-
-    public function testTryTestUserAccountWithClientLoginValid(AcceptanceTester $I)
+    public function testTryTestUserAccountWithClientLoginValid(AcceptanceTester $I): void
     {
         $I->wantTo('test the modify user informations');
 
-        $I->amOnPage('/login');
-
-
-        // Remplir le formulaire de connexion
-        $I->fillField('email', 'maxence@gmail.com');
-        $I->fillField('password', 'Azertyuiop24!');
-
-        // Soumettre le formulaire
-        $I->click('Se connecter');
+        $this->loginAsFixtureClient($I);
 
         $I->wait(2);
         $I->seeInCurrentUrl('/');
     }
 
-        public function testTryTestUserAccountWithLoginInvalid(AcceptanceTester $I)
+    public function testTryTestUserAccountWithLoginInvalid(AcceptanceTester $I): void
     {
         $I->wantTo('refuse login with invalid credentials');
 
         $I->amOnPage('/login');
-
-        $I->fillField('email', 'jean@gmail.com');
-        $I->fillField('password', 'azertyuiop62!');
-
-        $I->click('Se connecter');
+        $this->submitLoginForm($I, 'jean@gmail.com', 'azertyuiop62!');
 
         // Attendre que la page réagisse (évite les faux positifs)
         $I->waitForElementVisible('form', 5);
 
         $I->seeInCurrentUrl('/login');
-
     }
-
 }
