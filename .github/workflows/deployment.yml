@@ -20,6 +20,36 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Validate deployment secrets
+        env:
+          VPN_CONFIG: ${{ secrets.VPN_CONFIG }}
+          VPN_USER: ${{ secrets.VPN_USER }}
+          VPN_PASSWORD: ${{ secrets.VPN_PASSWORD }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          set -euo pipefail
+          missing=0
+
+          for secret_name in VPN_CONFIG VPN_USER VPN_PASSWORD SSH_HOST SSH_USER SSH_PASSWORD; do
+            if [ -z "${!secret_name:-}" ]; then
+              echo "::error::Secret ${secret_name} is missing or empty in environment VPN_USER."
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+          case "$SSH_HOST" in
+            *"@"*|http://*|https://*|*":"*)
+              echo "::error::SSH_HOST must contain only a hostname or IP address, without user, protocol, or port."
+              exit 1
+              ;;
+          esac
+
       - name: Install OpenVPN and sshpass
         run: |
           set -euo pipefail
