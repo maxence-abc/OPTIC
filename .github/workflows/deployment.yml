@@ -47,8 +47,8 @@ jobs:
           sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << 'EOF'
             set -euo pipefail
             cd ./Optic-symfony/
-            git checkout prod
-            git pull --ff-only origin prod
+            git checkout main
+            git pull --ff-only origin main
             make deploy
           EOF
 
