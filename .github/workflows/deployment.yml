@@ -30,7 +30,7 @@ jobs:
         run: |
           set -euo pipefail
           echo "${{ secrets.VPN_CONFIG }}" > vpn.conf
-          printf "%s\n%s\n" "${{ secrets.VPN_USER }}" "${{ secrets.VPN_PASSWORD }}" > vpn.auth
+          printf "%s\n%s\n" "${{ secrets.VPN_USER }}" "${{ secrets.  }}" > vpn.auth
           sed -i 's|auth-user-pass|auth-user-pass vpn.auth|' vpn.conf
           chmod 600 vpn.conf vpn.auth
 
