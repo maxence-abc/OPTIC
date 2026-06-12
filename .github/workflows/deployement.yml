@@ -1,0 +1,62 @@
+name: Optic Deployment
+
+on:
+  workflow_run:
+    workflows: ["Optic CI"]
+    types:
+      - completed
+
+jobs:
+  deployment:
+    name: Deployment with VPN
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'prod' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install OpenVPN and sshpass
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openvpn sshpass
+
+      - name: Create VPN config and credentials
+        run: |
+          echo "${{ secrets.VPN_CONFIG }}" > vpn.conf
+          echo -e "${{ secrets.VPN_USER }}\n${{ secrets.VPN_PASSWORD }}" > vpn.auth
+          sed -i 's|auth-user-pass|auth-user-pass vpn.auth|' vpn.conf
+
+      - name: Start VPN
+        run: |
+          sudo openvpn --config vpn.conf --daemon
+          sleep 10
+          ip a  # debug
+
+      - name: Deploy with SSH using password
+        run: |
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            cd ./Optic-symfony/
+            git pull origin prod
+            make deploy
+          EOF
+
+      - name: Affichage si le déploiement échoue
+        if: failure()
+        run: |
+          echo ""
+          echo " DÉPLOIEMENT ÉCHOUÉ "
+          echo "Branche       : ${{ github.event.workflow_run.head_branch }}"
+          echo "Auteur        : ${{ github.event.workflow_run.head_commit.author.name }}"
+          echo "Voir les logs : ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo ""
+
+      - name: Affichage si le déploiement réussit
+        if: success()
+        run: |
+          echo ""
+          echo " DÉPLOIEMENT RÉUSSI "
+          echo "Branche       : ${{ github.event.workflow_run.head_branch }}"
+          echo "Auteur        : ${{ github.event.workflow_run.head_commit.author.name }}"
+          echo "Voir les logs : ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo ""
