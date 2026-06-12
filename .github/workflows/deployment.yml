@@ -1,6 +1,7 @@
 name: Optic Deployment
 
 on:
+  workflow_dispatch:
   workflow_run:
     workflows:
       - Optic CI
@@ -15,7 +16,7 @@ permissions:
 jobs:
   deployment:
     name: Deployment with VPN
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && github.ref_name == 'prod') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
     runs-on: ubuntu-latest
 
     steps:
