@@ -13,7 +13,7 @@ permissions:
 jobs:
   deployment:
     name: Deployment with VPN
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
+    environment: VPN_USER
     runs-on: ubuntu-latest
 
     steps:
