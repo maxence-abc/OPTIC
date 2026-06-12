@@ -3,8 +3,7 @@ name: Optic Deployment
 on:
   workflow_dispatch:
   workflow_run:
-    workflows:
-      - ["Optic CI"]
+    workflows: [ "Optic CI" ]
     types:
       - completed
 
