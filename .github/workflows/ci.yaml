@@ -1,77 +1,104 @@
-name: CI
-
+---
+Name: CI
 on:
   push:
-    branches:
-      - main
-  pull_request: ~
-  workflow_dispatch: ~
-
-permissions:
-  contents: read
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
+    branches: [ dev, main, prod ]
+  pull_request:
+    branches: [ dev, main, prod ]
 
 jobs:
-  tests:
-    name: Tests
+  ci:
+    name: Build & Tests
     runs-on: ubuntu-latest
     env:
-      APP_SECRET: ci_app_secret
-      CADDY_MERCURE_JWT_SECRET: ci_mercure_secret_key_for_tests
+      APP_ENV: 'test'
+      APP_ENV_NAME: 'test'
+      APP_DEBUG: 1
+      APP_SECRET: '$ecretf0rt3st'
+      SYMFONY_DEPRECATIONS_HELPER: disabled
+      DATABASE_URL: 'postgresql://app:password@localhost:3318/app_test?serverVersion=15&charset=utf8'
+      JWT_PASSPHRASE: 'NRyT23bmBpvnjKQL'
+      JWT_TOKEN_TTL: 31536000
+      JWT_SECRET_KEY: "%kernel.project_dir%/config/jwt/private.pem"
+      JWT_PUBLIC_KEY: "%kernel.project_dir%/config/jwt/public.pem"
+      BASE_URL: ''
+      MAILER_DSN: 'null://null'
+      MAILER_DSN_AWS_SES: 'null://null'
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_ROOT_PASSWORD: root
+          POSTGRES_DB: app_test
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: password
+          TZ: Europe/Paris
+        ports:
+          - 3318:5432
+        options: >-
+          --health-cmd="pg_isready"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
         with:
-          persist-credentials: false
+          php-version: 8.4
+          extensions: composer:v2, flex, pcov, ssh2
+          coverage: pcov
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker images
-        uses: docker/bake-action@v6
+      - name: Cache Composer packages
+        id: composer-cache
+        uses: actions/cache@v4
         with:
-          pull: true
-          load: true
-          files: |
-            compose.yaml
-            compose.prod.yaml
-          set: |
-            *.cache-from=type=gha,scope=${{ github.ref }}
-            *.cache-from=type=gha,scope=refs/heads/main
-            *.cache-to=type=gha,scope=${{ github.ref }},mode=max
+          path: vendor
+          key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-
 
-      - name: Start services
-        run: docker compose -f compose.yaml -f compose.prod.yaml up --wait --no-build
+      - name: Install vendors
+        run: composer install --no-progress --ansi --no-scripts
 
-      - name: Check HTTP reachability
-        run: curl -v --fail-with-body http://localhost
+      - name: Validate composer
+        run: composer validate --no-check-lock
 
-      - name: Check HTTPS reachability
-        if: false # Remove this line when the homepage is configured, or change the path to check
-        run: curl -v --insecure --fail-with-body https://localhost
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
 
-      - name: Check Mercure reachability
-        run: curl -vI --insecure --fail-with-body https://localhost/.well-known/mercure?topic=test
+      - name: Cache node_modules
+        id: node-cache
+        uses: actions/cache@v4
+        with:
+          path: ./node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('./.package-lock.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
-      - name: Create test database
-        if: false # Remove this line if Doctrine ORM is installed
-        run: docker compose -f compose.yaml -f compose.prod.yaml exec -T php bin/console -e test doctrine:database:create
+      # - name: Npm Install
+      #   run: npm install
 
-      - name: Run migrations
-        if: false # Remove this line if Doctrine Migrations is installed
-        run: docker compose -f compose.yaml -f compose.prod.yaml exec -T php bin/console -e test doctrine:migrations:migrate --no-interaction
+      # - name: Npm Build
+      #   run: npm run build
 
-      - name: Doctrine Schema Validator
-        if: false # Remove this line if Doctrine ORM is installed
-        run: docker compose -f compose.yaml -f compose.prod.yaml exec -T php bin/console -e test doctrine:schema:validate
+      # - name: Run PHPUnit tests
+      #   run: composer test-with-coverage
 
-      - name: Dump container logs on failure
-        if: failure()
-        run: docker compose -f compose.yaml -f compose.prod.yaml logs --no-color php database selenium
-
-      - name: Stop services
-        if: always()
-        run: docker compose -f compose.yaml -f compose.prod.yaml down -v
+      # - name: Monitor coverage
+      #   uses: slavcodev/coverage-monitor-action@v1
+      #   with:
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
+      #     coverage_path: "tests/coverage.xml"
+      #     threshold_alert: 60
+      #     threshold_warning: 80
+      #     threshold_metric: "lines"
