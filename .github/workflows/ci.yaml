@@ -2,9 +2,9 @@
 Name: CI
 on:
   push:
-    branches: [ dev, main, prod ]
+    branches: main
   pull_request:
-    branches: [ dev, main, prod ]
+    branches: main
 
 jobs:
   ci:
@@ -17,17 +17,10 @@ jobs:
       APP_SECRET: '$ecretf0rt3st'
       SYMFONY_DEPRECATIONS_HELPER: disabled
       DATABASE_URL: 'postgresql://app:password@localhost:3318/app_test?serverVersion=15&charset=utf8'
-      JWT_PASSPHRASE: 'NRyT23bmBpvnjKQL'
-      JWT_TOKEN_TTL: 31536000
-      JWT_SECRET_KEY: "%kernel.project_dir%/config/jwt/private.pem"
-      JWT_PUBLIC_KEY: "%kernel.project_dir%/config/jwt/public.pem"
-      BASE_URL: ''
-      MAILER_DSN: 'null://null'
-      MAILER_DSN_AWS_SES: 'null://null'
 
     services:
       postgres:
-        image: postgres:16
+        image: postgres:15
         env:
           POSTGRES_ROOT_PASSWORD: root
           POSTGRES_DB: app_test
@@ -35,7 +28,7 @@ jobs:
           POSTGRES_PASSWORD: password
           TZ: Europe/Paris
         ports:
-          - 3318:5432
+          - 5432:5432
         options: >-
           --health-cmd="pg_isready"
           --health-interval=10s
