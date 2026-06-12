@@ -9,8 +9,7 @@ on:
 
 permissions:
   contents: read
-  
-//  - read access to the repository contents (code, configuration files, etc.)
+
 jobs:
   deployment:
     name: Deployment with VPN
