@@ -7,8 +7,6 @@ on:
       - Optic CI
     types:
       - completed
-    branches:
-      - prod
 
 permissions:
   contents: read
@@ -16,7 +14,7 @@ permissions:
 jobs:
   deployment:
     name: Deployment with VPN
-    if: ${{ (github.event_name == 'workflow_dispatch' && github.ref_name == 'prod') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'prod') }}
     runs-on: ubuntu-latest
 
     steps:
